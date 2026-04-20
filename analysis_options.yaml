@@ -1,20 +1,22 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  errors:
-    missing_return: warning
-    dead_code: info
   exclude:
-    - "**/*.g.dart"
+    - build/**
+    - .dart_tool/**
+  errors:
+    invalid_annotation_target: ignore
+    todo: ignore
 
 linter:
   rules:
-    - always_declare_return_types
-    - avoid_empty_else
-    - avoid_print
-    - prefer_const_constructors
-    - prefer_const_declarations
-    - prefer_final_fields
-    - prefer_single_quotes
-    - sort_child_properties_last
-    - use_key_in_widget_constructors
+    avoid_print: false
+    prefer_single_quotes: true
+    require_trailing_commas: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    use_key_in_widget_constructors: true
+    unnecessary_lambdas: true
+    sort_constructors_first: false
+    sort_unnamed_constructors_first: true
+    always_declare_return_types: false
