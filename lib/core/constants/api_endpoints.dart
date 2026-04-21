@@ -1,51 +1,59 @@
+import 'package:flutter/foundation.dart';
+
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // Base URL — ganti sesuai environment
-  static const String baseUrl = 'https://api.smkn1sigumpar.sch.id/api/v1';
+  // Samakan dengan Web: Base URL hanya sampai port Gateway
+  static const String baseUrl = kIsWeb
+      ? 'http://localhost:8001'
+      : 'http://10.0.2.2:8001';
 
   // ─── Auth ──────────────────────────────────────────────
+  // Di Web: /auth/profile
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';
   static const String profile = '/auth/profile';
 
   // ─── Academic ──────────────────────────────────────────
-  static const String classes = '/academic/classes';
-  static const String students = '/academic/students';
-  static const String teachers = '/academic/teachers';
-  static const String announcements = '/academic/announcements';
-  static const String schedules = '/academic/schedules';
-  static const String letters = '/academic/letters';
+  // Gunakan awalan /api untuk rute yang membutuhkan verifikasi Nginx
+  static const String classes = '/api/academic/classes';
+  static const String students = '/api/academic/students';
+  static const String teachers = '/api/academic/teachers';
+  static const String announcements = '/api/academic/announcements';
+  static const String schedules = '/api/academic/schedules';
+  static const String letters = '/api/academic/letters';
 
   // ─── Student ───────────────────────────────────────────
-  static const String cleanlinessRecap = '/student/cleanliness';
-  static const String parentingNotes = '/student/parenting-notes';
-  static const String homeroomReflection = '/student/homeroom-reflection';
-  static const String summonsLetter = '/student/summons';
-  static const String attendanceRecap = '/student/attendance';
-  static const String gradesRecap = '/student/grades';
+  // PENTING: Backend menggunakan 'students' (jamak), Nginx menggunakan 'student' (tunggal)
+  // Untuk mobile, tembak langsung ke rute backend yang benar lewat /api
+  static const String cleanlinessRecap = '/api/students/cleanliness';
+  static const String parentingNotes = '/api/students/parenting-notes';
+  static const String homeroomReflection = '/api/students/homeroom-reflection';
+  static const String summonsLetter = '/api/students/summons';
+  static const String attendanceRecap = '/api/students/attendance';
+  static const String gradesRecap = '/api/students/grades';
 
   // ─── Learning ──────────────────────────────────────────
-  static const String teacherAttendance = '/learning/teacher-attendance';
-  static const String teachingNotes = '/learning/teaching-notes';
-  static const String teacherEvaluation = '/learning/teacher-evaluation';
-  static const String learningDevice = '/learning/devices';
-  static const String principalReview = '/learning/principal-review';
-  static const String vicePrincipalReview = '/learning/vice-principal-review';
+  static const String teacherAttendance = '/api/learning/teacher-attendance';
+  static const String teachingNotes = '/api/learning/teaching-notes';
+  static const String teacherEvaluation = '/api/learning/teacher-evaluation';
+  static const String learningDevice = '/api/learning/devices';
+  static const String principalReview = '/api/learning/principal-review';
+  static const String vicePrincipalReview = '/api/learning/vice-principal-review';
 
   // ─── Vocational ────────────────────────────────────────
-  static const String scoutClasses = '/vocational/scout-classes';
-  static const String scoutAttendance = '/vocational/scout-attendance';
-  static const String scoutReport = '/vocational/scout-report';
-  static const String pklLocationReport = '/vocational/pkl-location';
-  static const String pklProgressReport = '/vocational/pkl-progress';
+  static const String scoutClasses = '/api/vocational/scout-classes';
+  static const String scoutAttendance = '/api/vocational/scout-attendance';
+  static const String scoutReport = '/api/vocational/scout-report';
+  static const String pklLocationReport = '/api/vocational/pkl-location';
+  static const String pklProgressReport = '/api/vocational/pkl-progress';
 
   // ─── Asset ─────────────────────────────────────────────
-  static const String submissionInfo = '/asset/submissions';
-  static const String itemLoan = '/asset/loans';
-  static const String equipmentSubmission = '/asset/equipment';
-  static const String loanResponse = '/asset/loan-response';
-  static const String treasurerResponse = '/asset/treasurer-response';
-  static const String principalResponse = '/asset/principal-response';
+  static const String submissionInfo = '/api/asset/submissions';
+  static const String itemLoan = '/api/asset/loans';
+  static const String equipmentSubmission = '/api/asset/equipment';
+  static const String loanResponse = '/api/asset/loan-response';
+  static const String treasurerResponse = '/api/asset/treasurer-response';
+  static const String principalResponse = '/api/asset/principal-response';
 }

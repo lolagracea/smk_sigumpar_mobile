@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../models/user_model.dart';
@@ -6,6 +8,19 @@ import '../repositories/auth_repository.dart';
 class AuthService implements AuthRepository {
   final DioClient _dioClient;
 
+  // Sesuaikan dengan Client ID Keycloak di docker-compose Anda
+  final String _keycloakClientId = 'smk-sigumpar';
+
+  // 1. URL untuk proses Login dan Refresh Token
+  final String _keycloakTokenUrl = kIsWeb
+      ? 'http://localhost:8080/realms/smk-sigumpar/protocol/openid-connect/token'
+      : 'http://10.0.2.2:8080/realms/smk-sigumpar/protocol/openid-connect/token';
+
+  // 2. URL untuk mengambil Data Profil
+  final String _keycloakUserInfoUrl = kIsWeb
+      ? 'http://localhost:8080/realms/smk-sigumpar/protocol/openid-connect/userinfo'
+      : 'http://10.0.2.2:8080/realms/smk-sigumpar/protocol/openid-connect/userinfo';
+
   AuthService({required DioClient dioClient}) : _dioClient = dioClient;
 
   @override
@@ -13,9 +28,19 @@ class AuthService implements AuthRepository {
     required String username,
     required String password,
   }) async {
-    final response = await _dioClient.post(
-      ApiEndpoints.login,
-      data: {'username': username, 'password': password},
+    // Fungsi ini tetap menggunakan .dio.post (tanpa interceptor) karena belum punya token
+    final response = await _dioClient.dio.post(
+      _keycloakTokenUrl,
+      data: {
+        'client_id': _keycloakClientId,
+        'grant_type': 'password',
+        'username': username,
+        'password': password,
+        'scope': 'openid profile email', // 👈 Penambahan scope untuk OpenID Connect
+      },
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     return response.data as Map<String, dynamic>;
   }
@@ -27,8 +52,20 @@ class AuthService implements AuthRepository {
 
   @override
   Future<UserModel> getProfile() async {
-    final response = await _dioClient.get(ApiEndpoints.profile);
-    return UserModel.fromJson(response.data['data']);
+    // LANGSUNG tembak menggunakan _dioClient.get (TIDAK PAKAI .dio.get)
+    // Interceptor di dio_client.dart akan OTOMATIS menyematkan Bearer Token-nya
+    final response = await _dioClient.get(_keycloakUserInfoUrl);
+
+    // Keycloak akan membalas dengan data profil
+    final data = response.data;
+
+    return UserModel(
+      id: data['sub'],
+      username: data['preferred_username'],
+      name: data['name'] ?? data['preferred_username'],
+      email: data['email'] ?? '',
+      role: 'user',
+    );
   }
 
   @override
@@ -62,9 +99,17 @@ class AuthService implements AuthRepository {
 
   @override
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
-    final response = await _dioClient.post(
-      ApiEndpoints.refreshToken,
-      data: {'refresh_token': refreshToken},
+    final response = await _dioClient.dio.post(
+      _keycloakTokenUrl,
+      data: {
+        'client_id': _keycloakClientId,
+        'grant_type': 'refresh_token',
+        'refresh_token': refreshToken,
+        'scope': 'openid profile email', // 👈 Penambahan scope untuk OpenID Connect
+      },
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     return response.data as Map<String, dynamic>;
   }
