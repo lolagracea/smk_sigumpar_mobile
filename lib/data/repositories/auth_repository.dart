@@ -1,8 +1,15 @@
-import '../remote/auth_api.dart';
+import '../models/user_model.dart';
+import '../services/auth_service.dart';
 
 class AuthRepository {
-  AuthRepository(this._api);
-  final AuthApi _api;
+  AuthRepository({AuthService? service}) : _service = service ?? AuthService();
 
-  Future<void> login() => _api.login();
+  final AuthService _service;
+
+  Future<UserModel> login({
+    required String username,
+    required String password,
+  }) {
+    return _service.login(username: username, password: password);
+  }
 }

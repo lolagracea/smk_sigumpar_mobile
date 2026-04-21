@@ -1,50 +1,20 @@
-import '../models/arsip_surat.dart';
-import '../models/kelas.dart';
-import '../models/pengumuman.dart';
-import '../models/siswa.dart';
-import '../remote/academic_api.dart';
+import '../models/arsip_surat_model.dart';
+import '../models/kelas_model.dart';
+import '../models/pengumuman_model.dart';
+import '../models/siswa_model.dart';
+import '../services/academic_service.dart';
 
 class AcademicRepository {
-  AcademicRepository(this._api);
-  final AcademicApi _api;
+  AcademicRepository({AcademicService? service})
+      : _service = service ?? AcademicService();
 
-  Future<List<Kelas>> fetchKelas() async {
-    await _api.getKelas();
-    return const [
-      Kelas(id: 1, nama: 'X TKJ 1', tingkat: 'X', waliKelas: 'Ibu Ratna'),
-      Kelas(id: 2, nama: 'XI RPL 1', tingkat: 'XI', waliKelas: 'Pak Joni'),
-    ];
-  }
+  final AcademicService _service;
 
-  Future<List<Siswa>> fetchSiswa() async {
-    await _api.getSiswa();
-    return const [
-      Siswa(id: 1, nama: 'Budi Situmorang', nisn: '1234567890', kelas: 'X TKJ 1'),
-      Siswa(id: 2, nama: 'Tiur Simarmata', nisn: '0987654321', kelas: 'XI RPL 1'),
-    ];
-  }
+  Future<List<KelasModel>> getKelas() => _service.getKelas();
 
-  Future<List<Pengumuman>> fetchPengumuman() async {
-    await _api.getPengumuman();
-    return [
-      Pengumuman(
-        id: 1,
-        judul: 'Libur Semester',
-        isi: 'Kegiatan belajar dihentikan sementara selama libur semester.',
-        tanggal: DateTime.now(),
-      ),
-    ];
-  }
+  Future<List<SiswaModel>> getSiswa() => _service.getSiswa();
 
-  Future<List<ArsipSurat>> fetchArsipSurat() async {
-    await _api.getArsipSurat();
-    return const [
-      ArsipSurat(
-        id: 1,
-        nomorSurat: '420/SMKN1S/2026',
-        perihal: 'Undangan Rapat Orang Tua',
-        fileUrl: null,
-      ),
-    ];
-  }
+  Future<List<PengumumanModel>> getPengumuman() => _service.getPengumuman();
+
+  Future<List<ArsipSuratModel>> getArsipSurat() => _service.getArsipSurat();
 }
