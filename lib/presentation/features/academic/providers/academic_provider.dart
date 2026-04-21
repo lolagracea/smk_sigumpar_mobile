@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/class_model.dart';
-import '../../../data/models/student_model.dart';
-import '../../../data/models/teacher_model.dart';
-import '../../../data/repositories/academic_repository.dart';
-import '../../../core/network/api_response.dart';
+import 'package:smk_sigumpar/data/models/class_model.dart';
+import 'package:smk_sigumpar/data/models/student_model.dart';
+import 'package:smk_sigumpar/data/models/teacher_model.dart';
+import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
+import 'package:smk_sigumpar/core/network/api_response.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/academic_provider.dart';
-import '../../../data/repositories/academic_repository.dart';
+import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection_container.dart';

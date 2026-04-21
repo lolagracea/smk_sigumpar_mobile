@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/repositories/vocational_repository.dart';
+import 'package:smk_sigumpar/data/repositories/vocational_repository.dart';
 
 enum VocationalLoadState { initial, loading, loaded, error }
 

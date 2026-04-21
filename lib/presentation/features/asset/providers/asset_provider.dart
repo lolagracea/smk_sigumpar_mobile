@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/repositories/asset_repository.dart';
+import 'package:smk_sigumpar/data/repositories/asset_repository.dart';
 
 enum AssetLoadState { initial, loading, loaded, error }
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/repositories/learning_repository.dart';
+import 'package:smk_sigumpar/data/repositories/learning_repository.dart';
 
 enum LearningLoadState { initial, loading, loaded, error }
 
