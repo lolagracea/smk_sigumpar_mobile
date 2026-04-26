@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../constants/route_names.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/features/auth/login_screen.dart';
@@ -39,78 +38,74 @@ import '../../presentation/features/asset/screens/principal_response_screen.dart
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static final router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
-    initialLocation: RouteNames.login,
-    redirect: (context, state) {
-      final auth = context.read<AuthProvider>();
-      final isLoggedIn = auth.isAuthenticated;
-      final isLoginRoute = state.matchedLocation == RouteNames.login;
+  // Diubah menjadi fungsi yang menerima AuthProvider
+  static GoRouter createRouter(AuthProvider authProvider) {
+    return GoRouter(
+      navigatorKey: _rootNavigatorKey,
+      initialLocation: RouteNames.home, // Default selalu Home, biarkan Redirect yang mengatur
+      refreshListenable: authProvider,  // PENTING: Mendengarkan perubahan login/logout
+      redirect: (context, state) {
+        // Tahan navigasi jika aplikasi masih dalam proses membaca token
+        if (authProvider.status == AuthStatus.initial || authProvider.status == AuthStatus.loading) {
+          return null;
+        }
 
-      if (!isLoggedIn && !isLoginRoute) return RouteNames.login;
-      if (isLoggedIn && isLoginRoute) return RouteNames.home;
-      return null;
-    },
-    routes: [
-      // ─── Auth ────────────────────────────────────────────
-      GoRoute(
-        path: RouteNames.login,
-        builder: (_, __) => const LoginScreen(),
+        final isLoggedIn = authProvider.isAuthenticated;
+        final isLoginRoute = state.matchedLocation == RouteNames.login;
+
+        if (!isLoggedIn && !isLoginRoute) return RouteNames.login;
+        if (isLoggedIn && isLoginRoute) return RouteNames.home;
+
+        return null;
+      },
+      routes: [
+        // Rute-rute tetap sama seperti kode awalmu
+        GoRoute(path: RouteNames.login, builder: (_, __) => const LoginScreen()),
+        GoRoute(path: RouteNames.profile, builder: (_, __) => const ProfileScreen()),
+        GoRoute(path: RouteNames.home, builder: (_, __) => const HomeScreen()),
+
+        // -- Academic --
+        GoRoute(path: RouteNames.classes, builder: (_, __) => const ClassesScreen()),
+        GoRoute(path: RouteNames.students, builder: (_, __) => const StudentsScreen()),
+        GoRoute(path: RouteNames.teachers, builder: (_, __) => const TeachersScreen()),
+        GoRoute(path: RouteNames.announcements, builder: (_, __) => const AnnouncementsScreen()),
+        GoRoute(path: RouteNames.schedules, builder: (_, __) => const SchedulesScreen()),
+        GoRoute(path: RouteNames.letters, builder: (_, __) => const LettersScreen()),
+
+        // -- Student --
+        GoRoute(path: RouteNames.cleanlinessRecap, builder: (_, __) => const CleanlinessRecapScreen()),
+        GoRoute(path: RouteNames.parentingNotes, builder: (_, __) => const ParentingNotesScreen()),
+        GoRoute(path: RouteNames.homeroomReflection, builder: (_, __) => const HomeroomReflectionScreen()),
+        GoRoute(path: RouteNames.summonsLetter, builder: (_, __) => const SummonsLetterScreen()),
+        GoRoute(path: RouteNames.attendanceRecap, builder: (_, __) => const AttendanceRecapScreen()),
+        GoRoute(path: RouteNames.gradesRecap, builder: (_, __) => const GradesRecapScreen()),
+
+        // -- Learning --
+        GoRoute(path: RouteNames.teacherAttendance, builder: (_, __) => const TeacherAttendanceScreen()),
+        GoRoute(path: RouteNames.teachingNotes, builder: (_, __) => const TeachingNotesScreen()),
+        GoRoute(path: RouteNames.teacherEvaluation, builder: (_, __) => const TeacherEvaluationScreen()),
+        GoRoute(path: RouteNames.learningDevice, builder: (_, __) => const LearningDeviceScreen()),
+        GoRoute(path: RouteNames.principalReview, builder: (_, __) => const PrincipalReviewScreen()),
+        GoRoute(path: RouteNames.vicePrincipalReview, builder: (_, __) => const VicePrincipalReviewScreen()),
+
+        // -- Vocational --
+        GoRoute(path: RouteNames.scoutClasses, builder: (_, __) => const ScoutClassesScreen()),
+        GoRoute(path: RouteNames.scoutAttendance, builder: (_, __) => const ScoutAttendanceScreen()),
+        GoRoute(path: RouteNames.scoutReport, builder: (_, __) => const ScoutReportScreen()),
+        GoRoute(path: RouteNames.pklLocationReport, builder: (_, __) => const PklLocationReportScreen()),
+        GoRoute(path: RouteNames.pklProgressReport, builder: (_, __) => const PklProgressReportScreen()),
+
+        // -- Asset --
+        GoRoute(path: RouteNames.submissionInfo, builder: (_, __) => const SubmissionInfoScreen()),
+        GoRoute(path: RouteNames.itemLoan, builder: (_, __) => const ItemLoanScreen()),
+        GoRoute(path: RouteNames.equipmentSubmission, builder: (_, __) => const EquipmentSubmissionScreen()),
+        GoRoute(path: RouteNames.loanResponse, builder: (_, __) => const LoanResponseScreen()),
+        GoRoute(path: RouteNames.treasurerResponse, builder: (_, __) => const TreasurerResponseScreen()),
+        GoRoute(path: RouteNames.principalResponse, builder: (_, __) => const PrincipalResponseScreen()),
+      ],
+      errorBuilder: (_, state) => Scaffold(
+        body: Center(child: Text('Halaman tidak ditemukan: ${state.error}')),
       ),
-      GoRoute(
-        path: RouteNames.profile,
-        builder: (_, __) => const ProfileScreen(),
-      ),
-
-      // ─── Home ────────────────────────────────────────────
-      GoRoute(
-        path: RouteNames.home,
-        builder: (_, __) => const HomeScreen(),
-      ),
-
-      // ─── Academic ────────────────────────────────────────
-      GoRoute(path: RouteNames.classes, builder: (_, __) => const ClassesScreen()),
-      GoRoute(path: RouteNames.students, builder: (_, __) => const StudentsScreen()),
-      GoRoute(path: RouteNames.teachers, builder: (_, __) => const TeachersScreen()),
-      GoRoute(path: RouteNames.announcements, builder: (_, __) => const AnnouncementsScreen()),
-      GoRoute(path: RouteNames.schedules, builder: (_, __) => const SchedulesScreen()),
-      GoRoute(path: RouteNames.letters, builder: (_, __) => const LettersScreen()),
-
-      // ─── Student ─────────────────────────────────────────
-      GoRoute(path: RouteNames.cleanlinessRecap, builder: (_, __) => const CleanlinessRecapScreen()),
-      GoRoute(path: RouteNames.parentingNotes, builder: (_, __) => const ParentingNotesScreen()),
-      GoRoute(path: RouteNames.homeroomReflection, builder: (_, __) => const HomeroomReflectionScreen()),
-      GoRoute(path: RouteNames.summonsLetter, builder: (_, __) => const SummonsLetterScreen()),
-      GoRoute(path: RouteNames.attendanceRecap, builder: (_, __) => const AttendanceRecapScreen()),
-      GoRoute(path: RouteNames.gradesRecap, builder: (_, __) => const GradesRecapScreen()),
-
-      // ─── Learning ────────────────────────────────────────
-      GoRoute(path: RouteNames.teacherAttendance, builder: (_, __) => const TeacherAttendanceScreen()),
-      GoRoute(path: RouteNames.teachingNotes, builder: (_, __) => const TeachingNotesScreen()),
-      GoRoute(path: RouteNames.teacherEvaluation, builder: (_, __) => const TeacherEvaluationScreen()),
-      GoRoute(path: RouteNames.learningDevice, builder: (_, __) => const LearningDeviceScreen()),
-      GoRoute(path: RouteNames.principalReview, builder: (_, __) => const PrincipalReviewScreen()),
-      GoRoute(path: RouteNames.vicePrincipalReview, builder: (_, __) => const VicePrincipalReviewScreen()),
-
-      // ─── Vocational ──────────────────────────────────────
-      GoRoute(path: RouteNames.scoutClasses, builder: (_, __) => const ScoutClassesScreen()),
-      GoRoute(path: RouteNames.scoutAttendance, builder: (_, __) => const ScoutAttendanceScreen()),
-      GoRoute(path: RouteNames.scoutReport, builder: (_, __) => const ScoutReportScreen()),
-      GoRoute(path: RouteNames.pklLocationReport, builder: (_, __) => const PklLocationReportScreen()),
-      GoRoute(path: RouteNames.pklProgressReport, builder: (_, __) => const PklProgressReportScreen()),
-
-      // ─── Asset ───────────────────────────────────────────
-      GoRoute(path: RouteNames.submissionInfo, builder: (_, __) => const SubmissionInfoScreen()),
-      GoRoute(path: RouteNames.itemLoan, builder: (_, __) => const ItemLoanScreen()),
-      GoRoute(path: RouteNames.equipmentSubmission, builder: (_, __) => const EquipmentSubmissionScreen()),
-      GoRoute(path: RouteNames.loanResponse, builder: (_, __) => const LoanResponseScreen()),
-      GoRoute(path: RouteNames.treasurerResponse, builder: (_, __) => const TreasurerResponseScreen()),
-      GoRoute(path: RouteNames.principalResponse, builder: (_, __) => const PrincipalResponseScreen()),
-    ],
-    errorBuilder: (_, state) => Scaffold(
-      body: Center(
-        child: Text('Halaman tidak ditemukan: ${state.error}'),
-      ),
-    ),
-  );
+    );
+  }
 }

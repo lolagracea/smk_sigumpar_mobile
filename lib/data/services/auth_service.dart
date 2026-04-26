@@ -1,34 +1,32 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/constants/api_endpoints.dart';
+import '../../core/utils/secure_storage.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
 
 class AuthService implements AuthRepository {
   final DioClient _dioClient;
-
-  // Sesuaikan dengan Client ID Keycloak di docker-compose Anda
+  final SecureStorage _secureStorage;
   final String _keycloakClientId = 'smk-sigumpar';
 
-  // 1. URL untuk proses Login dan Refresh Token
   final String _keycloakTokenUrl = kIsWeb
       ? 'http://localhost:8080/realms/smk-sigumpar/protocol/openid-connect/token'
       : 'http://10.0.2.2:8080/realms/smk-sigumpar/protocol/openid-connect/token';
 
-  // 2. URL untuk mengambil Data Profil
-  final String _keycloakUserInfoUrl = kIsWeb
-      ? 'http://localhost:8080/realms/smk-sigumpar/protocol/openid-connect/userinfo'
-      : 'http://10.0.2.2:8080/realms/smk-sigumpar/protocol/openid-connect/userinfo';
-
-  AuthService({required DioClient dioClient}) : _dioClient = dioClient;
+  AuthService({
+    required DioClient dioClient,
+    required SecureStorage secureStorage,
+  })  : _dioClient = dioClient,
+        _secureStorage = secureStorage;
 
   @override
   Future<Map<String, dynamic>> login({
     required String username,
     required String password,
   }) async {
-    // Fungsi ini tetap menggunakan .dio.post (tanpa interceptor) karena belum punya token
     final response = await _dioClient.dio.post(
       _keycloakTokenUrl,
       data: {
@@ -36,7 +34,9 @@ class AuthService implements AuthRepository {
         'grant_type': 'password',
         'username': username,
         'password': password,
-        'scope': 'openid profile email', // 👈 Penambahan scope untuk OpenID Connect
+        // 👇 PERUBAHAN UTAMA 1: Tambahkan offline_access di sini
+        // Ini memberitahu Keycloak untuk memberikan token sesi jangka panjang untuk Mobile
+        'scope': 'openid profile email offline_access',
       },
       options: Options(
         contentType: Headers.formUrlEncodedContentType,
@@ -47,25 +47,48 @@ class AuthService implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    await _dioClient.post(ApiEndpoints.logout);
+    try {
+      await _dioClient.post(ApiEndpoints.logout);
+    } catch (_) {
+      // Abaikan ralat API, biarkan proses berlanjut agar token di HP tetap terhapus
+    }
   }
 
   @override
   Future<UserModel> getProfile() async {
-    // LANGSUNG tembak menggunakan _dioClient.get (TIDAK PAKAI .dio.get)
-    // Interceptor di dio_client.dart akan OTOMATIS menyematkan Bearer Token-nya
-    final response = await _dioClient.get(_keycloakUserInfoUrl);
+    try {
+      final token = await _secureStorage.getAccessToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Sesi telah tamat. Sila log masuk semula.');
+      }
 
-    // Keycloak akan membalas dengan data profil
-    final data = response.data;
+      // Decode JWT
+      final parts = token.split('.');
+      if (parts.length != 3) throw Exception('Format token tidak sah');
 
-    return UserModel(
-      id: data['sub'],
-      username: data['preferred_username'],
-      name: data['name'] ?? data['preferred_username'],
-      email: data['email'] ?? '',
-      role: 'user',
-    );
+      String payload = parts[1];
+      String normalized = base64Url.normalize(payload);
+      String decodedPayload = utf8.decode(base64Url.decode(normalized));
+      Map<String, dynamic> data = json.decode(decodedPayload);
+
+      // Ekstrak peranan (roles) dari Keycloak
+      List<String> userRoles = ['user'];
+      if (data['realm_access'] != null && data['realm_access']['roles'] != null) {
+        userRoles = List<String>.from(data['realm_access']['roles']);
+      }
+
+      // 👇 KEMAS KINI DI SINI: Padankan tepat dengan UserModel anda
+      return UserModel(
+        id: data['sub']?.toString() ?? '',
+        username: data['preferred_username']?.toString() ?? '',
+        name: data['name']?.toString() ?? data['preferred_username']?.toString() ?? 'Pengguna',
+        email: data['email']?.toString() ?? '', // Ditambah kembali
+        role: userRoles.isNotEmpty ? userRoles.first : 'user', // Ditukar dari 'roles' kepada 'role'
+      );
+
+    } catch (e) {
+      throw Exception('Gagal memuat data profil: $e');
+    }
   }
 
   @override
@@ -105,7 +128,8 @@ class AuthService implements AuthRepository {
         'client_id': _keycloakClientId,
         'grant_type': 'refresh_token',
         'refresh_token': refreshToken,
-        'scope': 'openid profile email', // 👈 Penambahan scope untuk OpenID Connect
+        // 👇 PERUBAHAN UTAMA 2: Pastikan offline_access juga ada semasa refresh token
+        'scope': 'openid profile email offline_access',
       },
       options: Options(
         contentType: Headers.formUrlEncodedContentType,

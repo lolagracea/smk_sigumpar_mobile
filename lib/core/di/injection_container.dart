@@ -20,47 +20,52 @@ import '../../presentation/common/providers/theme_provider.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
+
+  sl.allowReassignment = true;
   // ─── Core ──────────────────────────────────────────────
   sl.registerLazySingleton<SecureStorage>(() => SecureStorage());
 
   sl.registerLazySingleton<DioClient>(
-    () => DioClient(secureStorage: sl<SecureStorage>()),
+        () => DioClient(secureStorage: sl<SecureStorage>()),
   );
 
   sl.registerLazySingleton<ThemeNotifier>(() => ThemeNotifier());
 
   // ─── Repositories ──────────────────────────────────────
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthService(dioClient: sl<DioClient>()),
+        () => AuthService(
+      dioClient: sl<DioClient>(),
+      secureStorage: sl<SecureStorage>(), // 👇 Ditambah di sini
+    ),
   );
 
   sl.registerLazySingleton<AcademicRepository>(
-    () => AcademicService(dioClient: sl<DioClient>()),
+        () => AcademicService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<StudentRepository>(
-    () => StudentService(dioClient: sl<DioClient>()),
+        () => StudentService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<LearningRepository>(
-    () => LearningService(dioClient: sl<DioClient>()),
+        () => LearningService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<VocationalRepository>(
-    () => VocationalService(dioClient: sl<DioClient>()),
+        () => VocationalService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<AssetRepository>(
-    () => AssetService(dioClient: sl<DioClient>()),
+        () => AssetService(dioClient: sl<DioClient>()),
   );
 
   // ─── Providers ─────────────────────────────────────────
   sl.registerLazySingleton<ThemeProvider>(
-    () => ThemeProvider(notifier: sl<ThemeNotifier>()),
+        () => ThemeProvider(notifier: sl<ThemeNotifier>()),
   );
 
   sl.registerFactory<AuthProvider>(
-    () => AuthProvider(
+        () => AuthProvider(
       authRepository: sl<AuthRepository>(),
       secureStorage: sl<SecureStorage>(),
     ),
