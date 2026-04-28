@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/class_model.dart';
-import '../../../data/models/student_model.dart';
-import '../../../data/models/teacher_model.dart';
-import '../../../data/repositories/academic_repository.dart';
-import '../../../core/network/api_response.dart';
+import '../../../../data/models/class_model.dart';
+import '../../../../data/models/student_model.dart';
+import '../../../../data/models/teacher_model.dart';
+import '../../../../data/repositories/academic_repository.dart';
+import '../../../../core/network/api_response.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 
@@ -37,7 +37,8 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getClasses(page: _classPage, search: search);
+      final result =
+          await _repository.getClasses(page: _classPage, search: search);
       _classes.addAll(result.items);
       _hasMoreClasses = result.hasNextPage;
       _classPage++;
@@ -60,7 +61,8 @@ class AcademicProvider extends ChangeNotifier {
   List<StudentModel> get students => _students;
   String? get studentError => _studentError;
 
-  Future<void> fetchStudents({bool refresh = false, String? classId, String? search}) async {
+  Future<void> fetchStudents(
+      {bool refresh = false, String? classId, String? search}) async {
     if (refresh) {
       _studentPage = 1;
       _students = [];
@@ -111,7 +113,8 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getTeachers(page: _teacherPage, search: search);
+      final result =
+          await _repository.getTeachers(page: _teacherPage, search: search);
       _teachers.addAll(result.items);
       _hasMoreTeachers = result.hasNextPage;
       _teacherPage++;
@@ -144,7 +147,8 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getAnnouncements(page: _announcementPage);
+      final result =
+          await _repository.getAnnouncements(page: _announcementPage);
       _announcements.addAll(result.items);
       _hasMoreAnnouncements = result.hasNextPage;
       _announcementPage++;

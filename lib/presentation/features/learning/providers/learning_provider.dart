@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/repositories/learning_repository.dart';
+import '../../../../data/repositories/learning_repository.dart';
 
 enum LearningLoadState { initial, loading, loaded, error }
 
@@ -17,7 +17,8 @@ class LearningProvider extends ChangeNotifier {
   LearningLoadState get attendanceState => _attendanceState;
   List<Map<String, dynamic>> get teacherAttendances => _teacherAttendances;
 
-  Future<void> fetchTeacherAttendance({bool refresh = false, String? date}) async {
+  Future<void> fetchTeacherAttendance(
+      {bool refresh = false, String? date}) async {
     if (refresh) _teacherAttendances = [];
 
     _attendanceState = LearningLoadState.loading;

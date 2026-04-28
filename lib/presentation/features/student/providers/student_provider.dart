@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/attendance_model.dart';
-import '../../../data/models/grade_model.dart';
-import '../../../data/repositories/student_repository.dart';
+import '../../../../data/models/attendance_model.dart';
+import '../../../../data/models/grade_model.dart';
+import '../../../../data/repositories/student_repository.dart';
 
 enum StudentLoadState { initial, loading, loaded, error }
 

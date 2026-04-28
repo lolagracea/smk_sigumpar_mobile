@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/academic_provider.dart';
-import '../../../data/repositories/academic_repository.dart';
+import '../../../../data/repositories/academic_repository.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/di/injection_container.dart';
@@ -42,9 +42,8 @@ class _ClassesViewState extends State<_ClassesView> {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       context.read<AcademicProvider>().fetchClasses(
-            search: _searchController.text.isEmpty
-                ? null
-                : _searchController.text,
+            search:
+                _searchController.text.isEmpty ? null : _searchController.text,
           );
     }
   }
@@ -86,7 +85,8 @@ class _ClassesViewState extends State<_ClassesView> {
               ),
               onSubmitted: (value) => context
                   .read<AcademicProvider>()
-                  .fetchClasses(refresh: true, search: value.isEmpty ? null : value),
+                  .fetchClasses(
+                      refresh: true, search: value.isEmpty ? null : value),
             ),
           ),
 
@@ -94,14 +94,14 @@ class _ClassesViewState extends State<_ClassesView> {
           Expanded(
             child: switch (provider.classState) {
               AcademicLoadState.initial ||
-              AcademicLoadState.loading
-                  when provider.classes.isEmpty =>
+              AcademicLoadState.loading when provider.classes.isEmpty =>
                 const LoadingWidget(),
               AcademicLoadState.error when provider.classes.isEmpty =>
                 AppErrorWidget(
                   message: provider.classError,
-                  onRetry: () =>
-                      context.read<AcademicProvider>().fetchClasses(refresh: true),
+                  onRetry: () => context
+                      .read<AcademicProvider>()
+                      .fetchClasses(refresh: true),
                 ),
               _ => RefreshIndicator(
                   onRefresh: () => context
@@ -141,7 +141,8 @@ class _ClassesViewState extends State<_ClassesView> {
                                   ),
                                 ),
                                 title: Text(cls.name,
-                                    style: Theme.of(context).textTheme.titleSmall),
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall),
                                 subtitle: Text(
                                   '${cls.major} • ${cls.studentCount} Siswa',
                                   style: Theme.of(context)
