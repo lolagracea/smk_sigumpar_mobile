@@ -15,15 +15,15 @@ class AppDrawer extends StatelessWidget {
     final user = authProvider.user;
 
     // Tarik data menu dari fungsi dinamis
-    // final menus = RoleHelper.getDrawerMenus(user?.role);
-//     // Kita paksa cetak ke terminal untuk melihat apa isi sebenarnya
-//     print("===== DEBUGGING =====");
-//     print("NAMA USER: ${user?.name}");
-//     print("ROLE USER: '${user?.role}'");
-//     print("=====================");
-//
+    final menus = RoleHelper.getDrawerMenus(user?.role);
+    // Kita paksa cetak ke terminal untuk melihat apa isi sebenarnya
+    print("===== DEBUGGING =====");
+    print("NAMA USER: ${user?.name}");
+    print("ROLE USER: '${user?.role}'");
+    print("=====================");
+
 // KITA PAKSA APLIKASI MENGANGGAP INI ADALAH TATA USAHA
-    final menus = RoleHelper.getDrawerMenus('tata-usaha');
+//     final menus = RoleHelper.getDrawerMenus('tata-usaha');
 
     return Drawer(
       child: Column(

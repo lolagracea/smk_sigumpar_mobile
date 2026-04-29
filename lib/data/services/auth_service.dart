@@ -60,49 +60,68 @@ class AuthService implements AuthRepository {
         throw Exception('Sesi telah tamat. Sila log masuk semula.');
       }
 
-      // Decode JWT
+      // 1. Decode JWT Access Token (Seperti biasa)
       final parts = token.split('.');
       if (parts.length != 3) throw Exception('Format token tidak sah');
 
       String payload = parts[1];
       String normalized = base64Url.normalize(payload);
       String decodedPayload = utf8.decode(base64Url.decode(normalized));
-      Map<String, dynamic> data = json.decode(decodedPayload);
+      Map<String, dynamic> tokenData = json.decode(decodedPayload);
 
-      // --- PERBAIKAN PEMBACAAN ROLE KEYCLOAK (REALM + CLIENT ROLES) ---
-      List<String> userRoles = [];
+      // 2. MINTA DATA LENGKAP KE ENDPOINT USERINFO KEYCLOAK (Cara Web)
+      // Gunakan URL dasar Keycloak Anda dengan memotong bagian '/token'
+      final String userInfoUrl = _keycloakTokenUrl.replaceAll('/token', '/userinfo');
 
-      // 1. Ambil Realm Roles (Role Global)
-      if (data['realm_access'] != null && data['realm_access']['roles'] != null) {
-        userRoles.addAll(List<String>.from(data['realm_access']['roles']));
+      Map<String, dynamic> userInfoData = {};
+      try {
+        final userInfoResponse = await _dioClient.dio.get(
+          userInfoUrl,
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+        userInfoData = userInfoResponse.data as Map<String, dynamic>;
+      } catch (e) {
+        debugPrint('Gagal mengambil userinfo, menggunakan data token lokal: $e');
       }
 
-      // 2. Ambil Client Roles (Resource Access) - Seringkali tata-usaha sembunyi di sini!
-      if (data['resource_access'] != null) {
-        data['resource_access'].forEach((clientId, clientData) {
-          if (clientData['roles'] != null) {
-            userRoles.addAll(List<String>.from(clientData['roles']));
+      // 3. GABUNGKAN DATA (Token Lokal + Data UserInfo)
+      final Map<String, dynamic> combinedData = {...tokenData, ...userInfoData};
+
+      // 4. EKSTRAKSI ROLE SECARA AGRESIF (Mencari di semua "laci" Keycloak)
+      Set<String> extractedRoles = {}; // Pakai Set agar tidak ada role duplikat
+
+      // Laci A: realm_access (Bawaan Keycloak)
+      if (combinedData['realm_access'] != null && combinedData['realm_access']['roles'] != null) {
+        extractedRoles.addAll(List<String>.from(combinedData['realm_access']['roles']));
+      }
+
+      // Laci B: resource_access (Client Roles - Biasanya role custom sembunyi di sini)
+      if (combinedData['resource_access'] != null) {
+        combinedData['resource_access'].forEach((key, value) {
+          if (value['roles'] != null) {
+            extractedRoles.addAll(List<String>.from(value['roles']));
           }
         });
       }
 
-      // Jika sama sekali tidak ada role, set default
-      if (userRoles.isEmpty) {
-        userRoles.add('user');
+      // Laci C: roles dari UserInfo atau Array langsung
+      if (combinedData['roles'] != null && combinedData['roles'] is List) {
+        extractedRoles.addAll(List<String>.from(combinedData['roles']));
       }
 
-      // Kita cetak isi token aslinya agar ketahuan jika ada yang salah
-      print("==== ISI TOKEN KEYCLOAK ====");
-      print("Semua Role Terdeteksi: $userRoles");
-      print("============================");
+      // Jika role penting (seperti tata-usaha) ditemukan dalam string biasa
+      if (combinedData['role'] != null && combinedData['role'] is String) {
+        extractedRoles.add(combinedData['role'].toString());
+      }
 
+      // 5. KEMBALIKAN MODEL USER
       return UserModel(
-        id: data['sub']?.toString() ?? '',
-        username: data['preferred_username']?.toString() ?? '',
-        name: data['name']?.toString() ?? data['preferred_username']?.toString() ?? 'Pengguna',
-        email: data['email']?.toString() ?? '',
-        // Gabungkan semua role dengan koma
-        role: userRoles.join(', '),
+        id: combinedData['sub']?.toString() ?? '',
+        username: combinedData['preferred_username']?.toString() ?? '',
+        name: combinedData['name']?.toString() ?? combinedData['preferred_username']?.toString() ?? 'Pengguna',
+        email: combinedData['email']?.toString() ?? '',
+        // Gabungkan semua role menjadi satu string (contoh: "default-roles-smk-sigumpar, tata-usaha")
+        role: extractedRoles.isNotEmpty ? extractedRoles.join(', ') : 'user',
       );
 
     } catch (e) {
