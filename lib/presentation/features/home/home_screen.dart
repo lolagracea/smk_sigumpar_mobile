@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../common/providers/auth_provider.dart';
+import '../../common/widgets/app_drawer.dart'; // <-- IMPORT DRAWER
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/route_names.dart';
@@ -25,6 +26,9 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
+      // --- PENAMBAHAN DRAWER DISINI ---
+      drawer: const AppDrawer(),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -54,9 +58,9 @@ class HomeScreen extends StatelessWidget {
                   Text(
                     user?.name ?? '-',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -132,7 +136,7 @@ class HomeScreen extends StatelessWidget {
       _MenuItem(
         title: AppStrings.profile,
         icon: Icons.person_outline_rounded,
-        color: AppColors.grey600,
+        color: Colors.grey.shade600,
         route: RouteNames.profile,
         allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.vicePrincipal, AppRoles.teacher, AppRoles.homeroom, AppRoles.student, AppRoles.staff, AppRoles.treasurer],
       ),
@@ -193,9 +197,9 @@ class _MenuCard extends StatelessWidget {
               item.title,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: item.color,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: item.color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),

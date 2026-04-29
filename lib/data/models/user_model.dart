@@ -24,12 +24,33 @@ class UserModel extends Equatable {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    // --- LOGIKA CERDAS UNTUK MEMBACA ROLE DARI KEYCLOAK ---
+    String parsedRole = '';
+
+    // 1. Cek apakah role ada di dalam 'realm_access' (Format asli token JWT Keycloak)
+    if (json['realm_access'] != null && json['realm_access']['roles'] is List) {
+      parsedRole = (json['realm_access']['roles'] as List).join(', ');
+    }
+    // 2. Cek apakah Keycloak mengirim array 'roles'
+    else if (json['roles'] is List) {
+      parsedRole = (json['roles'] as List).join(', ');
+    }
+    // 3. Cek apakah role dikirim dengan key 'role'
+    else if (json['role'] != null) {
+      if (json['role'] is List) {
+        parsedRole = (json['role'] as List).join(', ');
+      } else {
+        parsedRole = json['role'].toString();
+      }
+    }
+    // ------------------------------------------------------
+
     return UserModel(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       username: json['username'] ?? '',
       email: json['email'] ?? '',
-      role: json['role'] ?? '',
+      role: parsedRole, // Masukkan role yang sudah diproses di atas
       photoUrl: json['photo_url'],
       phone: json['phone'],
       isActive: json['is_active'] ?? true,
@@ -40,16 +61,16 @@ class UserModel extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'username': username,
-        'email': email,
-        'role': role,
-        'photo_url': photoUrl,
-        'phone': phone,
-        'is_active': isActive,
-        'created_at': createdAt?.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'username': username,
+    'email': email,
+    'role': role,
+    'photo_url': photoUrl,
+    'phone': phone,
+    'is_active': isActive,
+    'created_at': createdAt?.toIso8601String(),
+  };
 
   UserModel copyWith({
     String? id,

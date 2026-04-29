@@ -34,8 +34,6 @@ class AuthService implements AuthRepository {
         'grant_type': 'password',
         'username': username,
         'password': password,
-        // 👇 PERUBAHAN UTAMA 1: Tambahkan offline_access di sini
-        // Ini memberitahu Keycloak untuk memberikan token sesi jangka panjang untuk Mobile
         'scope': 'openid profile email offline_access',
       },
       options: Options(
@@ -71,19 +69,40 @@ class AuthService implements AuthRepository {
       String decodedPayload = utf8.decode(base64Url.decode(normalized));
       Map<String, dynamic> data = json.decode(decodedPayload);
 
-      // Ekstrak peranan (roles) dari Keycloak
-      List<String> userRoles = ['user'];
+      // --- PERBAIKAN PEMBACAAN ROLE KEYCLOAK (REALM + CLIENT ROLES) ---
+      List<String> userRoles = [];
+
+      // 1. Ambil Realm Roles (Role Global)
       if (data['realm_access'] != null && data['realm_access']['roles'] != null) {
-        userRoles = List<String>.from(data['realm_access']['roles']);
+        userRoles.addAll(List<String>.from(data['realm_access']['roles']));
       }
 
-      // 👇 KEMAS KINI DI SINI: Padankan tepat dengan UserModel anda
+      // 2. Ambil Client Roles (Resource Access) - Seringkali tata-usaha sembunyi di sini!
+      if (data['resource_access'] != null) {
+        data['resource_access'].forEach((clientId, clientData) {
+          if (clientData['roles'] != null) {
+            userRoles.addAll(List<String>.from(clientData['roles']));
+          }
+        });
+      }
+
+      // Jika sama sekali tidak ada role, set default
+      if (userRoles.isEmpty) {
+        userRoles.add('user');
+      }
+
+      // Kita cetak isi token aslinya agar ketahuan jika ada yang salah
+      print("==== ISI TOKEN KEYCLOAK ====");
+      print("Semua Role Terdeteksi: $userRoles");
+      print("============================");
+
       return UserModel(
         id: data['sub']?.toString() ?? '',
         username: data['preferred_username']?.toString() ?? '',
         name: data['name']?.toString() ?? data['preferred_username']?.toString() ?? 'Pengguna',
-        email: data['email']?.toString() ?? '', // Ditambah kembali
-        role: userRoles.isNotEmpty ? userRoles.first : 'user', // Ditukar dari 'roles' kepada 'role'
+        email: data['email']?.toString() ?? '',
+        // Gabungkan semua role dengan koma
+        role: userRoles.join(', '),
       );
 
     } catch (e) {
@@ -128,7 +147,6 @@ class AuthService implements AuthRepository {
         'client_id': _keycloakClientId,
         'grant_type': 'refresh_token',
         'refresh_token': refreshToken,
-        // 👇 PERUBAHAN UTAMA 2: Pastikan offline_access juga ada semasa refresh token
         'scope': 'openid profile email offline_access',
       },
       options: Options(

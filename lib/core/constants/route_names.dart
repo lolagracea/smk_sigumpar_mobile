@@ -17,6 +17,7 @@ class RouteNames {
   static const String schedules = '/academic/schedules';
   static const String letters = '/academic/letters';
 
+
   // ─── Student ───────────────────────────────────────────
   static const String student = '/student';
   static const String cleanlinessRecap = '/student/cleanliness';
