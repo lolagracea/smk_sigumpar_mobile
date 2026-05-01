@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/academic_provider.dart';
+import 'package:smk_sigumpar/data/models/class_model.dart';
 import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -30,134 +31,397 @@ class _ClassesView extends StatefulWidget {
 
 class _ClassesViewState extends State<_ClassesView> {
   final _searchController = TextEditingController();
-  final _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
+  Future<void> _showClassForm({
+    ClassModel? initialData,
+  }) async {
+    final isEdit = initialData != null;
+
+    final namaController = TextEditingController(
+      text: initialData?.namaKelas ?? '',
+    );
+
+    String tingkat = initialData?.tingkat ?? 'X';
+
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: bottomInset + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 48,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 18),
+                      decoration: BoxDecoration(
+                        color: AppColors.grey300,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    isEdit ? 'Edit Kelas' : 'Tambah Kelas',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isEdit
+                        ? 'Perbarui data kelas sesuai backend academic-service.'
+                        : 'Tambahkan kelas baru seperti flow website tata usaha.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.grey600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  TextField(
+                    controller: namaController,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Kelas',
+                      hintText: 'Contoh: X RPL 1',
+                      prefixIcon: Icon(Icons.class_outlined),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    value: tingkat,
+                    decoration: const InputDecoration(
+                      labelText: 'Tingkat',
+                      prefixIcon: Icon(Icons.layers_outlined),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'X', child: Text('X')),
+                      DropdownMenuItem(value: 'XI', child: Text('XI')),
+                      DropdownMenuItem(value: 'XII', child: Text('XII')),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setModalState(() => tingkat = value);
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(modalContext, false),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.save_outlined),
+                          label: Text(isEdit ? 'Update' : 'Simpan'),
+                          onPressed: () async {
+                            final namaKelas = namaController.text.trim();
+
+                            if (namaKelas.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Nama kelas wajib diisi'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final provider =
+                            modalContext.read<AcademicProvider>();
+
+                            final success = isEdit
+                                ? await provider.updateClass(
+                              id: initialData.id,
+                              namaKelas: namaKelas,
+                              tingkat: tingkat,
+                            )
+                                : await provider.createClass(
+                              namaKelas: namaKelas,
+                              tingkat: tingkat,
+                            );
+
+                            if (!context.mounted) return;
+
+                            if (success) {
+                              Navigator.pop(modalContext, true);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    provider.classError ??
+                                        'Gagal menyimpan kelas',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    namaController.dispose();
+
+    if (!mounted) return;
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEdit ? 'Kelas berhasil diperbarui' : 'Kelas berhasil ditambahkan',
+          ),
+        ),
+      );
+    }
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      context.read<AcademicProvider>().fetchClasses(
-            search: _searchController.text.isEmpty
-                ? null
-                : _searchController.text,
-          );
-    }
+  Future<void> _deleteClass(ClassModel cls) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Hapus Kelas'),
+          content: Text(
+            'Apakah kamu yakin ingin menghapus kelas ${cls.namaKelas}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.error,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    final provider = context.read<AcademicProvider>();
+    final success = await provider.deleteClass(cls.id);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Kelas berhasil dihapus'
+              : provider.classError ?? 'Gagal menghapus kelas',
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
+  }
+
+  List<ClassModel> _filterClasses(List<ClassModel> classes) {
+    final keyword = _searchController.text.trim().toLowerCase();
+
+    if (keyword.isEmpty) return classes;
+
+    return classes.where((item) {
+      return item.namaKelas.toLowerCase().contains(keyword) ||
+          item.tingkat.toLowerCase().contains(keyword) ||
+          (item.waliKelasNama ?? '').toLowerCase().contains(keyword);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
+    final classes = _filterClasses(provider.classes);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.classes)),
+      appBar: AppBar(
+        title: const Text(AppStrings.classes),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh',
+            onPressed: () {
+              context.read<AcademicProvider>().fetchClasses(refresh: true);
+            },
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showClassForm(),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Tambah Kelas'),
+      ),
       body: Column(
         children: [
-          // ─── Search bar ──────────────────────────────────
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: AppStrings.search,
+                hintText: 'Cari kelas...',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          context
-                              .read<AcademicProvider>()
-                              .fetchClasses(refresh: true);
-                        },
-                      )
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                )
                     : null,
               ),
-              onSubmitted: (value) => context
-                  .read<AcademicProvider>()
-                  .fetchClasses(refresh: true, search: value.isEmpty ? null : value),
+              onChanged: (_) => setState(() {}),
             ),
           ),
 
-          // ─── Content ─────────────────────────────────────
           Expanded(
             child: switch (provider.classState) {
-              AcademicLoadState.initial ||
-              AcademicLoadState.loading
-                  when provider.classes.isEmpty =>
-                const LoadingWidget(),
-              AcademicLoadState.error when provider.classes.isEmpty =>
-                AppErrorWidget(
-                  message: provider.classError,
-                  onRetry: () =>
-                      context.read<AcademicProvider>().fetchClasses(refresh: true),
-                ),
-              _ => RefreshIndicator(
-                  onRefresh: () => context
-                      .read<AcademicProvider>()
-                      .fetchClasses(refresh: true),
-                  child: provider.classes.isEmpty
-                      ? const Center(child: Text(AppStrings.noData))
-                      : ListView.separated(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: provider.classes.length +
-                              (provider.hasMoreClasses ? 1 : 0),
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
-                          itemBuilder: (context, index) {
-                            if (index == provider.classes.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
-                            final cls = provider.classes[index];
-                            return Card(
-                              child: ListTile(
-                                leading: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.academic.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.class_outlined,
-                                    color: AppColors.academic,
-                                  ),
-                                ),
-                                title: Text(cls.name,
-                                    style: Theme.of(context).textTheme.titleSmall),
-                                subtitle: Text(
-                                  '${cls.major} • ${cls.studentCount} Siswa',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: AppColors.grey500),
-                                ),
-                                trailing: const Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: AppColors.grey400,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
+            AcademicLoadState.initial ||
+            AcademicLoadState.loading
+            when provider.classes.isEmpty =>
+            const LoadingWidget(message: 'Memuat data kelas...'),
+
+            AcademicLoadState.error when provider.classes.isEmpty =>
+            AppErrorWidget(
+            message: provider.classError,
+            onRetry: () => context
+                .read<AcademicProvider>()
+                .fetchClasses(refresh: true),
+            ),
+
+            _ => RefreshIndicator(
+            onRefresh: () => context
+                .read<AcademicProvider>()
+                .fetchClasses(refresh: true),
+            child: classes.isEmpty
+            ? ListView(
+            children: const [
+            SizedBox(height: 160),
+            Center(child: Text('Belum ada data kelas')),
+            ],
+            )
+                : ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+            itemCount: classes.length,
+            separatorBuilder: (_, __) =>
+            const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+            final cls = classes[index];
+
+            return Card(
+            child: ListTile(
+            leading: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+            color: AppColors.academic.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+            Icons.class_outlined,
+            color: AppColors.academic,
+            ),
+            ),
+            title: Text(
+            cls.namaKelas,
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+            'Tingkat ${cls.tingkat}'
+            '${cls.waliKelasNama != null && cls.waliKelasNama!.isNotEmpty ? ' • Wali: ${cls.waliKelasNama}' : ''}',
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.grey600),
+            ),
+            ),
+            trailing: PopupMenuButton<String>(
+            onSelected: (value) {
+            if (value == 'edit') {
+            _showClassForm(initialData: cls);
+            }
+
+            if (value == 'delete') {
+            _deleteClass(cls);
+            }
+            },
+            itemBuilder: (_) => const [
+            PopupMenuItem(
+            value: 'edit',
+            child: Row(
+            children: [
+            Icon(Icons.edit_outlined),
+            SizedBox(width: 8),
+            Text('Edit'),
+            ],
+            ),
+            ),
+            PopupMenuItem(
+            value: 'delete',
+            child: Row(
+            children: [
+            Icon(
+            Icons.delete_outline,
+            color: AppColors.error,
+            ),
+            SizedBox(width: 8),
+            Text('Hapus'),
+            ],
+            ),
+            ),
+            ],
+            ),
+            ),
+            );
+            },
+            ),
+            ),
             },
           ),
         ],

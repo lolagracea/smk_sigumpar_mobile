@@ -3,7 +3,6 @@ import 'package:smk_sigumpar/data/models/class_model.dart';
 import 'package:smk_sigumpar/data/models/student_model.dart';
 import 'package:smk_sigumpar/data/models/teacher_model.dart';
 import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
-import 'package:smk_sigumpar/core/network/api_response.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 
@@ -14,42 +13,102 @@ class AcademicProvider extends ChangeNotifier {
       : _repository = repository;
 
   // ─── Classes ─────────────────────────────────────────────
+
   AcademicLoadState _classState = AcademicLoadState.initial;
   List<ClassModel> _classes = [];
   String? _classError;
-  bool _hasMoreClasses = true;
-  int _classPage = 1;
 
   AcademicLoadState get classState => _classState;
   List<ClassModel> get classes => _classes;
   String? get classError => _classError;
-  bool get hasMoreClasses => _hasMoreClasses;
+  bool get hasMoreClasses => false;
 
   Future<void> fetchClasses({bool refresh = false, String? search}) async {
-    if (refresh) {
-      _classPage = 1;
-      _classes = [];
-      _hasMoreClasses = true;
-    }
-    if (!_hasMoreClasses) return;
-
     _classState = AcademicLoadState.loading;
+    _classError = null;
+
+    if (refresh) {
+      _classes = [];
+    }
+
     notifyListeners();
 
     try {
-      final result = await _repository.getClasses(page: _classPage, search: search);
-      _classes.addAll(result.items);
-      _hasMoreClasses = result.hasNextPage;
-      _classPage++;
+      final result = await _repository.getClasses(search: search);
+      _classes = result;
       _classState = AcademicLoadState.loaded;
     } catch (e) {
       _classError = e.toString();
       _classState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
+  Future<bool> createClass({
+    required String namaKelas,
+    required String tingkat,
+    String? waliKelasId,
+  }) async {
+    try {
+      final payload = {
+        'nama_kelas': namaKelas.trim(),
+        'tingkat': tingkat.trim(),
+        'wali_kelas_id':
+        waliKelasId != null && waliKelasId.isNotEmpty ? waliKelasId : null,
+      };
+
+      await _repository.createClass(payload);
+      await fetchClasses(refresh: true);
+
+      return true;
+    } catch (e) {
+      _classError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateClass({
+    required String id,
+    required String namaKelas,
+    required String tingkat,
+    String? waliKelasId,
+  }) async {
+    try {
+      final payload = {
+        'nama_kelas': namaKelas.trim(),
+        'tingkat': tingkat.trim(),
+        'wali_kelas_id':
+        waliKelasId != null && waliKelasId.isNotEmpty ? waliKelasId : null,
+      };
+
+      await _repository.updateClass(id, payload);
+      await fetchClasses(refresh: true);
+
+      return true;
+    } catch (e) {
+      _classError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteClass(String id) async {
+    try {
+      await _repository.deleteClass(id);
+      await fetchClasses(refresh: true);
+
+      return true;
+    } catch (e) {
+      _classError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   // ─── Students ─────────────────────────────────────────────
+
   AcademicLoadState _studentState = AcademicLoadState.initial;
   List<StudentModel> _students = [];
   String? _studentError;
@@ -60,12 +119,17 @@ class AcademicProvider extends ChangeNotifier {
   List<StudentModel> get students => _students;
   String? get studentError => _studentError;
 
-  Future<void> fetchStudents({bool refresh = false, String? classId, String? search}) async {
+  Future<void> fetchStudents({
+    bool refresh = false,
+    String? classId,
+    String? search,
+  }) async {
     if (refresh) {
       _studentPage = 1;
       _students = [];
       _hasMoreStudents = true;
     }
+
     if (!_hasMoreStudents) return;
 
     _studentState = AcademicLoadState.loading;
@@ -77,6 +141,7 @@ class AcademicProvider extends ChangeNotifier {
         classId: classId,
         search: search,
       );
+
       _students.addAll(result.items);
       _hasMoreStudents = result.hasNextPage;
       _studentPage++;
@@ -85,10 +150,12 @@ class AcademicProvider extends ChangeNotifier {
       _studentError = e.toString();
       _studentState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
   // ─── Teachers ─────────────────────────────────────────────
+
   AcademicLoadState _teacherState = AcademicLoadState.initial;
   List<TeacherModel> _teachers = [];
   String? _teacherError;
@@ -99,19 +166,27 @@ class AcademicProvider extends ChangeNotifier {
   List<TeacherModel> get teachers => _teachers;
   String? get teacherError => _teacherError;
 
-  Future<void> fetchTeachers({bool refresh = false, String? search}) async {
+  Future<void> fetchTeachers({
+    bool refresh = false,
+    String? search,
+  }) async {
     if (refresh) {
       _teacherPage = 1;
       _teachers = [];
       _hasMoreTeachers = true;
     }
+
     if (!_hasMoreTeachers) return;
 
     _teacherState = AcademicLoadState.loading;
     notifyListeners();
 
     try {
-      final result = await _repository.getTeachers(page: _teacherPage, search: search);
+      final result = await _repository.getTeachers(
+        page: _teacherPage,
+        search: search,
+      );
+
       _teachers.addAll(result.items);
       _hasMoreTeachers = result.hasNextPage;
       _teacherPage++;
@@ -120,10 +195,12 @@ class AcademicProvider extends ChangeNotifier {
       _teacherError = e.toString();
       _teacherState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
   // ─── Announcements ────────────────────────────────────────
+
   AcademicLoadState _announcementState = AcademicLoadState.initial;
   List<Map<String, dynamic>> _announcements = [];
   int _announcementPage = 1;
@@ -138,20 +215,25 @@ class AcademicProvider extends ChangeNotifier {
       _announcements = [];
       _hasMoreAnnouncements = true;
     }
+
     if (!_hasMoreAnnouncements) return;
 
     _announcementState = AcademicLoadState.loading;
     notifyListeners();
 
     try {
-      final result = await _repository.getAnnouncements(page: _announcementPage);
+      final result = await _repository.getAnnouncements(
+        page: _announcementPage,
+      );
+
       _announcements.addAll(result.items);
       _hasMoreAnnouncements = result.hasNextPage;
       _announcementPage++;
       _announcementState = AcademicLoadState.loaded;
-    } catch (e) {
+    } catch (_) {
       _announcementState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 }
