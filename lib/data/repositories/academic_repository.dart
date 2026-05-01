@@ -6,6 +6,7 @@ import '../../core/network/api_response.dart';
 abstract class AcademicRepository {
   // Classes
   Future<List<ClassModel>> getClasses({String? search});
+  Future<List<Map<String, dynamic>>> getWaliKelasUsers({String? search});
   Future<ClassModel> getClassById(String id);
   Future<ClassModel> createClass(Map<String, dynamic> data);
   Future<ClassModel> updateClass(String id, Map<String, dynamic> data);

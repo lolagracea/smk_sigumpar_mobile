@@ -12,6 +12,7 @@ class ApiEndpoints {
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh';
   static const String profile = '/auth/profile';
+  static const String users = '/api/auth/users';
 
   // ─── Academic ──────────────────────────────────────────
   // Disesuaikan dengan backend website
@@ -45,11 +46,4 @@ class ApiEndpoints {
   static const String pklLocationReport = '/api/vocational/pkl/lokasi';
   static const String pklProgressReport = '/api/vocational/pkl/progres';
 
-  // ─── Asset ─────────────────────────────────────────────
-  static const String submissionInfo = '/api/asset/submissions';
-  static const String itemLoan = '/api/asset/loans';
-  static const String equipmentSubmission = '/api/asset/equipment';
-  static const String loanResponse = '/api/asset/loan-response';
-  static const String treasurerResponse = '/api/asset/treasurer-response';
-  static const String principalResponse = '/api/asset/principal-response';
 }

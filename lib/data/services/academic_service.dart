@@ -215,6 +215,21 @@ class AcademicService implements AcademicRepository {
     return list.map((item) => item as Map<String, dynamic>).toList();
   }
 
+  @override
+  Future<List<Map<String, dynamic>>> getWaliKelasUsers({String? search}) async {
+    final response = await _dioClient.get(
+      ApiEndpoints.users,
+      queryParameters: {
+        'role': 'wali-kelas',
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+    );
+
+    final list = _extractList(response.data);
+
+    return list.map((item) => item as Map<String, dynamic>).toList();
+  }
+
   // ─── Letters ──────────────────────────────────────────────
 
   @override

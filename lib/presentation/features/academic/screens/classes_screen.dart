@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/academic_provider.dart';
 import 'package:smk_sigumpar/data/models/class_model.dart';
 import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
@@ -32,16 +33,82 @@ class _ClassesView extends StatefulWidget {
 class _ClassesViewState extends State<_ClassesView> {
   final _searchController = TextEditingController();
 
+  String _getUserId(Map<String, dynamic> user) {
+    return user['id']?.toString() ??
+        user['user_id']?.toString() ??
+        user['keycloak_id']?.toString() ??
+        user['sub']?.toString() ??
+        '';
+  }
+
+  String _getUserName(Map<String, dynamic> user) {
+    return user['name']?.toString() ??
+        user['nama']?.toString() ??
+        user['nama_lengkap']?.toString() ??
+        user['full_name']?.toString() ??
+        user['username']?.toString() ??
+        user['preferred_username']?.toString() ??
+        '-';
+  }
+
   Future<void> _showClassForm({
     ClassModel? initialData,
   }) async {
+    final provider = context.read<AcademicProvider>();
     final isEdit = initialData != null;
+
+    await provider.fetchWaliKelasUsers();
 
     final namaController = TextEditingController(
       text: initialData?.namaKelas ?? '',
     );
 
-    String tingkat = initialData?.tingkat ?? 'X';
+    String tingkat = initialData?.tingkat.isNotEmpty == true
+        ? initialData!.tingkat
+        : 'X';
+
+    String? waliKelasId =
+    initialData?.waliKelasId != null && initialData!.waliKelasId!.isNotEmpty
+        ? initialData.waliKelasId
+        : null;
+
+    final waliKelasUsers = provider.waliKelasUsers;
+
+    String getUserId(Map<String, dynamic> user) {
+      return user['id']?.toString() ??
+          user['user_id']?.toString() ??
+          user['keycloak_id']?.toString() ??
+          user['sub']?.toString() ??
+          '';
+    }
+
+    String getUserName(Map<String, dynamic> user) {
+      return user['name']?.toString() ??
+          user['nama']?.toString() ??
+          user['nama_lengkap']?.toString() ??
+          user['full_name']?.toString() ??
+          user['username']?.toString() ??
+          user['preferred_username']?.toString() ??
+          '-';
+    }
+
+    final dropdownItems = waliKelasUsers
+        .map((user) {
+      final id = getUserId(user);
+      final name = getUserName(user);
+
+      if (id.isEmpty) return null;
+
+      return DropdownMenuItem<String>(
+        value: id,
+        child: Text(
+          name,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    })
+        .whereType<DropdownMenuItem<String>>()
+        .toList();
 
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -51,10 +118,13 @@ class _ClassesViewState extends State<_ClassesView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (modalContext) {
+      builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+            final selectedWaliStillExists = waliKelasId != null &&
+                dropdownItems.any((item) => item.value == waliKelasId);
 
             return Padding(
               padding: EdgeInsets.only(
@@ -63,128 +133,182 @@ class _ClassesViewState extends State<_ClassesView> {
                 top: 20,
                 bottom: bottomInset + 20,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 48,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 18),
-                      decoration: BoxDecoration(
-                        color: AppColors.grey300,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    isEdit ? 'Edit Kelas' : 'Tambah Kelas',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isEdit
-                        ? 'Perbarui data kelas sesuai backend academic-service.'
-                        : 'Tambahkan kelas baru seperti flow website tata usaha.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.grey600,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  TextField(
-                    controller: namaController,
-                    textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Kelas',
-                      hintText: 'Contoh: X RPL 1',
-                      prefixIcon: Icon(Icons.class_outlined),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  DropdownButtonFormField<String>(
-                    value: tingkat,
-                    decoration: const InputDecoration(
-                      labelText: 'Tingkat',
-                      prefixIcon: Icon(Icons.layers_outlined),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'X', child: Text('X')),
-                      DropdownMenuItem(value: 'XI', child: Text('XI')),
-                      DropdownMenuItem(value: 'XII', child: Text('XII')),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setModalState(() => tingkat = value);
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(modalContext, false),
-                          child: const Text('Batal'),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 48,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 18),
+                        decoration: BoxDecoration(
+                          color: AppColors.grey300,
+                          borderRadius: BorderRadius.circular(99),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.save_outlined),
-                          label: Text(isEdit ? 'Update' : 'Simpan'),
-                          onPressed: () async {
-                            final namaKelas = namaController.text.trim();
+                    ),
 
-                            if (namaKelas.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Nama kelas wajib diisi'),
-                                ),
-                              );
-                              return;
-                            }
+                    Text(
+                      isEdit ? 'Edit Kelas' : 'Tambah Kelas',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
 
-                            final provider =
-                            modalContext.read<AcademicProvider>();
+                    const SizedBox(height: 4),
 
-                            final success = isEdit
-                                ? await provider.updateClass(
-                              id: initialData.id,
-                              namaKelas: namaKelas,
-                              tingkat: tingkat,
-                            )
-                                : await provider.createClass(
-                              namaKelas: namaKelas,
-                              tingkat: tingkat,
-                            );
+                    Text(
+                      isEdit
+                          ? 'Perbarui data kelas dan wali kelas.'
+                          : 'Tambahkan kelas baru dan assign user wali kelas.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.grey600,
+                      ),
+                    ),
 
-                            if (!context.mounted) return;
+                    const SizedBox(height: 20),
 
-                            if (success) {
-                              Navigator.pop(modalContext, true);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    provider.classError ??
-                                        'Gagal menyimpan kelas',
+                    TextField(
+                      controller: namaController,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Kelas',
+                        hintText: 'Contoh: X RPL 1',
+                        prefixIcon: Icon(Icons.class_outlined),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      value: tingkat,
+                      decoration: const InputDecoration(
+                        labelText: 'Tingkat',
+                        prefixIcon: Icon(Icons.layers_outlined),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'X', child: Text('X')),
+                        DropdownMenuItem(value: 'XI', child: Text('XI')),
+                        DropdownMenuItem(value: 'XII', child: Text('XII')),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setModalState(() => tingkat = value);
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      value: selectedWaliStillExists ? waliKelasId : null,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Wali Kelas',
+                        hintText: 'Pilih user wali kelas',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      items: dropdownItems,
+                      onChanged: (value) {
+                        setModalState(() => waliKelasId = value);
+                      },
+                    ),
+
+                    if (dropdownItems.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Belum ada user dengan role wali-kelas.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.grey600,
+                          ),
+                        ),
+                      ),
+
+                    if (provider.waliKelasError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          provider.waliKelasError!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                Navigator.pop(bottomSheetContext, false),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.save_outlined),
+                            label: Text(isEdit ? 'Update' : 'Simpan'),
+                            onPressed: () async {
+                              final namaKelas = namaController.text.trim();
+
+                              if (namaKelas.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Nama kelas wajib diisi'),
                                   ),
-                                ),
+                                );
+                                return;
+                              }
+
+                              if (waliKelasId == null ||
+                                  waliKelasId!.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Wali kelas wajib dipilih'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final success = isEdit
+                                  ? await provider.updateClass(
+                                id: initialData.id,
+                                namaKelas: namaKelas,
+                                tingkat: tingkat,
+                                waliKelasId: waliKelasId,
+                              )
+                                  : await provider.createClass(
+                                namaKelas: namaKelas,
+                                tingkat: tingkat,
+                                waliKelasId: waliKelasId,
                               );
-                            }
-                          },
+
+                              if (!context.mounted) return;
+
+                              if (success) {
+                                Navigator.pop(bottomSheetContext, true);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      provider.classError ??
+                                          'Gagal menyimpan kelas',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -251,12 +375,6 @@ class _ClassesViewState extends State<_ClassesView> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   List<ClassModel> _filterClasses(List<ClassModel> classes) {
     final keyword = _searchController.text.trim().toLowerCase();
 
@@ -267,6 +385,12 @@ class _ClassesViewState extends State<_ClassesView> {
           item.tingkat.toLowerCase().contains(keyword) ||
           (item.waliKelasNama ?? '').toLowerCase().contains(keyword);
     }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override

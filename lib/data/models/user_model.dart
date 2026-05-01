@@ -2,75 +2,105 @@ import 'package:equatable/equatable.dart';
 
 class UserModel extends Equatable {
   final String id;
+
+  /// Dipertahankan karena banyak file project kamu masih memakai user.name
   final String name;
+
   final String username;
-  final String email;
+  final String? email;
+
+  /// Role utama untuk tampilan/debug.
+  /// Untuk pengecekan menu, gunakan roles atau hasRole().
   final String role;
-  final String? photoUrl;
-  final String? phone;
-  final bool isActive;
-  final DateTime? createdAt;
+
+  /// Semua role dari Keycloak realm_access.roles.
+  final List<String> roles;
 
   const UserModel({
     required this.id,
     required this.name,
-    required this.username,
-    required this.email,
-    required this.role,
-    this.photoUrl,
-    this.phone,
-    this.isActive = true,
-    this.createdAt,
+    this.username = '',
+    this.email,
+    this.role = 'user',
+    this.roles = const [],
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    // --- LOGIKA CERDAS UNTUK MEMBACA ROLE DARI KEYCLOAK ---
-    String parsedRole = '';
+  String get fullName => name;
 
-    // 1. Cek apakah role ada di dalam 'realm_access' (Format asli token JWT Keycloak)
-    if (json['realm_access'] != null && json['realm_access']['roles'] is List) {
-      parsedRole = (json['realm_access']['roles'] as List).join(', ');
-    }
-    // 2. Cek apakah Keycloak mengirim array 'roles'
-    else if (json['roles'] is List) {
-      parsedRole = (json['roles'] as List).join(', ');
-    }
-    // 3. Cek apakah role dikirim dengan key 'role'
-    else if (json['role'] != null) {
-      if (json['role'] is List) {
-        parsedRole = (json['role'] as List).join(', ');
-      } else {
-        parsedRole = json['role'].toString();
-      }
-    }
-    // ------------------------------------------------------
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final parsedRoles = _parseRoles(json['roles'] ?? json['role']);
+    final selectedRole = _selectPrimaryRole(
+      parsedRoles,
+      fallback: json['role']?.toString(),
+    );
+
+    final username = json['username']?.toString() ??
+        json['preferred_username']?.toString() ??
+        '';
+
+    final name = json['name']?.toString() ??
+        json['full_name']?.toString() ??
+        _buildFullName(
+          json['given_name']?.toString(),
+          json['family_name']?.toString(),
+        ) ??
+        username.ifEmpty('Pengguna');
 
     return UserModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      username: json['username'] ?? '',
-      email: json['email'] ?? '',
-      role: parsedRole, // Masukkan role yang sudah diproses di atas
-      photoUrl: json['photo_url'],
-      phone: json['phone'],
-      isActive: json['is_active'] ?? true,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
-          : null,
+      id: json['id']?.toString() ?? json['sub']?.toString() ?? '',
+      name: name,
+      username: username,
+      email: json['email']?.toString(),
+      role: selectedRole,
+      roles: parsedRoles,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'username': username,
-    'email': email,
-    'role': role,
-    'photo_url': photoUrl,
-    'phone': phone,
-    'is_active': isActive,
-    'created_at': createdAt?.toIso8601String(),
-  };
+  factory UserModel.fromTokenPayload(Map<String, dynamic> payload) {
+    final realmAccess = payload['realm_access'];
+    final rawRealmRoles = realmAccess is Map ? realmAccess['roles'] : null;
+
+    final resourceAccess = payload['resource_access'];
+    final accountAccess =
+    resourceAccess is Map ? resourceAccess['account'] : null;
+    final rawAccountRoles = accountAccess is Map ? accountAccess['roles'] : null;
+
+    final roles = <String>{
+      ..._parseRoles(rawRealmRoles),
+      ..._parseRoles(rawAccountRoles),
+    }.toList();
+
+    final selectedRole = _selectPrimaryRole(roles);
+
+    final username = payload['preferred_username']?.toString() ?? '';
+
+    final name = payload['name']?.toString() ??
+        _buildFullName(
+          payload['given_name']?.toString(),
+          payload['family_name']?.toString(),
+        ) ??
+        username.ifEmpty('Pengguna');
+
+    return UserModel(
+      id: payload['sub']?.toString() ?? '',
+      name: name,
+      username: username,
+      email: payload['email']?.toString(),
+      role: selectedRole,
+      roles: roles,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'username': username,
+      'email': email,
+      'role': role,
+      'roles': roles,
+    };
+  }
 
   UserModel copyWith({
     String? id,
@@ -78,10 +108,7 @@ class UserModel extends Equatable {
     String? username,
     String? email,
     String? role,
-    String? photoUrl,
-    String? phone,
-    bool? isActive,
-    DateTime? createdAt,
+    List<String>? roles,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -89,13 +116,99 @@ class UserModel extends Equatable {
       username: username ?? this.username,
       email: email ?? this.email,
       role: role ?? this.role,
-      photoUrl: photoUrl ?? this.photoUrl,
-      phone: phone ?? this.phone,
-      isActive: isActive ?? this.isActive,
-      createdAt: createdAt ?? this.createdAt,
+      roles: roles ?? this.roles,
     );
   }
 
+  bool hasRole(String roleName) {
+    return roles.contains(roleName);
+  }
+
+  bool hasAnyRole(List<String> roleNames) {
+    return roleNames.any(roles.contains);
+  }
+
+  bool get isTataUsaha => hasRole('tata-usaha');
+  bool get isKepalaSekolah => hasRole('kepala-sekolah');
+  bool get isWakaSekolah => hasRole('waka-sekolah');
+  bool get isGuruMapel => hasRole('guru-mapel');
+  bool get isWaliKelas => hasRole('wali-kelas');
+  bool get isPramuka => hasRole('pramuka');
+  bool get isVokasi => hasRole('vokasi');
+
+  static List<String> _parseRoles(dynamic rawRoles) {
+    if (rawRoles == null) return [];
+
+    if (rawRoles is List) {
+      return rawRoles
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toSet()
+          .toList();
+    }
+
+    if (rawRoles is String) {
+      if (rawRoles.trim().isEmpty) return [];
+
+      if (rawRoles.contains(',')) {
+        return rawRoles
+            .split(',')
+            .map((item) => item.trim())
+            .where((item) => item.isNotEmpty)
+            .toSet()
+            .toList();
+      }
+
+      return [rawRoles.trim()];
+    }
+
+    return [];
+  }
+
+  static String _selectPrimaryRole(
+      List<String> roles, {
+        String? fallback,
+      }) {
+    if (roles.contains('tata-usaha')) return 'tata-usaha';
+    if (roles.contains('kepala-sekolah')) return 'kepala-sekolah';
+    if (roles.contains('waka-sekolah')) return 'waka-sekolah';
+    if (roles.contains('guru-mapel')) return 'guru-mapel';
+    if (roles.contains('wali-kelas')) return 'wali-kelas';
+    if (roles.contains('vokasi')) return 'vokasi';
+    if (roles.contains('pramuka')) return 'pramuka';
+
+    if (fallback != null && fallback.trim().isNotEmpty) {
+      return fallback.trim();
+    }
+
+    return roles.isNotEmpty ? roles.first : 'user';
+  }
+
+  static String? _buildFullName(String? givenName, String? familyName) {
+    final parts = [
+      if (givenName != null && givenName.trim().isNotEmpty) givenName.trim(),
+      if (familyName != null && familyName.trim().isNotEmpty)
+        familyName.trim(),
+    ];
+
+    if (parts.isEmpty) return null;
+
+    return parts.join(' ');
+  }
+
   @override
-  List<Object?> get props => [id, name, username, email, role, photoUrl, phone, isActive];
+  List<Object?> get props => [
+    id,
+    name,
+    username,
+    email,
+    role,
+    roles,
+  ];
+}
+
+extension _StringEmptyExt on String {
+  String ifEmpty(String fallback) {
+    return trim().isEmpty ? fallback : this;
+  }
 }

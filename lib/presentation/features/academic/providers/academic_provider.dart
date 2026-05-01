@@ -69,6 +69,30 @@ class AcademicProvider extends ChangeNotifier {
     }
   }
 
+  List<Map<String, dynamic>> _waliKelasUsers = [];
+  bool _loadingWaliKelas = false;
+  String? _waliKelasError;
+
+  List<Map<String, dynamic>> get waliKelasUsers => _waliKelasUsers;
+  bool get loadingWaliKelas => _loadingWaliKelas;
+  String? get waliKelasError => _waliKelasError;
+
+  Future<void> fetchWaliKelasUsers({String? search}) async {
+    _loadingWaliKelas = true;
+    _waliKelasError = null;
+    notifyListeners();
+
+    try {
+      _waliKelasUsers = await _repository.getWaliKelasUsers(search: search);
+    } catch (e) {
+      _waliKelasError = e.toString();
+      _waliKelasUsers = [];
+    }
+
+    _loadingWaliKelas = false;
+    notifyListeners();
+  }
+
   Future<bool> updateClass({
     required String id,
     required String namaKelas,
