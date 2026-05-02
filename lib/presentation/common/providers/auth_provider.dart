@@ -96,11 +96,28 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Logout ──────────────────────────────────────────────
   Future<void> logout() async {
+    // 1. Set loading state agar UI bisa show loading indicator
+    _status = AuthStatus.loading;
+    notifyListeners();
+
     try {
-      await _authRepository.logout();
-    } catch (_) {}
+      // 2. Ambil refresh token dari secure storage
+      final refreshToken = await _secureStorage.getRefreshToken();
+
+      // 3. Invalidate session di Keycloak server (best-effort, tidak block)
+      await _authRepository.logout(refreshToken);
+    } catch (e) {
+      // Ignore — logout tetap dilanjutkan walau server logout gagal
+      // (misal: network error, server down, dll)
+      debugPrint('Server logout failed (non-critical): $e');
+    }
+
+    // 4. Selalu clear local storage (yang penting user benar-benar logout di app)
     await _secureStorage.clearAll();
+
+    // 5. Reset state
     _user = null;
+    _errorMessage = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();
   }

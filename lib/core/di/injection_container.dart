@@ -59,7 +59,7 @@ Future<void> init() async {
     () => ThemeProvider(notifier: sl<ThemeNotifier>()),
   );
 
-  sl.registerFactory<AuthProvider>(
+  sl.registerLazySingleton<AuthProvider>(
     () => AuthProvider(
       authRepository: sl<AuthRepository>(),
       secureStorage: sl<SecureStorage>(),

@@ -147,7 +147,7 @@ class _AuthInterceptor extends Interceptor {
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
-    handler.next(options);
+    return handler.next(options);
   }
 
   @override

@@ -45,9 +45,27 @@ class AuthService implements AuthRepository {
     return response.data as Map<String, dynamic>;
   }
 
+
+
+// Di auth_service.dart implementation:
   @override
-  Future<void> logout() async {
-    await _dioClient.post(ApiEndpoints.logout);
+  Future<void> logout(String? refreshToken) async {
+    if (refreshToken == null) return;
+
+    try {
+      await _dioClient.dio.post(
+        ApiEndpoints.keycloakLogoutUrl,
+        data: {
+          'client_id': ApiEndpoints.keycloakClientId,
+          'refresh_token': refreshToken,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
+    } catch (e) {
+      if (kDebugMode) print('Keycloak logout failed: $e');
+    }
   }
 
   @override

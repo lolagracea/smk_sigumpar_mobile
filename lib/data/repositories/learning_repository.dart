@@ -19,7 +19,7 @@ abstract class LearningRepository {
 
   // Reviews
   Future<PaginatedResponse<Map<String, dynamic>>> getPrincipalReviews({int page = 1});
-  Future<Map<String, dynamic>> submitPrincipalReview(Map<String, dynamic> data);
   Future<PaginatedResponse<Map<String, dynamic>>> getVicePrincipalReviews({int page = 1});
-  Future<Map<String, dynamic>> submitVicePrincipalReview(Map<String, dynamic> data);
+  Future<Map<String, dynamic>> submitPrincipalReview(int id, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> submitVicePrincipalReview(int id, Map<String, dynamic> data);
 }

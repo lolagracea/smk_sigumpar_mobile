@@ -44,37 +44,43 @@ class LearningService implements LearningRepository {
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getLearningDevices({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.learningDevice, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.learningDevices, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> uploadLearningDevice(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.learningDevice, data: data);
+    final r = await _dioClient.post(ApiEndpoints.learningDevices, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getPrincipalReviews({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.principalReview, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.learningDevices, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
-  Future<Map<String, dynamic>> submitPrincipalReview(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.principalReview, data: data);
+  Future<Map<String, dynamic>> submitPrincipalReview(int id, Map<String, dynamic> data) async {
+    final r = await _dioClient.put(
+      ApiEndpoints.learningDeviceReviewKepsek(id),
+      data: data,
+    );
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getVicePrincipalReviews({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.vicePrincipalReview, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.learningDevices, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
-  Future<Map<String, dynamic>> submitVicePrincipalReview(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.vicePrincipalReview, data: data);
+  Future<Map<String, dynamic>> submitVicePrincipalReview(int id, Map<String, dynamic> data) async {
+    final r = await _dioClient.put(
+      ApiEndpoints.learningDeviceReviewWakasek(id),
+      data: data,
+    );
     return r.data['data'] as Map<String, dynamic>;
   }
 }

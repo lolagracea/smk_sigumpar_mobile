@@ -9,7 +9,7 @@ class VocationalService implements VocationalRepository {
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.scoutClasses, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.scoutGroups, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
@@ -26,37 +26,37 @@ class VocationalService implements VocationalRepository {
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getScoutReports({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.scoutReport, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.activityReport, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> createScoutReport(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.scoutReport, data: data);
+    final r = await _dioClient.post(ApiEndpoints.activityReport, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.pklLocationReport, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.pklLocation, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> submitPklLocationReport(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.pklLocationReport, data: data);
+    final r = await _dioClient.post(ApiEndpoints.pklLocation, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getPklProgressReports({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.pklProgressReport, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.pklProgress, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> submitPklProgressReport(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.pklProgressReport, data: data);
+    final r = await _dioClient.post(ApiEndpoints.pklProgress, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 }

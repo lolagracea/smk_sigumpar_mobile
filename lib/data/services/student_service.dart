@@ -44,7 +44,7 @@ class StudentService implements StudentRepository {
     int page = 1,
   }) async {
     final response = await _dioClient.get(
-      ApiEndpoints.gradesRecap,
+      ApiEndpoints.studentRekapNilai,
       queryParameters: {
         'class_id': classId,
         'page': page,
@@ -57,61 +57,61 @@ class StudentService implements StudentRepository {
 
   @override
   Future<GradeModel> submitGrade(Map<String, dynamic> data) async {
-    final response = await _dioClient.post(ApiEndpoints.gradesRecap, data: data);
+    final response = await _dioClient.post(ApiEndpoints.studentRekapNilai, data: data);
     return GradeModel.fromJson(response.data['data']);
   }
 
   @override
   Future<GradeModel> updateGrade(String id, Map<String, dynamic> data) async {
-    final response = await _dioClient.put('${ApiEndpoints.gradesRecap}/$id', data: data);
+    final response = await _dioClient.put('${ApiEndpoints.studentRekapNilai}/$id', data: data);
     return GradeModel.fromJson(response.data['data']);
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getCleanlinessRecap({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.cleanlinessRecap, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.cleanliness, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> submitCleanliness(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.cleanlinessRecap, data: data);
+    final r = await _dioClient.post(ApiEndpoints.cleanliness, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getParentingNotes({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.parentingNotes, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.parenting, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> createParentingNote(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.parentingNotes, data: data);
+    final r = await _dioClient.post(ApiEndpoints.parenting, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getHomeroomReflections({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.homeroomReflection, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.reflection, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> createHomeroomReflection(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.homeroomReflection, data: data);
+    final r = await _dioClient.post(ApiEndpoints.reflection, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getSummonsLetters({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.summonsLetter, queryParameters: {'page': page});
+    final r = await _dioClient.get(ApiEndpoints.summons, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
   Future<Map<String, dynamic>> createSummonsLetter(Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.summonsLetter, data: data);
+    final r = await _dioClient.post(ApiEndpoints.summons, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
 }
