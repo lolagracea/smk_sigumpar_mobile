@@ -31,7 +31,10 @@ Future<void> init() async {
 
   // ─── Repositories ──────────────────────────────────────
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthService(dioClient: sl<DioClient>()),
+        () => AuthService(
+      dioClient: sl<DioClient>(),
+      secureStorage: sl<SecureStorage>(),
+    ),
   );
 
   sl.registerLazySingleton<AcademicRepository>(
