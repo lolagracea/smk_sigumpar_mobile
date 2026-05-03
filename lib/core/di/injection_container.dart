@@ -2,20 +2,26 @@ import 'package:get_it/get_it.dart';
 import '../network/dio_client.dart';
 import '../theme/theme_notifier.dart';
 import '../utils/secure_storage.dart';
+
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/academic_repository.dart';
 import '../../data/repositories/student_repository.dart';
 import '../../data/repositories/learning_repository.dart';
 import '../../data/repositories/vocational_repository.dart';
 import '../../data/repositories/asset_repository.dart';
+
 import '../../data/services/auth_service.dart';
 import '../../data/services/academic_service.dart';
 import '../../data/services/student_service.dart';
 import '../../data/services/learning_service.dart';
 import '../../data/services/vocational_service.dart';
 import '../../data/services/asset_service.dart';
+
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
+
+// ✅ TAMBAHAN IMPORT
+import '../../presentation/features/vocational/providers/vocational_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -31,7 +37,7 @@ Future<void> init() async {
 
   // ─── Repositories ──────────────────────────────────────
   sl.registerLazySingleton<AuthRepository>(
-        () => AuthService(
+    () => AuthService(
       dioClient: sl<DioClient>(),
       secureStorage: sl<SecureStorage>(),
     ),
@@ -66,6 +72,13 @@ Future<void> init() async {
     () => AuthProvider(
       authRepository: sl<AuthRepository>(),
       secureStorage: sl<SecureStorage>(),
+    ),
+  );
+
+  // ✅ TAMBAHAN DI SINI
+  sl.registerFactory<VocationalProvider>(
+    () => VocationalProvider(
+      repository: sl<VocationalRepository>(),
     ),
   );
 }

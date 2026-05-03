@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../constants/route_names.dart';
+import '../utils/role_helper.dart';  
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/features/auth/login_screen.dart';
 import '../../presentation/features/auth/profile_screen.dart';
@@ -48,7 +49,9 @@ class AppRouter {
       final isLoginRoute = state.matchedLocation == RouteNames.login;
 
       if (!isLoggedIn && !isLoginRoute) return RouteNames.login;
-      if (isLoggedIn && isLoginRoute) return RouteNames.home;
+      if (isLoggedIn && isLoginRoute) {
+        return RoleHelper.getHomeRouteByRole(auth.user?.role);
+      }
       return null;
     },
     routes: [
