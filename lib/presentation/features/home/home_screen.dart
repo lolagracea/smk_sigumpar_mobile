@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../common/providers/auth_provider.dart';
-import '../../../core/constants/route_names.dart';
 import '../../../core/utils/role_helper.dart';
-import 'widgets/guru_mapel_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,60 +11,20 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
-    final role = user?.role;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      drawer: _buildDrawerByRole(role),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.school, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'SMK NEGERI 1 SIGUMPAR',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildWelcomeCard(context, user),
-            const SizedBox(height: 16),
-            _buildAnnouncementCard(),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildWelcomeCard(context, user),
+          const SizedBox(height: 16),
+          _buildAnnouncementCard(),
+        ],
       ),
     );
   }
 
-  // ─── Build Drawer Sesuai Role ───────────────────────────
-  Widget? _buildDrawerByRole(String? role) {
-    if (role == null) return null;
-
-    // Untuk guru-mapel pakai GuruMapelDrawer
-    if (role == AppRoles.teacher) {
-      return const GuruMapelDrawer(currentRoute: RouteNames.home);
-    }
-
-    // TODO: Tambah drawer untuk role lain (wali-kelas, kepsek, dll)
-    // Untuk sementara, role lain tidak dapat drawer
-    return null;
-  }
-
-  // ─── Welcome Card ───────────────────────────────────────
   Widget _buildWelcomeCard(BuildContext context, dynamic user) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -123,7 +81,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ─── Announcement Card (Empty State) ────────────────────
   Widget _buildAnnouncementCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -150,7 +107,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          // Empty state dengan icon
           Center(
             child: Column(
               children: [
