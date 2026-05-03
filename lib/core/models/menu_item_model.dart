@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// ─────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────
 /// MenuItemModel — model untuk item menu di Sidebar/Drawer
 ///
-/// Scalable: allowedRoles memungkinkan filtering per role.
-/// Saat ini hanya role 'pramuka' yang digunakan.
-/// ─────────────────────────────────────────────────────────
+/// Support MULTI-ROLE:
+/// - `allowedRoles` adalah list role yang boleh lihat menu ini
+/// - `isAccessibleByAny(List<String>)` cek multi-role user
+/// - Backward compat: `isAccessibleBy(String?)` tetap ada
+/// ─────────────────────────────────────────────────────────────
 class MenuItemModel {
   final String id;
   final String label;
   final IconData icon;
   final String route;
 
-  /// Daftar role yang boleh melihat menu ini
+  /// Daftar role yang boleh melihat menu ini.
+  /// User hanya perlu punya SATU role dari list ini untuk dapat akses.
   final List<String> allowedRoles;
 
   /// Apakah menu ini adalah header section (pemisah grup)
@@ -31,7 +34,16 @@ class MenuItemModel {
     this.sectionTitle,
   });
 
-  /// Cek apakah role user boleh mengakses menu ini
+  /// ✅ MULTI-ROLE: Cek apakah user dengan banyak role boleh akses menu ini.
+  ///
+  /// Returns true kalau ada irisan antara [userRoles] dan [allowedRoles].
+  bool isAccessibleByAny(List<String> userRoles) {
+    if (userRoles.isEmpty) return false;
+    return allowedRoles.any((role) => userRoles.contains(role));
+  }
+
+  /// @deprecated Gunakan [isAccessibleByAny] untuk multi-role.
+  /// Backward compat: cek akses berdasarkan single role.
   bool isAccessibleBy(String? role) {
     if (role == null) return false;
     return allowedRoles.contains(role);

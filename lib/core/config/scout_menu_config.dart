@@ -3,7 +3,7 @@ import '../constants/route_names.dart';
 import '../models/menu_item_model.dart';
 import '../utils/role_helper.dart';
 
-/// ─────────────────────────────────────────────────────────────
+/// ─────────────────────────────────────────────────────────────────
 /// ScoutMenuConfig — konfigurasi menu PRAMUKA (SCOUT)
 ///
 /// ⚠️ ATURAN KETAT:
@@ -18,11 +18,15 @@ import '../utils/role_helper.dart';
 ///   3. Absensi Pramuka (Scout Attendance)
 ///   4. Laporan Kegiatan (Activity Report)
 ///   5. Profil
-/// ─────────────────────────────────────────────────────────────
+///
+/// MULTI-ROLE: Menu di sini ditetapkan untuk role [pramuka].
+/// Jika user punya role lain (misal: pramuka + guru-mapel),
+/// menu pramuka tetap tampil selama roles mengandung 'pramuka'.
+/// ─────────────────────────────────────────────────────────────────
 class ScoutMenuConfig {
   ScoutMenuConfig._();
 
-  /// Menu utama untuk role PRAMUKA
+  /// Menu utama untuk modul PRAMUKA
   static const List<MenuItemModel> menus = [
     // ── UTAMA ────────────────────────────────────────────────
     MenuItemModel(
@@ -33,7 +37,7 @@ class ScoutMenuConfig {
       allowedRoles: [AppRoles.pramuka],
     ),
 
-    // ── MODUL PRAMUKA ─────────────────────────────────────────
+    // ── MODUL PRAMUKA (sesuai urutan web) ────────────────────
     MenuItemModel(
       id: 'scout_classes',
       label: 'Kelas Pramuka',
@@ -66,9 +70,29 @@ class ScoutMenuConfig {
     ),
   ];
 
-  /// Filter menu berdasarkan role user
+  /// ✅ MULTI-ROLE: Filter menu berdasarkan SEMUA role user.
+  ///
+  /// Tampilkan menu jika user punya setidaknya satu role
+  /// yang cocok dengan allowedRoles menu tersebut.
+  ///
+  /// Contoh: user punya roles ['pramuka', 'guru-mapel']
+  /// → semua menu pramuka tampil karena 'pramuka' ada di userRoles.
+  static List<MenuItemModel> getMenusForRoles(List<String> userRoles) {
+    if (userRoles.isEmpty) return [];
+    return menus
+        .where((m) => m.isAccessibleByAny(userRoles))
+        .toList();
+  }
+
+  /// @deprecated Gunakan [getMenusForRoles] untuk multi-role support.
+  /// Backward compat: filter menu berdasarkan single role string.
   static List<MenuItemModel> getMenusForRole(String? role) {
     if (role == null) return [];
-    return menus.where((m) => m.isAccessibleBy(role)).toList();
+    return getMenusForRoles([role]);
+  }
+
+  /// Cek apakah user (dengan multi-role) punya akses ke modul pramuka
+  static bool hasPramukaAccess(List<String> userRoles) {
+    return RoleHelper.hasAccess(userRoles, [AppRoles.pramuka]);
   }
 }

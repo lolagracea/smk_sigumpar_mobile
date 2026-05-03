@@ -60,33 +60,46 @@ class AuthService implements AuthRepository {
     }
   }
 
-  // ─── GET PROFILE (FIXED ROLE DETECTION) ──────────────────
+  // ─── GET PROFILE — MULTI-ROLE SUPPORT ────────────────────
   @override
   Future<UserModel> getProfile() async {
-    // 1. Get user info dari Keycloak userinfo endpoint
+    // 1. Ambil userinfo dari Keycloak
     final response = await _dioClient.get(ApiEndpoints.keycloakUserInfoUrl);
     final data = response.data;
 
-    // 2. Extract role dari JWT access token
-    // (Keycloak userinfo TIDAK return roles by default)
+    // 2. Extract SEMUA roles dari JWT access token
     final accessToken = await _secureStorage.getAccessToken();
-    String role = 'user';
+
+    List<String> allRoles = [];
+    String primaryRole = 'user';
 
     if (accessToken != null) {
-      // 🐛 DEBUG: Print untuk verifikasi (HAPUS setelah confirmed working)
+      // ✅ Ambil SEMUA roles (bukan hanya primary)
+      allRoles = TokenHelper.getRoles(accessToken);
+      primaryRole = TokenHelper.getPrimaryRole(accessToken);
+
       if (kDebugMode) {
         final payload = TokenHelper.decodePayload(accessToken);
-        print('🔍 JWT realm_access: ${payload?['realm_access']}');
-
-        final roles = TokenHelper.getRoles(accessToken);
-        print('🔍 All roles found: $roles');
+        debugPrint('🔍 JWT realm_access: ${payload?['realm_access']}');
+        debugPrint('🔍 All roles found: $allRoles');
+        debugPrint('🔍 Primary role selected: $primaryRole');
       }
+    }
 
-      role = TokenHelper.getPrimaryRole(accessToken);
+    // Fallback kalau roles kosong
+    if (allRoles.isEmpty && primaryRole != 'user') {
+      allRoles = [primaryRole];
+    } else if (allRoles.isEmpty) {
+      allRoles = ['user'];
+    }
 
-      if (kDebugMode) {
-        print('🔍 Primary role selected: $role');
-      }
+    // Pastikan primaryRole ada di allRoles
+    if (!allRoles.contains(primaryRole)) {
+      allRoles = [primaryRole, ...allRoles];
+    }
+
+    if (kDebugMode) {
+      debugPrint('✅ UserModel roles: $allRoles, primary: $primaryRole');
     }
 
     return UserModel(
@@ -94,11 +107,12 @@ class AuthService implements AuthRepository {
       username: data['preferred_username'] ?? '',
       name: data['name'] ?? data['preferred_username'] ?? '',
       email: data['email'] ?? '',
-      role: role, // ✅ Real role dari JWT
+      roles: allRoles,           // ✅ Multi-role
+      primaryRole: primaryRole,  // ✅ Primary role
     );
   }
 
-  // ─── UPDATE PROFILE (Backend tidak punya endpoint) ───────
+  // ─── UPDATE PROFILE ──────────────────────────────────────
   @override
   Future<void> updateProfile({
     String? name,
@@ -110,7 +124,7 @@ class AuthService implements AuthRepository {
     );
   }
 
-  // ─── CHANGE PASSWORD (Backend tidak punya endpoint) ──────
+  // ─── CHANGE PASSWORD ─────────────────────────────────────
   @override
   Future<void> changePassword({
     required String currentPassword,
