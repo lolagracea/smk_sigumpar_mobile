@@ -10,6 +10,7 @@ import '../../presentation/features/academic/screens/classes_screen.dart';
 import '../../presentation/features/academic/screens/students_screen.dart';
 import '../../presentation/features/academic/screens/teachers_screen.dart';
 import '../../presentation/features/academic/screens/announcements_screen.dart';
+import '../../presentation/features/academic/screens/announcement_detail_screen.dart';
 import '../../presentation/features/academic/screens/schedules_screen.dart';
 import '../../presentation/features/academic/screens/letters_screen.dart';
 import '../../presentation/features/student/screens/attendance_recap_screen.dart';
@@ -101,10 +102,29 @@ class AppRouter {
             path: RouteNames.teachers,
             builder: (_, __) => const TeachersScreen(),
           ),
+
+          // Halaman daftar/manajemen Pengumuman.
+          // Route mobile tetap memakai RouteNames.announcements agar tidak
+          // merusak drawer dan screen lama.
           GoRoute(
             path: RouteNames.announcements,
             builder: (_, __) => const AnnouncementsScreen(),
           ),
+
+          // Halaman detail Pengumuman full screen.
+          // Path-nya memakai /academic/pengumuman/:id agar dekat dengan
+          // istilah web dan backend academic-service.
+          GoRoute(
+            path: RouteNames.announcementDetail,
+            builder: (_, state) {
+              final id = state.pathParameters['id'] ?? '';
+
+              return AnnouncementDetailScreen(
+                announcementId: id,
+              );
+            },
+          ),
+
           GoRoute(
             path: RouteNames.schedules,
             builder: (_, __) => const SchedulesScreen(),

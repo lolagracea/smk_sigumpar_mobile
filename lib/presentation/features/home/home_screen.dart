@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection_container.dart';
 import '../../../core/utils/role_helper.dart';
 import '../../../data/repositories/academic_repository.dart';
 import '../../common/providers/auth_provider.dart';
 import '../academic/providers/academic_provider.dart';
+import '../../../core/constants/route_names.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -199,7 +201,13 @@ class _HomeView extends StatelessWidget {
 
                 return InkWell(
                   onTap: () {
-                    _showAnnouncementDetail(context, item);
+                    final id = item['id']?.toString();
+
+                    if (id == null || id.isEmpty) {
+                      return;
+                    }
+
+                    context.go(RouteNames.announcementDetailPath(id));
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -260,34 +268,6 @@ class _HomeView extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-
-  void _showAnnouncementDetail(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) {
-    showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          title: Text(item['judul']?.toString() ?? 'Detail Pengumuman'),
-          content: SingleChildScrollView(
-            child: Text(
-              item['isi']?.toString() ?? '-',
-              style: const TextStyle(height: 1.5),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Tutup'),
-            ),
-          ],
-        );
-      },
     );
   }
 

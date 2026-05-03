@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/role_helper.dart';
@@ -8,6 +9,8 @@ import '../../../common/providers/auth_provider.dart';
 import '../../../common/widgets/error_widget.dart';
 import '../../../common/widgets/loading_widget.dart';
 import '../providers/academic_provider.dart';
+import '../../../../core/constants/route_names.dart';
+
 
 class AnnouncementsScreen extends StatelessWidget {
   const AnnouncementsScreen({super.key});
@@ -41,6 +44,8 @@ class _AnnouncementsView extends StatelessWidget {
       BuildContext context, {
         Map<String, dynamic>? initialData,
       }) {
+    final parentContext = context;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -48,8 +53,9 @@ class _AnnouncementsView extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return ChangeNotifierProvider.value(
-          value: context.read<AcademicProvider>(),
+          value: parentContext.read<AcademicProvider>(),
           child: _AnnouncementFormSheet(
+            parentContext: parentContext,
             initialData: initialData,
           ),
         );
@@ -89,6 +95,7 @@ class _AnnouncementsView extends StatelessWidget {
       BuildContext context,
       Map<String, dynamic> item,
       ) {
+    final parentContext = context;
     final controller = TextEditingController();
     final title = item['judul']?.toString() ?? '';
     final id = item['id']?.toString() ?? '';
@@ -97,7 +104,7 @@ class _AnnouncementsView extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (builderContext, setState) {
             final isMatch = controller.text.trim() == title;
 
             return AlertDialog(
@@ -131,20 +138,26 @@ class _AnnouncementsView extends StatelessWidget {
                 FilledButton(
                   onPressed: isMatch
                       ? () async {
-                    final success = await context
-                        .read<AcademicProvider>()
-                        .deleteAnnouncement(id: id);
+                    final provider =
+                    parentContext.read<AcademicProvider>();
+
+                    final success = await provider.deleteAnnouncement(
+                      id: id,
+                    );
 
                     if (!dialogContext.mounted) return;
 
                     Navigator.pop(dialogContext);
 
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    if (!parentContext.mounted) return;
+
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
                       SnackBar(
                         content: Text(
                           success
                               ? 'Pengumuman berhasil dihapus.'
-                              : 'Gagal menghapus pengumuman.',
+                              : provider.announcementError ??
+                              'Gagal menghapus pengumuman.',
                         ),
                       ),
                     );
@@ -157,7 +170,9 @@ class _AnnouncementsView extends StatelessWidget {
           },
         );
       },
-    );
+    ).then((_) {
+      controller.dispose();
+    });
   }
 
   Future<void> _refresh(BuildContext context) {
@@ -294,13 +309,25 @@ class _AnnouncementsView extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                _openDetailDialog(context, item);
+                final id = item['id']?.toString();
+
+                if (id == null || id.isEmpty) {
+                  return;
+                }
+
+                context.go(RouteNames.announcementDetailPath(id));
               },
               trailing: canManage
                   ? PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'detail') {
-                    _openDetailDialog(context, item);
+                    final id = item['id']?.toString();
+
+                    if (id == null || id.isEmpty) {
+                      return;
+                    }
+
+                    context.go(RouteNames.announcementDetailPath(id));
                   } else if (value == 'edit') {
                     _openFormSheet(
                       context,
@@ -337,9 +364,11 @@ class _AnnouncementsView extends StatelessWidget {
 }
 
 class _AnnouncementFormSheet extends StatefulWidget {
+  final BuildContext parentContext;
   final Map<String, dynamic>? initialData;
 
   const _AnnouncementFormSheet({
+    required this.parentContext,
     this.initialData,
   });
 
@@ -400,10 +429,12 @@ class _AnnouncementFormSheetState extends State<_AnnouncementFormSheet> {
       _isSubmitting = false;
     });
 
-    if (success) {
-      Navigator.pop(context);
+    final messenger = ScaffoldMessenger.of(widget.parentContext);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+    if (success) {
+      Navigator.of(context).pop();
+
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             _isEdit
@@ -413,11 +444,11 @@ class _AnnouncementFormSheetState extends State<_AnnouncementFormSheet> {
         ),
       );
     } else {
-      final error = context.read<AcademicProvider>().announcementError;
-
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
-          content: Text(error ?? 'Gagal menyimpan pengumuman.'),
+          content: Text(
+            provider.announcementError ?? 'Gagal menyimpan pengumuman.',
+          ),
         ),
       );
     }
