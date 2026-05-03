@@ -193,11 +193,14 @@ class AcademicProvider extends ChangeNotifier {
   // ─── Announcements ────────────────────────────────────────
   AcademicLoadState _announcementState = AcademicLoadState.initial;
   List<Map<String, dynamic>> _announcements = [];
+  String? _announcementError;
   int _announcementPage = 1;
   bool _hasMoreAnnouncements = true;
 
   AcademicLoadState get announcementState => _announcementState;
   List<Map<String, dynamic>> get announcements => _announcements;
+  String? get announcementError => _announcementError;
+  bool get hasMoreAnnouncements => _hasMoreAnnouncements;
 
   Future<void> fetchAnnouncements({
     bool refresh = false,
@@ -211,6 +214,7 @@ class AcademicProvider extends ChangeNotifier {
     if (!_hasMoreAnnouncements) return;
 
     _announcementState = AcademicLoadState.loading;
+    _announcementError = null;
     notifyListeners();
 
     try {
@@ -218,14 +222,86 @@ class AcademicProvider extends ChangeNotifier {
         page: _announcementPage,
       );
 
-      _announcements.addAll(result.items);
+      if (refresh) {
+        _announcements = result.items;
+      } else {
+        _announcements.addAll(result.items);
+      }
+
       _hasMoreAnnouncements = result.hasNextPage;
       _announcementPage++;
       _announcementState = AcademicLoadState.loaded;
     } catch (e) {
+      _announcementError = e.toString();
       _announcementState = AcademicLoadState.error;
     }
 
     notifyListeners();
+  }
+
+  Future<bool> createAnnouncement({
+    required String judul,
+    required String isi,
+  }) async {
+    try {
+      _announcementError = null;
+      notifyListeners();
+
+      await _repository.createAnnouncement({
+        'judul': judul,
+        'isi': isi,
+      });
+
+      await fetchAnnouncements(refresh: true);
+      return true;
+    } catch (e) {
+      _announcementError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateAnnouncement({
+    required String id,
+    required String judul,
+    required String isi,
+  }) async {
+    try {
+      _announcementError = null;
+      notifyListeners();
+
+      await _repository.updateAnnouncement(
+        id,
+        {
+          'judul': judul,
+          'isi': isi,
+        },
+      );
+
+      await fetchAnnouncements(refresh: true);
+      return true;
+    } catch (e) {
+      _announcementError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteAnnouncement({
+    required String id,
+  }) async {
+    try {
+      _announcementError = null;
+      notifyListeners();
+
+      await _repository.deleteAnnouncement(id);
+
+      await fetchAnnouncements(refresh: true);
+      return true;
+    } catch (e) {
+      _announcementError = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 }

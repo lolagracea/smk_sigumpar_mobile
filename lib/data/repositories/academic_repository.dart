@@ -51,6 +51,13 @@ abstract class AcademicRepository {
 
   Future<Map<String, dynamic>> createAnnouncement(Map<String, dynamic> data);
 
+  Future<Map<String, dynamic>> updateAnnouncement(
+      String id,
+      Map<String, dynamic> data,
+      );
+
+  Future<void> deleteAnnouncement(String id);
+
   // Schedules
   Future<List<Map<String, dynamic>>> getSchedules({
     String? classId,

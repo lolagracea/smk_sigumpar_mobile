@@ -230,19 +230,38 @@ class AcademicService implements AcademicRepository {
     return TeacherModel.fromJson(response.data['data']);
   }
 
-  // ─── Announcements ────────────────────────────────────────
+  // ─── Announcements / Pengumuman ──────────────────────────
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getAnnouncements({
     int page = 1,
   }) async {
-    final response = await _dioClient.get(
-      ApiEndpoints.announcements,
-      queryParameters: {'page': page},
-    );
+    final response = await _dioClient.get(ApiEndpoints.announcements);
 
-    return PaginatedResponse.fromJson(
-      response.data,
-          (json) => json as Map<String, dynamic>,
+    final raw = response.data;
+
+    List<dynamic> rows = [];
+
+    if (raw is List) {
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['data'] is Map<String, dynamic> &&
+          raw['data']['data'] is List) {
+        rows = raw['data']['data'] as List;
+      }
+    }
+
+    final items = rows.map((item) {
+      return Map<String, dynamic>.from(item as Map);
+    }).toList();
+
+    return PaginatedResponse<Map<String, dynamic>>(
+      items: items,
+      currentPage: 1,
+      lastPage: 1,
+      perPage: items.length,
+      total: items.length,
     );
   }
 
@@ -255,7 +274,45 @@ class AcademicService implements AcademicRepository {
       data: data,
     );
 
-    return response.data['data'] as Map<String, dynamic>;
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(raw['data'] as Map);
+    }
+
+    if (raw is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(raw);
+    }
+
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateAnnouncement(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.announcements}/$id',
+      data: data,
+    );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(raw['data'] as Map);
+    }
+
+    if (raw is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(raw);
+    }
+
+    return {};
+  }
+
+  @override
+  Future<void> deleteAnnouncement(String id) async {
+    await _dioClient.delete('${ApiEndpoints.announcements}/$id');
   }
 
   // ─── Schedules ────────────────────────────────────────────
