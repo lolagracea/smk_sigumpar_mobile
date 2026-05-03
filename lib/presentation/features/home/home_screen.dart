@@ -54,12 +54,22 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── Drawer factory — hanya PRAMUKA aktif ────────────
+  // ── Drawer factory (updated) ─────────────────────────
   Widget? _buildDrawerByRole(BuildContext context, String? role) {
-    if (role == AppRoles.pramuka) {
-      return const PramukaDrawer(currentRoute: RouteNames.home);
+    if (role == null) return null;
+
+    switch (role) {
+      case AppRoles.pramuka:
+      case AppRoles.principal:
+      case AppRoles.vicePrincipal:
+      case AppRoles.teacher:
+      case AppRoles.homeroom:
+      case AppRoles.staff:
+      case AppRoles.vokasi:
+        return const PramukaDrawer(currentRoute: RouteNames.home);
+      default:
+        return null;
     }
-    return null;
   }
 
   // ── Welcome Card ─────────────────────────────────────
