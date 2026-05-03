@@ -18,12 +18,14 @@ import '../../presentation/features/student/screens/cleanliness_recap_screen.dar
 import '../../presentation/features/student/screens/parenting_notes_screen.dart';
 import '../../presentation/features/student/screens/homeroom_reflection_screen.dart';
 import '../../presentation/features/student/screens/summons_letter_screen.dart';
-import '../../presentation/features/learning/screens/teacher_attendance_screen.dart';
+// ─── LEARNING SCREENS ─────────────────────────────────────
+import '../../presentation/features/learning/screens/absensi_guru_screen.dart'; // ← BARU
 import '../../presentation/features/learning/screens/teaching_notes_screen.dart';
 import '../../presentation/features/learning/screens/teacher_evaluation_screen.dart';
 import '../../presentation/features/learning/screens/learning_device_screen.dart';
 import '../../presentation/features/learning/screens/principal_review_screen.dart';
 import '../../presentation/features/learning/screens/vice_principal_review_screen.dart';
+// ─── VOCATIONAL & ASSET (tidak berubah) ───────────────────
 import '../../presentation/features/vocational/screens/scout_classes_screen.dart';
 import '../../presentation/features/vocational/screens/scout_attendance_screen.dart';
 import '../../presentation/features/vocational/screens/scout_report_screen.dart';
@@ -85,7 +87,11 @@ class AppRouter {
       GoRoute(path: RouteNames.gradesRecap, builder: (_, __) => const GradesRecapScreen()),
 
       // ─── Learning ────────────────────────────────────────
-      GoRoute(path: RouteNames.teacherAttendance, builder: (_, __) => const TeacherAttendanceScreen()),
+      // ⭐ ABSENSI GURU — pakai screen baru kita
+      GoRoute(
+        path: RouteNames.teacherAttendance,
+        builder: (_, __) => const AbsensiGuruScreen(),
+      ),
       GoRoute(path: RouteNames.teachingNotes, builder: (_, __) => const TeachingNotesScreen()),
       GoRoute(path: RouteNames.teacherEvaluation, builder: (_, __) => const TeacherEvaluationScreen()),
       GoRoute(path: RouteNames.learningDevice, builder: (_, __) => const LearningDeviceScreen()),

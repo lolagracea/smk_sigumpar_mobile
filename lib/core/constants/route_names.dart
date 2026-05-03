@@ -24,11 +24,19 @@ class RouteNames {
   static const String homeroomReflection = '/student/homeroom-reflection';
   static const String summonsLetter = '/student/summons';
   static const String attendanceRecap = '/student/attendance';
+
+  /// Alias untuk absensi siswa (digunakan di drawer guru-mapel)
+  static const String studentAttendance = attendanceRecap;
+
   static const String gradesRecap = '/student/grades';
 
   // ─── Learning ──────────────────────────────────────────
   static const String learning = '/learning';
   static const String teacherAttendance = '/learning/teacher-attendance';
+
+  /// Alias untuk absensi guru (digunakan di drawer guru-mapel)
+  static const String absensiGuru = teacherAttendance;
+
   static const String teachingNotes = '/learning/teaching-notes';
   static const String teacherEvaluation = '/learning/teacher-evaluation';
   static const String learningDevice = '/learning/devices';
