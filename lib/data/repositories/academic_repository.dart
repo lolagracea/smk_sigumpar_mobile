@@ -3,6 +3,8 @@ import '../models/student_model.dart';
 import '../models/teacher_model.dart';
 import '../models/user_search_model.dart';
 import '../../core/network/api_response.dart';
+import 'package:file_picker/file_picker.dart';
+import '../models/arsip_surat_model.dart';
 
 abstract class AcademicRepository {
   // Classes
@@ -21,7 +23,7 @@ abstract class AcademicRepository {
 
   Future<List<UserSearchModel>> searchWaliKelas(String query);
 
-  // Students
+  // ─── Students ────────────────────────────────────────────
   Future<PaginatedResponse<StudentModel>> getStudents({
     int page = 1,
     String? classId,
@@ -64,8 +66,21 @@ abstract class AcademicRepository {
     String? teacherId,
   });
 
-  // Letters
-  Future<PaginatedResponse<Map<String, dynamic>>> getLetters({
+  // ─── Letters / Arsip Surat ──────────────────────────────
+  Future<PaginatedResponse<ArsipSuratModel>> getLetters({
     int page = 1,
   });
+
+  Future<ArsipSuratModel> createLetter({
+    required String nomorSurat,
+    required PlatformFile file,
+  });
+
+  Future<ArsipSuratModel> updateLetter({
+    required String id,
+    required String nomorSurat,
+    PlatformFile? file,
+  });
+
+  Future<void> deleteLetter(String id);
 }

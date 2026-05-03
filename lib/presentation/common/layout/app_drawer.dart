@@ -90,12 +90,12 @@ class AppDrawer extends StatelessWidget {
       items.addAll(const [
         _MenuItemData(
           icon: Icons.class_outlined,
-          label: 'Manajemen Kelas',
+          label: 'Data Kelas',
           route: RouteNames.classes,
         ),
         _MenuItemData(
           icon: Icons.groups_outlined,
-          label: 'Manajemen Siswa',
+          label: 'Data Siswa',
           route: RouteNames.students,
         ),
         _MenuItemData(

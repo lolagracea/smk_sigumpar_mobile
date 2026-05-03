@@ -5,6 +5,8 @@ import 'package:smk_sigumpar/data/models/student_model.dart';
 import 'package:smk_sigumpar/data/models/teacher_model.dart';
 import 'package:smk_sigumpar/data/models/user_search_model.dart';
 import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:smk_sigumpar/data/models/arsip_surat_model.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 
@@ -110,6 +112,7 @@ class AcademicProvider extends ChangeNotifier {
   AcademicLoadState get studentState => _studentState;
   List<StudentModel> get students => _students;
   String? get studentError => _studentError;
+  bool get hasMoreStudents => _hasMoreStudents;
 
   Future<void> fetchStudents({
     bool refresh = false,
@@ -125,6 +128,7 @@ class AcademicProvider extends ChangeNotifier {
     if (!_hasMoreStudents) return;
 
     _studentState = AcademicLoadState.loading;
+    _studentError = null;
     notifyListeners();
 
     try {
@@ -134,7 +138,12 @@ class AcademicProvider extends ChangeNotifier {
         search: search,
       );
 
-      _students.addAll(result.items);
+      if (refresh) {
+        _students = result.items;
+      } else {
+        _students.addAll(result.items);
+      }
+
       _hasMoreStudents = result.hasNextPage;
       _studentPage++;
       _studentState = AcademicLoadState.loaded;
@@ -144,6 +153,76 @@ class AcademicProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  Future<bool> createStudent({
+    required String nisn,
+    required String namaLengkap,
+    required String kelasId,
+  }) async {
+    try {
+      _studentError = null;
+      notifyListeners();
+
+      await _repository.createStudent({
+        'nisn': nisn,
+        'nama_lengkap': namaLengkap,
+        'kelas_id': kelasId,
+      });
+
+      await fetchStudents(refresh: true);
+      return true;
+    } catch (e) {
+      _studentError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateStudent({
+    required String id,
+    required String nisn,
+    required String namaLengkap,
+    required String kelasId,
+  }) async {
+    try {
+      _studentError = null;
+      notifyListeners();
+
+      await _repository.updateStudent(
+        id,
+        {
+          'nisn': nisn,
+          'nama_lengkap': namaLengkap,
+          'kelas_id': kelasId,
+        },
+      );
+
+      await fetchStudents(refresh: true);
+      return true;
+    } catch (e) {
+      _studentError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteStudent({
+    required String id,
+  }) async {
+    try {
+      _studentError = null;
+      notifyListeners();
+
+      await _repository.deleteStudent(id);
+
+      await fetchStudents(refresh: true);
+      return true;
+    } catch (e) {
+      _studentError = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
   // ─── Teachers ─────────────────────────────────────────────
@@ -300,6 +379,119 @@ class AcademicProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _announcementError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── Letters / Arsip Surat ──────────────────────────────
+  AcademicLoadState _letterState = AcademicLoadState.initial;
+  List<ArsipSuratModel> _letters = [];
+  String? _letterError;
+  bool _hasMoreLetters = true;
+  int _letterPage = 1;
+
+  AcademicLoadState get letterState => _letterState;
+  List<ArsipSuratModel> get letters => _letters;
+  String? get letterError => _letterError;
+  bool get hasMoreLetters => _hasMoreLetters;
+
+  Future<void> fetchLetters({
+    bool refresh = false,
+  }) async {
+    if (refresh) {
+      _letterPage = 1;
+      _letters = [];
+      _hasMoreLetters = true;
+    }
+
+    if (!_hasMoreLetters) return;
+
+    _letterState = AcademicLoadState.loading;
+    _letterError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.getLetters(
+        page: _letterPage,
+      );
+
+      if (refresh) {
+        _letters = result.items;
+      } else {
+        _letters.addAll(result.items);
+      }
+
+      _hasMoreLetters = result.hasNextPage;
+      _letterPage++;
+      _letterState = AcademicLoadState.loaded;
+    } catch (e) {
+      _letterError = e.toString();
+      _letterState = AcademicLoadState.error;
+    }
+
+    notifyListeners();
+  }
+
+  Future<bool> createLetter({
+    required String nomorSurat,
+    required PlatformFile file,
+  }) async {
+    try {
+      _letterError = null;
+      notifyListeners();
+
+      await _repository.createLetter(
+        nomorSurat: nomorSurat,
+        file: file,
+      );
+
+      await fetchLetters(refresh: true);
+      return true;
+    } catch (e) {
+      _letterError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateLetter({
+    required String id,
+    required String nomorSurat,
+    PlatformFile? file,
+  }) async {
+    try {
+      _letterError = null;
+      notifyListeners();
+
+      await _repository.updateLetter(
+        id: id,
+        nomorSurat: nomorSurat,
+        file: file,
+      );
+
+      await fetchLetters(refresh: true);
+      return true;
+    } catch (e) {
+      _letterError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteLetter({
+    required String id,
+  }) async {
+    try {
+      _letterError = null;
+      notifyListeners();
+
+      await _repository.deleteLetter(id);
+
+      await fetchLetters(refresh: true);
+      return true;
+    } catch (e) {
+      _letterError = e.toString();
       notifyListeners();
       return false;
     }

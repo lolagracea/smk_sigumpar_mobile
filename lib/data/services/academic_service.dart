@@ -6,6 +6,10 @@ import '../models/student_model.dart';
 import '../models/teacher_model.dart';
 import '../models/user_search_model.dart';
 import '../repositories/academic_repository.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
+
+import '../models/arsip_surat_model.dart';
 
 class AcademicService implements AcademicRepository {
   final DioClient _dioClient;
@@ -158,22 +162,58 @@ class AcademicService implements AcademicRepository {
     final response = await _dioClient.get(
       ApiEndpoints.students,
       queryParameters: {
-        'page': page,
-        if (classId != null) 'kelas_id': classId,
-        if (search != null) 'search': search,
+        if (classId != null && classId.isNotEmpty) 'kelas_id': classId,
       },
     );
 
-    return PaginatedResponse.fromJson(
-      response.data,
-          (json) => StudentModel.fromJson(json),
+    final raw = response.data;
+
+    List<dynamic> rows = [];
+
+    if (raw is List) {
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['data'] is Map<String, dynamic> &&
+          raw['data']['data'] is List) {
+        rows = raw['data']['data'] as List;
+      }
+    }
+
+    final keyword = search?.trim().toLowerCase();
+
+    final items = rows
+        .map((item) => StudentModel.fromJson(
+      Map<String, dynamic>.from(item as Map),
+    ))
+        .where((siswa) {
+      if (keyword == null || keyword.isEmpty) return true;
+
+      return siswa.nisn.toLowerCase().contains(keyword) ||
+          siswa.namaLengkap.toLowerCase().contains(keyword) ||
+          siswa.namaKelas.toLowerCase().contains(keyword);
+    }).toList();
+
+    return PaginatedResponse<StudentModel>(
+      items: items,
+      currentPage: 1,
+      lastPage: 1,
+      perPage: items.length,
+      total: items.length,
     );
   }
 
   @override
   Future<StudentModel> getStudentById(String id) async {
     final response = await _dioClient.get('${ApiEndpoints.students}/$id');
-    return StudentModel.fromJson(response.data['data']);
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return StudentModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return StudentModel.fromJson(Map<String, dynamic>.from(raw as Map));
   }
 
   @override
@@ -183,7 +223,13 @@ class AcademicService implements AcademicRepository {
       data: data,
     );
 
-    return StudentModel.fromJson(response.data['data']);
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return StudentModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return StudentModel.fromJson(Map<String, dynamic>.from(raw as Map));
   }
 
   @override
@@ -196,7 +242,13 @@ class AcademicService implements AcademicRepository {
       data: data,
     );
 
-    return StudentModel.fromJson(response.data['data']);
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return StudentModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return StudentModel.fromJson(Map<String, dynamic>.from(raw as Map));
   }
 
   @override
@@ -342,19 +394,146 @@ class AcademicService implements AcademicRepository {
     return [];
   }
 
-  // ─── Letters ──────────────────────────────────────────────
+  // ─── Letters / Arsip Surat ──────────────────────────────
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getLetters({
+  Future<PaginatedResponse<ArsipSuratModel>> getLetters({
     int page = 1,
   }) async {
-    final response = await _dioClient.get(
-      ApiEndpoints.letters,
-      queryParameters: {'page': page},
+    final response = await _dioClient.get(ApiEndpoints.letters);
+
+    final raw = response.data;
+
+    List<dynamic> rows = [];
+
+    if (raw is List) {
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['data'] is Map<String, dynamic> &&
+          raw['data']['data'] is List) {
+        rows = raw['data']['data'] as List;
+      }
+    }
+
+    final items = rows
+        .map(
+          (item) => ArsipSuratModel.fromJson(
+        Map<String, dynamic>.from(item as Map),
+      ),
+    )
+        .toList();
+
+    return PaginatedResponse<ArsipSuratModel>(
+      items: items,
+      currentPage: 1,
+      lastPage: 1,
+      perPage: items.length,
+      total: items.length,
+    );
+  }
+
+  @override
+  Future<ArsipSuratModel> createLetter({
+    required String nomorSurat,
+    required PlatformFile file,
+  }) async {
+    final formData = await _buildLetterFormData(
+      nomorSurat: nomorSurat,
+      file: file,
     );
 
-    return PaginatedResponse.fromJson(
-      response.data,
-          (json) => json as Map<String, dynamic>,
+    final response = await _dioClient.post(
+      ApiEndpoints.letters,
+      data: formData,
+      options: Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      ),
     );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return ArsipSuratModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return ArsipSuratModel.fromJson(
+      Map<String, dynamic>.from(raw as Map),
+    );
+  }
+
+  @override
+  Future<ArsipSuratModel> updateLetter({
+    required String id,
+    required String nomorSurat,
+    PlatformFile? file,
+  }) async {
+    final formData = await _buildLetterFormData(
+      nomorSurat: nomorSurat,
+      file: file,
+    );
+
+    final response = await _dioClient.put(
+      '${ApiEndpoints.letters}/$id',
+      data: formData,
+      options: Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      ),
+    );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return ArsipSuratModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return ArsipSuratModel.fromJson(
+      Map<String, dynamic>.from(raw as Map),
+    );
+  }
+
+  @override
+  Future<void> deleteLetter(String id) async {
+    await _dioClient.delete('${ApiEndpoints.letters}/$id');
+  }
+
+  Future<FormData> _buildLetterFormData({
+    required String nomorSurat,
+    PlatformFile? file,
+  }) async {
+    final formData = FormData.fromMap({
+      'nomor_surat': nomorSurat,
+    });
+
+    if (file != null) {
+      MultipartFile multipartFile;
+
+      if (file.bytes != null) {
+        multipartFile = MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        );
+      } else if (file.path != null) {
+        multipartFile = await MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        );
+      } else {
+        throw Exception('File tidak valid atau tidak bisa dibaca.');
+      }
+
+      formData.files.add(
+        MapEntry(
+          'file',
+          multipartFile,
+        ),
+      );
+    }
+
+    return formData;
   }
 }
