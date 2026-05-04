@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:smk_sigumpar/data/models/arsip_surat_model.dart';
 import 'package:smk_sigumpar/data/models/mapel_assignment_model.dart';
 import 'package:smk_sigumpar/data/models/schedule_model.dart';
+import 'package:smk_sigumpar/data/models/subject_model.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 
@@ -632,6 +633,135 @@ class AcademicProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _letterError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── Subjects / Mata Pelajaran ──────────────────────────
+  AcademicLoadState _subjectState = AcademicLoadState.initial;
+  List<SubjectModel> _subjects = [];
+  String? _subjectError;
+  bool _hasMoreSubjects = true;
+  int _subjectPage = 1;
+
+  AcademicLoadState get subjectState => _subjectState;
+  List<SubjectModel> get subjects => _subjects;
+  String? get subjectError => _subjectError;
+  bool get hasMoreSubjects => _hasMoreSubjects;
+
+  Future<void> fetchSubjects({
+    bool refresh = false,
+    String? classId,
+    String? teacherId,
+    String? search,
+  }) async {
+    if (refresh) {
+      _subjectPage = 1;
+      _subjects = [];
+      _hasMoreSubjects = true;
+    }
+
+    if (!_hasMoreSubjects) return;
+
+    _subjectState = AcademicLoadState.loading;
+    _subjectError = null;
+    notifyListeners();
+
+    try {
+      final result = await _repository.getSubjects(
+        page: _subjectPage,
+        classId: classId,
+        teacherId: teacherId,
+        search: search,
+      );
+
+      if (refresh) {
+        _subjects = result.items;
+      } else {
+        _subjects.addAll(result.items);
+      }
+
+      _hasMoreSubjects = result.hasNextPage;
+      _subjectPage++;
+      _subjectState = AcademicLoadState.loaded;
+    } catch (e) {
+      _subjectError = e.toString();
+      _subjectState = AcademicLoadState.error;
+    }
+
+    notifyListeners();
+  }
+
+  Future<bool> createSubject({
+    required String namaMapel,
+    required String kelasId,
+    required String guruMapelId,
+    required String guruMapelNama,
+  }) async {
+    try {
+      _subjectError = null;
+      notifyListeners();
+
+      await _repository.createSubject({
+        'nama_mapel': namaMapel,
+        'kelas_id': kelasId,
+        'guru_mapel_id': guruMapelId,
+        'guru_mapel_nama': guruMapelNama,
+      });
+
+      await fetchSubjects(refresh: true);
+      return true;
+    } catch (e) {
+      _subjectError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateSubject({
+    required String id,
+    required String namaMapel,
+    required String kelasId,
+    required String guruMapelId,
+    required String guruMapelNama,
+  }) async {
+    try {
+      _subjectError = null;
+      notifyListeners();
+
+      await _repository.updateSubject(
+        id,
+        {
+          'nama_mapel': namaMapel,
+          'kelas_id': kelasId,
+          'guru_mapel_id': guruMapelId,
+          'guru_mapel_nama': guruMapelNama,
+        },
+      );
+
+      await fetchSubjects(refresh: true);
+      return true;
+    } catch (e) {
+      _subjectError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteSubject({
+    required String id,
+  }) async {
+    try {
+      _subjectError = null;
+      notifyListeners();
+
+      await _repository.deleteSubject(id);
+
+      await fetchSubjects(refresh: true);
+      return true;
+    } catch (e) {
+      _subjectError = e.toString();
       notifyListeners();
       return false;
     }

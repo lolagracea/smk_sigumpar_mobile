@@ -26,6 +26,8 @@ class MainShell extends StatelessWidget {
         return 'Manajemen Kelas';
       case RouteNames.students:
         return 'Manajemen Siswa';
+      case RouteNames.subjects:
+        return 'Mata Pelajaran';
       case RouteNames.teachers:
         return 'Data Guru';
       case RouteNames.announcements:

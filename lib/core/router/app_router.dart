@@ -19,6 +19,7 @@ import '../../presentation/features/student/screens/cleanliness_recap_screen.dar
 import '../../presentation/features/student/screens/parenting_notes_screen.dart';
 import '../../presentation/features/student/screens/homeroom_reflection_screen.dart';
 import '../../presentation/features/student/screens/summons_letter_screen.dart';
+import '../../presentation/features/academic/screens/subjects_screen.dart';
 
 // ─── LEARNING SCREENS ─────────────────────────────────────
 import '../../presentation/features/learning/screens/absensi_guru_screen.dart';
@@ -212,6 +213,10 @@ class AppRouter {
           GoRoute(
             path: RouteNames.submissionInfo,
             builder: (_, __) => const SubmissionInfoScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.subjects,
+            builder: (_, __) => const SubjectsScreen(),
           ),
           GoRoute(
             path: RouteNames.itemLoan,

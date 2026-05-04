@@ -13,6 +13,7 @@ class RouteNames {
   static const String classes = '/academic/classes';
   static const String students = '/academic/students';
   static const String teachers = '/academic/teachers';
+  static const String subjects = '/academic/subjects';
 
   /// Route halaman daftar/manajemen pengumuman di mobile.
   ///

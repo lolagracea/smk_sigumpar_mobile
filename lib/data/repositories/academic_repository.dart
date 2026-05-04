@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import '../models/arsip_surat_model.dart';
 import '../models/mapel_assignment_model.dart';
 import '../models/schedule_model.dart';
+import '../models/subject_model.dart';
 
 abstract class AcademicRepository {
   // Classes
@@ -98,4 +99,21 @@ abstract class AcademicRepository {
   });
 
   Future<void> deleteLetter(String id);
+
+  // ─── Subjects / Mata Pelajaran ──────────────────────────
+  Future<PaginatedResponse<SubjectModel>> getSubjects({
+    int page = 1,
+    String? classId,
+    String? teacherId,
+    String? search,
+  });
+
+  Future<SubjectModel> createSubject(Map<String, dynamic> data);
+
+  Future<SubjectModel> updateSubject(
+      String id,
+      Map<String, dynamic> data,
+      );
+
+  Future<void> deleteSubject(String id);
 }

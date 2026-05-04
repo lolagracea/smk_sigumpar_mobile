@@ -118,6 +118,11 @@ class AppDrawer extends StatelessWidget {
           label: 'Jadwal Mengajar',
           route: RouteNames.schedules,
         ),
+        _MenuItemData(
+          icon: Icons.menu_book_outlined,
+          label: 'Mata Pelajaran',
+          route: RouteNames.subjects,
+        ),
       ]);
     }
 

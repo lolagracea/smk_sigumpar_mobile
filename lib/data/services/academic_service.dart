@@ -11,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import '../models/mapel_assignment_model.dart';
 import '../models/schedule_model.dart';
 import '../models/arsip_surat_model.dart';
+import '../models/subject_model.dart';
 
 class AcademicService implements AcademicRepository {
   final DioClient _dioClient;
@@ -666,5 +667,106 @@ class AcademicService implements AcademicRepository {
     }
 
     return formData;
+  }
+
+  // ─── Subjects / Mata Pelajaran ──────────────────────────
+  @override
+  Future<PaginatedResponse<SubjectModel>> getSubjects({
+    int page = 1,
+    String? classId,
+    String? teacherId,
+    String? search,
+  }) async {
+    final response = await _dioClient.get(
+      ApiEndpoints.subjects,
+      queryParameters: {
+        if (classId != null && classId.isNotEmpty) 'kelas_id': classId,
+        if (teacherId != null && teacherId.isNotEmpty)
+          'guru_mapel_id': teacherId,
+      },
+    );
+
+    final raw = response.data;
+
+    List<dynamic> rows = [];
+
+    if (raw is List) {
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['data'] is Map<String, dynamic> &&
+          raw['data']['data'] is List) {
+        rows = raw['data']['data'] as List;
+      }
+    }
+
+    final keyword = search?.trim().toLowerCase();
+
+    final items = rows
+        .map(
+          (item) => SubjectModel.fromJson(
+        Map<String, dynamic>.from(item as Map),
+      ),
+    )
+        .where((subject) {
+      if (keyword == null || keyword.isEmpty) return true;
+
+      return subject.namaMapel.toLowerCase().contains(keyword) ||
+          subject.namaKelas.toLowerCase().contains(keyword) ||
+          subject.guruMapelNama.toLowerCase().contains(keyword);
+    }).toList();
+
+    return PaginatedResponse<SubjectModel>(
+      items: items,
+      currentPage: 1,
+      lastPage: 1,
+      perPage: items.length,
+      total: items.length,
+    );
+  }
+
+  @override
+  Future<SubjectModel> createSubject(Map<String, dynamic> data) async {
+    final response = await _dioClient.post(
+      ApiEndpoints.subjects,
+      data: data,
+    );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return SubjectModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return SubjectModel.fromJson(
+      Map<String, dynamic>.from(raw as Map),
+    );
+  }
+
+  @override
+  Future<SubjectModel> updateSubject(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.subjects}/$id',
+      data: data,
+    );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return SubjectModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return SubjectModel.fromJson(
+      Map<String, dynamic>.from(raw as Map),
+    );
+  }
+
+  @override
+  Future<void> deleteSubject(String id) async {
+    await _dioClient.delete('${ApiEndpoints.subjects}/$id');
   }
 }
