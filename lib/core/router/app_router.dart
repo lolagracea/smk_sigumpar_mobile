@@ -37,6 +37,7 @@ import '../../presentation/features/vocational/screens/scout_attendance_screen.d
 import '../../presentation/features/vocational/screens/scout_report_screen.dart';
 import '../../presentation/features/vocational/screens/pkl_location_report_screen.dart';
 import '../../presentation/features/vocational/screens/pkl_progress_report_screen.dart';
+import '../../presentation/features/vocational/screens/pkl_input_nilai_screen.dart';
 import '../../presentation/features/asset/screens/submission_info_screen.dart';
 import '../../presentation/features/asset/screens/item_loan_screen.dart';
 import '../../presentation/features/asset/screens/equipment_submission_screen.dart';
@@ -207,6 +208,10 @@ class AppRouter {
           GoRoute(
             path: RouteNames.pklProgressReport,
             builder: (_, __) => const PklProgressReportScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.pklGradeInput,
+            builder: (_, __) => const PklInputNilaiScreen(),
           ),
 
           // ─── Asset ───────────────────────────────────────

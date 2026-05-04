@@ -52,7 +52,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   ...items.map(
-                        (item) => _DrawerMenuItem(
+                    (item) => _DrawerMenuItem(
                       icon: item.icon,
                       label: item.label,
                       route: item.route,
@@ -261,6 +261,11 @@ class AppDrawer extends StatelessWidget {
       roles: roles,
     )) {
       items.addAll(const [
+        _MenuItemData(
+          icon: Icons.edit_note_outlined,
+          label: 'Input Nilai PKL',
+          route: RouteNames.pklGradeInput,
+        ),
         _MenuItemData(
           icon: Icons.location_on_outlined,
           label: 'Lokasi PKL',

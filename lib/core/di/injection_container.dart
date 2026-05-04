@@ -16,7 +16,12 @@ import '../../data/services/vocational_service.dart';
 import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
-import '../../presentation/features/learning/providers/absensi_guru_provider.dart'; // ← BARU
+import '../../presentation/features/learning/providers/absensi_guru_provider.dart';
+import '../../presentation/features/academic/providers/announcement_provider.dart';
+
+// ─── PKL NILAI (BARU) ─────────────────────────────────────
+import 'package:smk_sigumpar/data/repositories/pkl_nilai_repository.dart';
+import 'package:smk_sigumpar/data/services/pkl_nilai_service.dart';
 
 final sl = GetIt.instance;
 
@@ -25,46 +30,51 @@ Future<void> init() async {
   sl.registerLazySingleton<SecureStorage>(() => SecureStorage());
 
   sl.registerLazySingleton<DioClient>(
-        () => DioClient(secureStorage: sl<SecureStorage>()),
+    () => DioClient(secureStorage: sl<SecureStorage>()),
   );
 
   sl.registerLazySingleton<ThemeNotifier>(() => ThemeNotifier());
 
   // ─── Repositories ──────────────────────────────────────
   sl.registerLazySingleton<AuthRepository>(
-        () => AuthService(
+    () => AuthService(
       dioClient: sl<DioClient>(),
       secureStorage: sl<SecureStorage>(),
     ),
   );
 
   sl.registerLazySingleton<AcademicRepository>(
-        () => AcademicService(dioClient: sl<DioClient>()),
+    () => AcademicService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<StudentRepository>(
-        () => StudentService(dioClient: sl<DioClient>()),
+    () => StudentService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<LearningRepository>(
-        () => LearningService(dioClient: sl<DioClient>()),
+    () => LearningService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<VocationalRepository>(
-        () => VocationalService(dioClient: sl<DioClient>()),
+    () => VocationalService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<AssetRepository>(
-        () => AssetService(dioClient: sl<DioClient>()),
+    () => AssetService(dioClient: sl<DioClient>()),
+  );
+
+  // ─── PKL Nilai Repository (BARU) ───────────────────────
+  sl.registerLazySingleton<PklNilaiRepository>(
+    () => PklNilaiService(dioClient: sl<DioClient>()),
   );
 
   // ─── Providers (Singleton) ─────────────────────────────
   sl.registerLazySingleton<ThemeProvider>(
-        () => ThemeProvider(notifier: sl<ThemeNotifier>()),
+    () => ThemeProvider(notifier: sl<ThemeNotifier>()),
   );
 
   sl.registerLazySingleton<AuthProvider>(
-        () => AuthProvider(
+    () => AuthProvider(
       authRepository: sl<AuthRepository>(),
       secureStorage: sl<SecureStorage>(),
     ),
@@ -72,6 +82,16 @@ Future<void> init() async {
 
   // ─── Providers (Factory — fresh state per screen) ──────
   sl.registerFactory<AbsensiGuruProvider>(
-        () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+    () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
   );
+
+  sl.registerLazySingleton<AnnouncementProvider>(
+    () => AnnouncementProvider(repository: sl<AcademicRepository>()),
+  );
+
+  // ─── PklNilaiProvider didaftarkan sebagai Factory ──────
+  // (fresh state setiap kali screen dibuka)
+  // Provider dibuat langsung di app_router.dart saat route dipanggil,
+  // sehingga tidak perlu registerFactory di sini.
+  // Namun PklNilaiRepository tetap perlu didaftarkan di atas (sudah dilakukan).
 }

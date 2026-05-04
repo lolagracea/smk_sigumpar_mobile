@@ -68,6 +68,8 @@ class MainShell extends StatelessWidget {
         return 'Lokasi PKL';
       case RouteNames.pklProgressReport:
         return 'Progres PKL';
+      case RouteNames.pklGradeInput:
+        return 'Input Nilai PKL';
       case RouteNames.submissionInfo:
         return 'Informasi Pengajuan';
       case RouteNames.itemLoan:

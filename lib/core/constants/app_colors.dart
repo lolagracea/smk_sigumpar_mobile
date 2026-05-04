@@ -4,10 +4,10 @@ class AppColors {
   AppColors._();
 
   // ─── Brand ─────────────────────────────────────────────
-  static const Color primary = Color(0xFF1565C0);       // Deep Blue
+  static const Color primary = Color(0xFF1565C0); // Deep Blue
   static const Color primaryLight = Color(0xFF5E92F3);
   static const Color primaryDark = Color(0xFF003C8F);
-  static const Color secondary = Color(0xFFE65100);     // Deep Orange (aksen)
+  static const Color secondary = Color(0xFFE65100); // Deep Orange (aksen)
   static const Color secondaryLight = Color(0xFFFF833A);
   static const Color secondaryDark = Color(0xFFAC1900);
 
@@ -50,4 +50,10 @@ class AppColors {
   static const Color learning = Color(0xFF6A1B9A);
   static const Color vocational = Color(0xFFE65100);
   static const Color assetService = Color(0xFF00695C);
+
+  // ─── Text & Border Helpers ─────────────────────────────
+  static const Color textPrimary = black;
+  static const Color textSecondary = grey600;
+  static const Color textTertiary = grey500;
+  static const Color border = grey300;
 }
