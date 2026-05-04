@@ -1,101 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-import '../../common/providers/auth_provider.dart';
-import '../../../core/config/scout_menu_config.dart';
+import '../../../core/di/injection_container.dart';
 import '../../../core/utils/role_helper.dart';
-import '../vocational/widgets/pramuka_drawer.dart';
 import '../../../core/constants/route_names.dart';
+import '../../../data/models/announcement_model.dart';
+import '../../../data/repositories/academic_repository.dart';
+import '../../common/providers/auth_provider.dart';
+import '../academic/providers/announcement_provider.dart';
+import '../academic/providers/academic_provider.dart';
 
-/// ─────────────────────────────────────────────────────────────
-/// HomeScreen — Halaman utama setelah login
-///
-/// PERUBAHAN dari versi lama:
-/// - Pakai `user.roles` (List<String>) bukan `user.role` (String)
-/// - Drawer muncul berdasarkan multi-role check
-/// - Scaffold BENAR: AppBar ada → hamburger muncul otomatis
-/// - Tidak ada nested Scaffold
-/// ─────────────────────────────────────────────────────────────
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AnnouncementProvider>().loadAnnouncements(limit: 5);
+    });
+  }
+
+  Future<void> _refreshData() async {
+    await context.read<AnnouncementProvider>().refresh(limit: 5);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeView(onRefresh: _refreshData);
+  }
+}
+
+class _HomeView extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+
+  const _HomeView({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 
-    // ✅ MULTI-ROLE: pakai roles (List) bukan role (String)
-    final userRoles = user?.roles ?? [];
-
-    debugPrint('🔍 HOME - user: ${user?.name}, roles: $userRoles');
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      // ✅ WAJIB: AppBar harus ada agar hamburger (☰) muncul
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1565C0),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.school, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'SMK NEGERI 1 SIGUMPAR',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        // hamburger (leading) otomatis muncul kalau drawer != null
-      ),
-      // ✅ WAJIB: drawer harus di root Scaffold (bukan nested)
-      drawer: _buildDrawer(context, userRoles),
-      body: SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildWelcomeCard(user),
+            _buildWelcomeCard(context, user),
             const SizedBox(height: 16),
-            _buildRoleBadges(userRoles),
-            const SizedBox(height: 16),
-            _buildAnnouncementCard(),
+            _buildAnnouncementSection(context),
           ],
         ),
       ),
     );
   }
 
-  // ── Drawer factory — multi-role check ────────────────────
-  Widget? _buildDrawer(BuildContext context, List<String> userRoles) {
-    // Tampilkan PramukaDrawer jika user punya akses modul pramuka
-    if (ScoutMenuConfig.hasPramukaAccess(userRoles)) {
-      return const PramukaDrawer(currentRoute: RouteNames.home);
-    }
-    // TODO: Tambah drawer untuk role lain di sini saat dikembangkan
-    // if (RoleHelper.hasAccess(userRoles, [AppRoles.principal])) {
-    //   return const PrincipalDrawer(currentRoute: RouteNames.home);
-    // }
-    return null;
-  }
-
-  // ── Welcome Card ─────────────────────────────────────────
-  Widget _buildWelcomeCard(dynamic user) {
+  Widget _buildWelcomeCard(BuildContext context, dynamic user) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -117,9 +90,11 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // ✅ Tampilkan primaryRole sebagai label jabatan utama
           Text(
-            RoleHelper.getRoleLabel(user?.primaryRole),
+            RoleHelper.getRolesLabel(
+              role: user?.role,
+              roles: user?.roles,
+            ),
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade700,
@@ -127,8 +102,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Sistem informasi sekolah untuk mengelola data akademik '
-            'dan administrasi pendidikan dengan mudah dan efisien.',
+            'Sistem informasi sekolah untuk mengelola data akademik dan administrasi pendidikan dengan mudah dan efisien.',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade600,
@@ -140,166 +114,232 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ── Role Badges — tampilkan SEMUA role user ───────────────
-  Widget _buildRoleBadges(List<String> userRoles) {
-    if (userRoles.isEmpty) return const SizedBox.shrink();
+  Widget _buildAnnouncementSection(BuildContext context) {
+    final provider = context.watch<AnnouncementProvider>();
 
-    final bool hasPramuka = ScoutMenuConfig.hasPramukaAccess(userRoles);
-
-    return Column(
-      children: [
-        // Info modul aktif (pramuka)
-        if (hasPramuka)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1565C0),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.local_activity_rounded,
-                    color: Colors.amber, size: 24),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Modul Aktif: PRAMUKA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      'Gunakan menu ☰ untuk navigasi fitur',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-        // Badge semua role (jika lebih dari 1)
-        if (userRoles.length > 1) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Akses Role (${userRoles.length})',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: userRoles
-                      .map(
-                        (r) => Chip(
-                          label: Text(
-                            RoleHelper.getRoleLabel(r),
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                          backgroundColor:
-                              const Color(0xFF1565C0).withValues(alpha: 0.1),
-                          labelStyle:
-                              const TextStyle(color: Color(0xFF1565C0)),
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // ── Announcement Card ────────────────────────────────────
-  Widget _buildAnnouncementCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Pengumuman Terbaru',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Column(
+            child: Row(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.grey.shade400,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Belum ada pengumuman terbaru',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                const Icon(Icons.campaign, color: Color(0xFF2563EB), size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Pengumuman Terbaru',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
+                if (provider.hasData)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${provider.announcements.length} pengumuman',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 16),
+          if (provider.isLoading) _buildLoadingState(),
+          if (provider.hasError) _buildErrorState(provider.errorMessage, context),
+          if (provider.isEmpty) _buildEmptyState(),
+          if (provider.hasData && !provider.isLoading)
+            _buildAnnouncementList(context, provider.announcements),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 32),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildErrorState(String? message, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade400, size: 40),
+          const SizedBox(height: 8),
+          Text(
+            message ?? 'Gagal memuat pengumuman',
+            style: TextStyle(fontSize: 12, color: Colors.red.shade700),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () =>
+                context.read<AnnouncementProvider>().loadAnnouncements(limit: 5),
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.campaign_outlined, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            Text(
+              'Belum ada pengumuman aktif saat ini.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementList(
+    BuildContext context,
+    List<AnnouncementModel> announcements,
+  ) {
+    return Column(
+      children: announcements.take(5).map((announcement) {
+        return _buildAnnouncementItem(context, announcement);
+      }).toList(),
+    );
+  }
+
+  Widget _buildAnnouncementItem(
+    BuildContext context,
+    AnnouncementModel announcement,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 0),
+      child: InkWell(
+        onTap: () => _navigateToDetail(context, announcement),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Colors.grey.shade100),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.campaign_outlined,
+                color: Color(0xFF2563EB),
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      announcement.judul,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      announcement.preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (announcement.createdAt != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatRelativeDate(announcement.createdAt!),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDetail(BuildContext context, AnnouncementModel announcement) {
+    context.go(RouteNames.announcementDetailPath(announcement.id.toString()));
+  }
+
+  String _formatRelativeDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+
+    return DateFormat('dd MMM yyyy', 'id_ID').format(date);
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
     );
   }
 }

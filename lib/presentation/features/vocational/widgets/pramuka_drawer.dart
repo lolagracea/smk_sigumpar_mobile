@@ -11,11 +11,10 @@ import '../../../common/providers/auth_provider.dart';
 /// ─────────────────────────────────────────────────────────────
 /// PramukaDrawer — Sidebar navigation untuk modul PRAMUKA
 ///
-/// PERUBAHAN dari versi lama:
-/// - Gunakan `user.roles` (List<String>) bukan `user.role` (String)
-/// - Filter menu via `ScoutMenuConfig.getMenusForRoles(roles)` (multi-role)
-/// - Header tampilkan primaryRole sebagai label jabatan
-/// - Drawer WAJIB jadi child langsung dari Scaffold (bukan nested)
+/// Disesuaikan dengan UserModel ifs23053:
+/// - Gunakan `user.roles` (List<String>) untuk multi-role
+/// - Gunakan `user.role` (String) sebagai primary role label
+/// - Filter menu via `ScoutMenuConfig.getMenusForRoles(roles)`
 /// ─────────────────────────────────────────────────────────────
 class PramukaDrawer extends StatelessWidget {
   final String currentRoute;
@@ -33,7 +32,7 @@ class PramukaDrawer extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
 
-    // ✅ MULTI-ROLE: gunakan user.roles (List) bukan user.role (String)
+    // Gunakan user.roles (List) dari UserModel ifs23053
     final userRoles = user?.roles ?? [];
     final menus = ScoutMenuConfig.getMenusForRoles(userRoles);
 
@@ -44,7 +43,8 @@ class PramukaDrawer extends StatelessWidget {
           children: [
             _buildHeader(
               name: user?.name ?? 'Pembina Pramuka',
-              primaryRole: user?.primaryRole,
+              // Gunakan user.role (String) sebagai primary role — kompatibel ifs23053
+              primaryRole: user?.role,
               allRoles: userRoles,
             ),
             const Divider(color: Colors.white24, height: 1, thickness: 1),
@@ -153,7 +153,7 @@ class PramukaDrawer extends StatelessWidget {
             ),
           ),
 
-          // ✅ MULTI-ROLE: tampilkan semua role kalau lebih dari 1
+          // Tampilkan semua role kalau lebih dari 1
           if (allRoles.length > 1) ...[
             const SizedBox(height: 6),
             Wrap(

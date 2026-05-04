@@ -3,20 +3,9 @@ import 'package:smk_sigumpar/data/models/user_model.dart';
 import 'package:smk_sigumpar/data/repositories/auth_repository.dart';
 import 'package:smk_sigumpar/core/utils/secure_storage.dart';
 import 'package:smk_sigumpar/core/utils/token_helper.dart';
-import 'package:smk_sigumpar/core/utils/role_helper.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
-/// ─────────────────────────────────────────────────────────────
-/// AuthProvider — state management untuk autentikasi
-///
-/// PERUBAHAN dari versi lama:
-/// - Menyimpan UserModel yang kini punya List<String> roles
-/// - Expose `roles` getter (semua role user)
-/// - Expose `primaryRole` getter
-/// - `hasRole(String)` method untuk RBAC check
-/// - `hasAnyRole(List<String>)` method untuk multi-role check
-/// ─────────────────────────────────────────────────────────────
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
   final SecureStorage _secureStorage;
@@ -40,24 +29,6 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get isLoading => _status == AuthStatus.loading;
 
-  /// Semua role user (multi-role)
-  List<String> get roles => _user?.roles ?? [];
-
-  /// Role utama user
-  String get primaryRole => _user?.primaryRole ?? '';
-
-  /// Cek apakah user punya role tertentu
-  /// Gunakan ini di widget untuk RBAC check
-  ///
-  /// Contoh: `authProvider.hasRole(AppRoles.pramuka)`
-  bool hasRole(String role) => _user?.hasRole(role) ?? false;
-
-  /// Cek apakah user punya salah satu dari daftar role
-  ///
-  /// Contoh: `authProvider.hasAnyRole([AppRoles.pramuka, AppRoles.teacher])`
-  bool hasAnyRole(List<String> checkRoles) =>
-      _user?.hasAnyRole(checkRoles) ?? false;
-
   // ─── Check existing auth ──────────────────────────────────
   Future<void> _checkAuth() async {
     _status = AuthStatus.loading;
@@ -70,8 +41,6 @@ class AuthProvider extends ChangeNotifier {
         if (token != null && !TokenHelper.isExpired(token)) {
           _user = await _authRepository.getProfile();
           _status = AuthStatus.authenticated;
-
-          debugPrint('✅ Auth restored: ${_user?.name}, roles: ${_user?.roles}');
         } else {
           await _secureStorage.clearAll();
           _status = AuthStatus.unauthenticated;
@@ -79,8 +48,7 @@ class AuthProvider extends ChangeNotifier {
       } else {
         _status = AuthStatus.unauthenticated;
       }
-    } catch (e) {
-      debugPrint('❌ _checkAuth error: $e');
+    } catch (_) {
       _status = AuthStatus.unauthenticated;
     }
 
@@ -114,13 +82,7 @@ class AuthProvider extends ChangeNotifier {
         await _secureStorage.saveRefreshToken(refreshToken);
       }
 
-      // ✅ getProfile sekarang return UserModel dengan multi-role
       _user = await _authRepository.getProfile();
-
-      debugPrint('✅ Login success: ${_user?.name}');
-      debugPrint('✅ Roles: ${_user?.roles}');
-      debugPrint('✅ Primary: ${_user?.primaryRole}');
-
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
@@ -134,18 +96,26 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Logout ──────────────────────────────────────────────
   Future<void> logout() async {
+    // 1. Set loading state agar UI bisa show loading indicator
     _status = AuthStatus.loading;
     notifyListeners();
 
     try {
+      // 2. Ambil refresh token dari secure storage
       final refreshToken = await _secureStorage.getRefreshToken();
+
+      // 3. Invalidate session di Keycloak server (best-effort, tidak block)
       await _authRepository.logout(refreshToken);
     } catch (e) {
+      // Ignore — logout tetap dilanjutkan walau server logout gagal
+      // (misal: network error, server down, dll)
       debugPrint('Server logout failed (non-critical): $e');
     }
 
+    // 4. Selalu clear local storage (yang penting user benar-benar logout di app)
     await _secureStorage.clearAll();
 
+    // 5. Reset state
     _user = null;
     _errorMessage = null;
     _status = AuthStatus.unauthenticated;

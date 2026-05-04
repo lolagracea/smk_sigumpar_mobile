@@ -1,32 +1,22 @@
 import 'package:equatable/equatable.dart';
 
-/// ─────────────────────────────────────────────────────────────
-/// UserModel — Model user dengan MULTI-ROLE support
-///
-/// PERUBAHAN dari versi lama:
-/// - `String role` → `List<String> roles` + `String primaryRole`
-/// - `fromJson` membaca array roles dari response backend/JWT
-/// - Backward compatible: `role` getter tetap ada (alias primaryRole)
-///
-/// Format response backend yang diharapkan:
-/// {
-///   "name": "User",
-///   "roles": ["kepala_sekolah", "guru", "pramuka"],
-///   "primary_role": "kepala_sekolah",
-///   "token": "xxx"
-/// }
-/// ─────────────────────────────────────────────────────────────
 class UserModel extends Equatable {
   final String id;
   final String name;
   final String username;
   final String email;
 
-  /// Semua role yang dimiliki user (multi-role)
-  final List<String> roles;
+  /// Role utama user.
+  ///
+  /// Contoh:
+  /// kepala-sekolah
+  final String role;
 
-  /// Role utama / prioritas tertinggi
-  final String primaryRole;
+  /// Semua role user.
+  ///
+  /// Contoh:
+  /// ['kepala-sekolah', 'tata-usaha']
+  final List<String> roles;
 
   final String? photoUrl;
   final String? phone;
@@ -38,79 +28,104 @@ class UserModel extends Equatable {
     required this.name,
     required this.username,
     required this.email,
-    required this.roles,
-    required this.primaryRole,
+    required this.role,
+    this.roles = const [],
     this.photoUrl,
     this.phone,
     this.isActive = true,
     this.createdAt,
   });
 
-  /// Backward compatibility getter — alias untuk primaryRole
-  /// Gunakan ini untuk fitur yang hanya butuh 1 role (label, redirect, dsb)
-  String get role => primaryRole;
-
-  /// Cek apakah user punya role tertentu
-  bool hasRole(String role) => roles.contains(role);
-
-  /// Cek apakah user punya salah satu dari daftar role
-  bool hasAnyRole(List<String> checkRoles) =>
-      checkRoles.any((r) => roles.contains(r));
-
-  // ─── fromJson ─────────────────────────────────────────────
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    // Parse roles — support berbagai format response
-    List<String> parsedRoles = [];
+    final parsedRoles = _parseRoles(json);
 
-    if (json['roles'] is List) {
-      parsedRoles = (json['roles'] as List).map((r) => r.toString()).toList();
-    } else if (json['role'] is String && (json['role'] as String).isNotEmpty) {
-      // Fallback: kalau backend kirim single role string
-      parsedRoles = [json['role'] as String];
-    }
-
-    // Parse primary role
-    String parsedPrimary = json['primary_role']?.toString() ?? '';
-    if (parsedPrimary.isEmpty && parsedRoles.isNotEmpty) {
-      parsedPrimary = parsedRoles.first;
-    }
+    final primaryRole = json['role']?.toString() ??
+        (parsedRoles.isNotEmpty ? parsedRoles.first : '');
 
     return UserModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      username: json['username'] ?? '',
-      email: json['email'] ?? '',
-      roles: parsedRoles,
-      primaryRole: parsedPrimary,
-      photoUrl: json['photo_url'],
-      phone: json['phone'],
-      isActive: json['is_active'] ?? true,
+      id: json['id']?.toString() ?? json['sub']?.toString() ?? '',
+      name: json['name']?.toString() ??
+          json['nama_lengkap']?.toString() ??
+          json['preferred_username']?.toString() ??
+          json['username']?.toString() ??
+          '',
+      username: json['username']?.toString() ??
+          json['preferred_username']?.toString() ??
+          '',
+      email: json['email']?.toString() ?? '',
+      role: primaryRole,
+      roles: parsedRoles.isNotEmpty
+          ? parsedRoles
+          : primaryRole.isNotEmpty
+          ? [primaryRole]
+          : const [],
+      photoUrl: json['photo_url']?.toString(),
+      phone: json['phone']?.toString(),
+      isActive: json['is_active'] is bool ? json['is_active'] as bool : true,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'])
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'username': username,
-        'email': email,
-        'roles': roles,
-        'primary_role': primaryRole,
-        'photo_url': photoUrl,
-        'phone': phone,
-        'is_active': isActive,
-        'created_at': createdAt?.toIso8601String(),
-      };
+  static List<String> _parseRoles(Map<String, dynamic> json) {
+    final result = <String>{};
+
+    final rawRoles = json['roles'];
+
+    if (rawRoles is List) {
+      result.addAll(
+        rawRoles
+            .map((role) => role.toString().trim())
+            .where((role) => role.isNotEmpty),
+      );
+    }
+
+    if (rawRoles is String && rawRoles.trim().isNotEmpty) {
+      result.addAll(
+        rawRoles
+            .split(RegExp(r'[,;|]+'))
+            .map((role) => role.trim())
+            .where((role) => role.isNotEmpty),
+      );
+    }
+
+    final rawRole = json['role'];
+
+    if (rawRole is String && rawRole.trim().isNotEmpty) {
+      result.addAll(
+        rawRole
+            .split(RegExp(r'[,;|]+'))
+            .map((role) => role.trim())
+            .where((role) => role.isNotEmpty),
+      );
+    }
+
+    return result.toList();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'username': username,
+      'email': email,
+      'role': role,
+      'roles': roles,
+      'photo_url': photoUrl,
+      'phone': phone,
+      'is_active': isActive,
+      'created_at': createdAt?.toIso8601String(),
+    };
+  }
 
   UserModel copyWith({
     String? id,
     String? name,
     String? username,
     String? email,
+    String? role,
     List<String>? roles,
-    String? primaryRole,
     String? photoUrl,
     String? phone,
     bool? isActive,
@@ -121,8 +136,8 @@ class UserModel extends Equatable {
       name: name ?? this.name,
       username: username ?? this.username,
       email: email ?? this.email,
+      role: role ?? this.role,
       roles: roles ?? this.roles,
-      primaryRole: primaryRole ?? this.primaryRole,
       photoUrl: photoUrl ?? this.photoUrl,
       phone: phone ?? this.phone,
       isActive: isActive ?? this.isActive,
@@ -132,18 +147,15 @@ class UserModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        username,
-        email,
-        roles,
-        primaryRole,
-        photoUrl,
-        phone,
-        isActive,
-      ];
-
-  @override
-  String toString() =>
-      'UserModel(name: $name, primaryRole: $primaryRole, roles: $roles)';
+    id,
+    name,
+    username,
+    email,
+    role,
+    roles,
+    photoUrl,
+    phone,
+    isActive,
+    createdAt,
+  ];
 }

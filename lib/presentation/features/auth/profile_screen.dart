@@ -17,9 +17,6 @@ class ProfileScreen extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
     final user = auth.user;
 
-    // ✅ FIX: auth.roles (List<String>) — bukan auth.userRoles
-    final userRoles = auth.roles;
-
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.profile)),
       body: user == null
@@ -27,7 +24,7 @@ class ProfileScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // ─── Avatar & name ───────────────────────────
+                // ─── Avatar & name ─────────────────────────
                 Center(
                   child: Column(
                     children: [
@@ -35,9 +32,7 @@ class ProfileScreen extends StatelessWidget {
                         radius: 44,
                         backgroundColor: AppColors.primary,
                         child: Text(
-                          user.name.isNotEmpty
-                              ? user.name[0].toUpperCase()
-                              : '?',
+                          user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                           style: const TextStyle(
                             fontSize: 36,
                             color: Colors.white,
@@ -46,23 +41,17 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        user.name,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                      Text(user.name,
+                          style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 4),
-
-                      // Badge primary role
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          // ✅ pakai primaryRole (alias .role juga bisa)
-                          RoleHelper.getRoleLabel(user.primaryRole),
+                          RoleHelper.getRoleLabel(user.role),
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
@@ -70,63 +59,22 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-
-                      // ✅ Tampilkan semua role kalau user punya lebih dari 1
-                      if (userRoles.length > 1) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: userRoles
-                              .where((r) => r != user.primaryRole)
-                              .map(
-                                (r) => Chip(
-                                  label: Text(
-                                    RoleHelper.getRoleLabel(r),
-                                    style: const TextStyle(fontSize: 11),
-                                  ),
-                                  backgroundColor:
-                                      AppColors.primaryLight.withOpacity(0.08),
-                                  labelStyle: const TextStyle(
-                                      color: AppColors.primary),
-                                  padding: EdgeInsets.zero,
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
-                // ─── Info card ──────────────────────────────
+                // ─── Info card ─────────────────────────────
                 Card(
                   child: Column(
                     children: [
-                      _InfoTile(
-                        icon: Icons.person_outline,
-                        label: 'Username',
-                        value: user.username,
-                      ),
+                      _InfoTile(icon: Icons.person_outline, label: 'Username', value: user.username),
                       const Divider(height: 1, indent: 56),
-                      _InfoTile(
-                        icon: Icons.email_outlined,
-                        label: 'Email',
-                        value: user.email,
-                      ),
+                      _InfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email),
                       if (user.phone != null) ...[
                         const Divider(height: 1, indent: 56),
-                        _InfoTile(
-                          icon: Icons.phone_outlined,
-                          label: 'Telepon',
-                          value: user.phone!,
-                        ),
+                        _InfoTile(icon: Icons.phone_outlined, label: 'Telepon', value: user.phone!),
                       ],
                     ],
                   ),
@@ -134,7 +82,7 @@ class ProfileScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // ─── Settings card ──────────────────────────
+                // ─── Settings card ─────────────────────────
                 Card(
                   child: Column(
                     children: [
@@ -150,7 +98,7 @@ class ProfileScreen extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
-                // ─── Logout ─────────────────────────────────
+                // ─── Logout ────────────────────────────────
                 Card(
                   child: ListTile(
                     leading: const Icon(Icons.logout, color: AppColors.error),
@@ -163,8 +111,7 @@ class ProfileScreen extends StatelessWidget {
                         context: context,
                         builder: (_) => AlertDialog(
                           title: const Text('Konfirmasi Keluar'),
-                          content:
-                              const Text('Apakah Anda yakin ingin keluar?'),
+                          content: const Text('Apakah Anda yakin ingin keluar?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
@@ -172,10 +119,8 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                'Keluar',
-                                style: TextStyle(color: AppColors.error),
-                              ),
+                              child: const Text('Keluar',
+                                  style: TextStyle(color: AppColors.error)),
                             ),
                           ],
                         ),
@@ -198,27 +143,15 @@ class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _InfoTile({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: AppColors.primary),
-      title: Text(
-        label,
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: AppColors.grey500),
-      ),
-      subtitle: Text(
-        value,
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
+      title: Text(label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.grey500)),
+      subtitle: Text(value, style: Theme.of(context).textTheme.bodyMedium),
     );
   }
 }

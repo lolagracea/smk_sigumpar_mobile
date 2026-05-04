@@ -6,6 +6,7 @@ import '../../core/utils/secure_storage.dart';
 import '../../core/utils/token_helper.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
+import 'package:flutter/material.dart';
 
 class AuthService implements AuthRepository {
   final DioClient _dioClient;
@@ -60,59 +61,38 @@ class AuthService implements AuthRepository {
     }
   }
 
-  // ─── GET PROFILE — MULTI-ROLE SUPPORT ────────────────────
+  // ─── GET PROFILE (FIXED ROLE DETECTION) ──────────────────
   @override
   Future<UserModel> getProfile() async {
-    // 1. Ambil userinfo dari Keycloak
     final response = await _dioClient.get(ApiEndpoints.keycloakUserInfoUrl);
     final data = response.data;
 
-    // 2. Extract SEMUA roles dari JWT access token
     final accessToken = await _secureStorage.getAccessToken();
 
-    List<String> allRoles = [];
     String primaryRole = 'user';
+    List<String> roles = [];
 
     if (accessToken != null) {
-      // ✅ Ambil SEMUA roles (bukan hanya primary)
-      allRoles = TokenHelper.getRoles(accessToken);
+      roles = TokenHelper.getRoles(accessToken);
       primaryRole = TokenHelper.getPrimaryRole(accessToken);
 
-      if (kDebugMode) {
-        final payload = TokenHelper.decodePayload(accessToken);
-        debugPrint('🔍 JWT realm_access: ${payload?['realm_access']}');
-        debugPrint('🔍 All roles found: $allRoles');
-        debugPrint('🔍 Primary role selected: $primaryRole');
-      }
-    }
-
-    // Fallback kalau roles kosong
-    if (allRoles.isEmpty && primaryRole != 'user') {
-      allRoles = [primaryRole];
-    } else if (allRoles.isEmpty) {
-      allRoles = ['user'];
-    }
-
-    // Pastikan primaryRole ada di allRoles
-    if (!allRoles.contains(primaryRole)) {
-      allRoles = [primaryRole, ...allRoles];
-    }
-
-    if (kDebugMode) {
-      debugPrint('✅ UserModel roles: $allRoles, primary: $primaryRole');
+      debugPrint('✅ MOBILE PRIMARY ROLE: $primaryRole');
+      debugPrint('✅ MOBILE ALL ROLES: $roles');
     }
 
     return UserModel(
-      id: data['sub'] ?? '',
-      username: data['preferred_username'] ?? '',
-      name: data['name'] ?? data['preferred_username'] ?? '',
-      email: data['email'] ?? '',
-      roles: allRoles,           // ✅ Multi-role
-      primaryRole: primaryRole,  // ✅ Primary role
+      id: data['sub']?.toString() ?? '',
+      username: data['preferred_username']?.toString() ?? '',
+      name: data['name']?.toString() ??
+          data['preferred_username']?.toString() ??
+          '',
+      email: data['email']?.toString() ?? '',
+      role: primaryRole,
+      roles: roles,
     );
   }
 
-  // ─── UPDATE PROFILE ──────────────────────────────────────
+  // ─── UPDATE PROFILE (Backend tidak punya endpoint) ───────
   @override
   Future<void> updateProfile({
     String? name,
@@ -124,7 +104,7 @@ class AuthService implements AuthRepository {
     );
   }
 
-  // ─── CHANGE PASSWORD ─────────────────────────────────────
+  // ─── CHANGE PASSWORD (Backend tidak punya endpoint) ──────
   @override
   Future<void> changePassword({
     required String currentPassword,

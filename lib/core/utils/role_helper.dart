@@ -1,140 +1,259 @@
 import '../constants/route_names.dart';
 
-/// ─────────────────────────────────────────────────────────────
-/// AppRoles — konstanta semua role di sistem SMK Sigumpar
-///
-/// ⚠️ ATURAN: Nilai string HARUS sama persis dengan yang ada
-/// di Keycloak realm & backend web (case-sensitive).
-/// ─────────────────────────────────────────────────────────────
 class AppRoles {
-  AppRoles._();
-
-  static const String principal     = 'kepala-sekolah';
+  static const String admin = 'admin';
+  static const String principal = 'kepala-sekolah';
   static const String vicePrincipal = 'waka-sekolah';
-  static const String teacher       = 'guru-mapel';
-  static const String homeroom      = 'wali-kelas';
-  static const String staff         = 'tata-usaha';
-  static const String vokasi        = 'vokasi';
-
-  /// 🎯 Role utama yang sedang dikembangkan di mobile
-  static const String pramuka       = 'pramuka';
-
-  /// Daftar semua role yang dikenali sistem
-  static const List<String> all = [
-    principal,
-    vicePrincipal,
-    teacher,
-    homeroom,
-    staff,
-    vokasi,
-    pramuka,
-  ];
+  static const String teacher = 'guru-mapel';
+  static const String homeroom = 'wali-kelas';
+  static const String student = 'siswa';
+  static const String staff = 'tata-usaha';
+  static const String pramuka = 'pramuka';
+  static const String vokasi = 'vokasi';
+  static const String treasurer = 'bendahara';
 }
 
-/// ─────────────────────────────────────────────────────────────
-/// RoleHelper — utility untuk RBAC (Role-Based Access Control)
-///
-/// PERUBAHAN dari versi lama:
-/// - Semua method kini support MULTI-ROLE (List<String>)
-/// - `hasRole(String?, List<String>)` → single role check (legacy)
-/// - `hasAccess(List<String>, List<String>)` → MULTI-ROLE check (baru)
-/// - Backward compatible: method lama tetap ada
-/// ─────────────────────────────────────────────────────────────
 class RoleHelper {
   RoleHelper._();
 
-  // ─── MULTI-ROLE ACCESS CHECK (utama, pakai ini) ──────────
-
-  /// Cek apakah user (dengan banyak role) punya akses ke resource.
-  ///
-  /// Returns true kalau ada IRISAN antara [userRoles] dan [allowedRoles].
-  ///
-  /// Contoh:
-  /// ```dart
-  /// // User punya role [pramuka, guru-mapel]
-  /// // Menu hanya untuk [pramuka]
-  /// RoleHelper.hasAccess(['pramuka', 'guru-mapel'], ['pramuka']); // → true
-  ///
-  /// // User punya role [tata-usaha]
-  /// // Menu hanya untuk [pramuka]
-  /// RoleHelper.hasAccess(['tata-usaha'], ['pramuka']); // → false
-  /// ```
-  static bool hasAccess(
-    List<String> userRoles,
-    List<String> allowedRoles,
-  ) {
-    if (userRoles.isEmpty || allowedRoles.isEmpty) return false;
-    return allowedRoles.any((role) => userRoles.contains(role));
-  }
-
-  /// Filter list menu berdasarkan semua role user.
-  ///
-  /// Generik — bekerja dengan object apapun selama ada callback [getRoles].
-  ///
-  /// Contoh:
-  /// ```dart
-  /// final visibleMenus = RoleHelper.filterByRoles(
-  ///   items: allMenus,
-  ///   userRoles: user.roles,
-  ///   getAllowedRoles: (menu) => menu.allowedRoles,
-  /// );
-  /// ```
-  static List<T> filterByRoles<T>({
-    required List<T> items,
-    required List<String> userRoles,
-    required List<String> Function(T item) getAllowedRoles,
+  static bool hasRole({
+    required String targetRole,
+    String? role,
+    List<String>? roles,
   }) {
-    return items
-        .where((item) => hasAccess(userRoles, getAllowedRoles(item)))
-        .toList();
+    final normalizedTarget = _normalizeRole(targetRole);
+
+    if (normalizedTarget.isEmpty) {
+      return false;
+    }
+
+    final normalizedUserRoles = getNormalizedRoles(
+      role: role,
+      roles: roles,
+    );
+
+    return normalizedUserRoles.contains(normalizedTarget);
   }
 
-  // ─── SINGLE-ROLE CHECKS (backward compat / utility) ──────
+  static bool hasAnyRole({
+    required List<String> targetRoles,
+    String? role,
+    List<String>? roles,
+  }) {
+    if (targetRoles.isEmpty) {
+      return false;
+    }
 
-  /// @deprecated Gunakan [hasAccess] untuk multi-role.
-  /// Cek apakah single role ada dalam daftar allowedRoles.
-  static bool hasRole(String? userRole, List<String> allowedRoles) {
-    if (userRole == null) return false;
-    return allowedRoles.contains(userRole);
+    return targetRoles.any(
+          (targetRole) => hasRole(
+        targetRole: targetRole,
+        role: role,
+        roles: roles,
+      ),
+    );
   }
 
-  static bool isPramuka(String? role) => role == AppRoles.pramuka;
+  static List<String> getNormalizedRoles({
+    String? role,
+    List<String>? roles,
+  }) {
+    final result = <String>{};
 
-  static bool isPrincipal(String? role) =>
-      role == AppRoles.principal || role == AppRoles.vicePrincipal;
+    if (role != null && role.trim().isNotEmpty) {
+      result.addAll(_splitRoles(role));
+    }
 
-  static bool isTeacher(String? role) =>
-      role == AppRoles.teacher || role == AppRoles.homeroom;
+    if (roles != null && roles.isNotEmpty) {
+      for (final item in roles) {
+        result.addAll(_splitRoles(item));
+      }
+    }
 
-  static bool isStaff(String? role) => role == AppRoles.staff;
+    return result.where((item) => item.isNotEmpty).toList();
+  }
 
-  // ─── ROUTING ─────────────────────────────────────────────
+  static bool isTataUsaha({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.staff,
+      role: role,
+      roles: roles,
+    );
+  }
 
-  /// Semua role saat ini diarahkan ke HomeScreen setelah login.
-  /// Drawer di HomeScreen yang akan menyesuaikan menu per role.
-  static String getHomeRouteByRole(String? role) {
+  static bool isGuruMapel({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.teacher,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static bool isWaliKelas({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.homeroom,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static bool isKepalaSekolah({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.principal,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static bool isWakaSekolah({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.vicePrincipal,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static bool isPramuka({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.pramuka,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static bool isVokasi({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.vokasi,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static bool isTreasurer({
+    String? role,
+    List<String>? roles,
+  }) {
+    return hasRole(
+      targetRole: AppRoles.treasurer,
+      role: role,
+      roles: roles,
+    );
+  }
+
+  static String getHomeRouteByRole(
+      String? role, {
+        List<String>? roles,
+      }) {
+    final normalizedRoles = getNormalizedRoles(
+      role: role,
+      roles: roles,
+    );
+
+    if (normalizedRoles.isEmpty) {
+      return RouteNames.login;
+    }
+
     return RouteNames.home;
   }
 
-  // ─── LABEL ───────────────────────────────────────────────
-
-  /// Label human-readable untuk ditampilkan di UI
   static String getRoleLabel(String? role) {
-    switch (role) {
-      case AppRoles.principal:     return 'Kepala Sekolah';
-      case AppRoles.vicePrincipal: return 'Waka Sekolah';
-      case AppRoles.teacher:       return 'Guru Mapel';
-      case AppRoles.homeroom:      return 'Wali Kelas';
-      case AppRoles.staff:         return 'Tata Usaha';
-      case AppRoles.pramuka:       return 'Pembina Pramuka';
-      case AppRoles.vokasi:        return 'Kajur Vokasi';
-      default:                     return 'Pengguna';
+    final normalizedRole = _normalizeRole(role ?? '');
+
+    switch (normalizedRole) {
+      case AppRoles.admin:
+        return 'Administrator';
+      case AppRoles.principal:
+        return 'Kepala Sekolah';
+      case AppRoles.vicePrincipal:
+        return 'Waka Sekolah';
+      case AppRoles.teacher:
+        return 'Guru Mapel';
+      case AppRoles.homeroom:
+        return 'Wali Kelas';
+      case AppRoles.student:
+        return 'Siswa';
+      case AppRoles.staff:
+        return 'Tata Usaha';
+      case AppRoles.pramuka:
+        return 'Pembina Pramuka';
+      case AppRoles.vokasi:
+        return 'Kajur Vokasi';
+      case AppRoles.treasurer:
+        return 'Bendahara';
+      default:
+        if (role == null || role.trim().isEmpty) {
+          return 'Pengguna Umum';
+        }
+
+        return _toTitleCase(
+          role.trim().replaceAll('_', ' ').replaceAll('-', ' '),
+        );
     }
   }
 
-  /// Label untuk daftar role (multi-role), dipisah koma
-  static String getRolesLabel(List<String> roles) {
-    if (roles.isEmpty) return 'Pengguna';
-    return roles.map(getRoleLabel).join(', ');
+  static String getRolesLabel({
+    String? role,
+    List<String>? roles,
+  }) {
+    final normalizedRoles = getNormalizedRoles(
+      role: role,
+      roles: roles,
+    );
+
+    if (normalizedRoles.isEmpty) {
+      return 'Pengguna Umum';
+    }
+
+    return normalizedRoles.map(getRoleLabel).join(', ');
+  }
+
+  static List<String> _splitRoles(String value) {
+    return value
+        .split(RegExp(r'[,;|]+'))
+        .map(_normalizeRole)
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  static String _normalizeRole(String value) {
+    return value.trim().toLowerCase().replaceAll('_', '-');
+  }
+
+  static String _toTitleCase(String value) {
+    if (value.trim().isEmpty) {
+      return value;
+    }
+
+    return value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .map((word) {
+      if (word.length == 1) {
+        return word.toUpperCase();
+      }
+
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 }

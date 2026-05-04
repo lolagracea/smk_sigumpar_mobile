@@ -2,6 +2,7 @@ import '../../core/network/dio_client.dart';
 import '../../core/network/api_response.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../repositories/learning_repository.dart';
+import '../models/absensi_guru_model.dart';
 
 class LearningService implements LearningRepository {
   final DioClient _dioClient;
@@ -82,5 +83,73 @@ class LearningService implements LearningRepository {
       data: data,
     );
     return r.data['data'] as Map<String, dynamic>;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // === ABSENSI GURU (NEW METHODS) ===
+  // ════════════════════════════════════════════════════════════════
+
+  @override
+  Future<AbsensiGuruModel> submitAbsensiGuru({
+    required String namaGuru,
+    required DateTime tanggal,
+    required String status,
+    required String fotoBase64,
+    String? keterangan,
+  }) async {
+    // Format tanggal: YYYY-MM-DD
+    final tanggalStr = tanggal.toIso8601String().split('T').first;
+
+    // Get current time untuk jam_masuk: HH:mm:ss
+    final now = DateTime.now();
+    final jamMasuk =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+
+    final response = await _dioClient.post(
+      ApiEndpoints.teacherAttendance,
+      data: {
+        'nama_guru': namaGuru,
+        'mata_pelajaran': '-', // Backend default '-'
+        'jam_masuk': jamMasuk,
+        'tanggal': tanggalStr,
+        'status': status,
+        'foto': fotoBase64,
+        if (keterangan != null && keterangan.isNotEmpty)
+          'keterangan': keterangan,
+      },
+    );
+
+    final data = response.data['data'] ?? response.data;
+    return AbsensiGuruModel.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<AbsensiGuruModel>> getAbsensiGuruList({
+    int page = 1,
+    String? date,
+  }) async {
+    final response = await _dioClient.get(
+      ApiEndpoints.teacherAttendance,
+      queryParameters: {
+        'page': page,
+        if (date != null) 'date': date,
+      },
+    );
+
+    final responseData = response.data;
+
+    // Handle berbagai format response backend
+    List<dynamic> rawList;
+    if (responseData is List) {
+      rawList = responseData;
+    } else if (responseData is Map) {
+      rawList = (responseData['data'] ?? responseData['items'] ?? []) as List;
+    } else {
+      rawList = [];
+    }
+
+    return rawList
+        .map((e) => AbsensiGuruModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
