@@ -24,13 +24,23 @@ class SmkSigumparApp extends StatelessWidget {
           create: (_) => sl<AbsensiGuruProvider>(),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'SMK Negeri 1 Sigumpar',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        // ⚠️ FORCE LIGHT THEME — biar UI consistent dengan mockup
-        themeMode: ThemeMode.light,
-        routerConfig: AppRouter.router,
+      // ⚠️ PERBAIKAN: Gunakan Consumer agar MaterialApp rebuild saat tema berubah
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            title: 'SMK Negeri 1 Sigumpar',
+            debugShowCheckedModeBanner: false,
+
+            // Konfigurasi Tema
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme, // Pastikan ini ada di app_theme.dart Anda
+
+            // ⚠️ PERBAIKAN: Gunakan themeMode dinamis dari Provider
+            themeMode: themeProvider.themeMode,
+
+            routerConfig: AppRouter.router,
+          );
+        },
       ),
     );
   }

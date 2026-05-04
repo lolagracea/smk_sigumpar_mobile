@@ -87,13 +87,22 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ⚠️ CEK TEMA SAAT INI (GELAP ATAU TERANG)
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      // ⚠️ PERBAIKAN: Gunakan warna dari Theme jika mode gelap, jika terang gunakan warna pastel bawaan Anda
+      backgroundColor: isDark
+          ? Theme.of(context).scaffoldBackgroundColor
+          : const Color(0xFFF5F7FA),
       drawer: AppDrawer(
         currentRoute: currentRoute,
       ),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2563EB),
+        // ⚠️ PERBAIKAN: AppBar juga harus dinamis agar tidak selalu biru terang di mode gelap
+        backgroundColor: isDark
+            ? Theme.of(context).appBarTheme.backgroundColor ?? const Color(0xFF1E293B)
+            : const Color(0xFF2563EB),
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 0,
