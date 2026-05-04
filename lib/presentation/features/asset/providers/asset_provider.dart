@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../data/repositories/asset_repository.dart';
+import 'package:smk_sigumpar/data/repositories/asset_repository.dart';
 
 enum AssetLoadState { initial, loading, loaded, error }
 
 class AssetProvider extends ChangeNotifier {
   final AssetRepository _repository;
 
-  AssetProvider({required AssetRepository repository})
-      : _repository = repository;
+  AssetProvider({required AssetRepository repository}) : _repository = repository;
 
   AssetLoadState _state = AssetLoadState.initial;
   List<Map<String, dynamic>> _submissions = [];

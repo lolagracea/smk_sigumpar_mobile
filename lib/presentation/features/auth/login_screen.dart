@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../common/providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -14,9 +15,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
 
   @override
@@ -30,13 +33,20 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
+
     final success = await auth.login(
       _usernameController.text.trim(),
       _passwordController.text,
     );
 
-    if (success && mounted) {
-      context.go(RoleHelper.getHomeRouteByRole(auth.user?.role));
+    if (!mounted) return;
+
+    if (success) {
+      context.go(
+        RoleHelper.getHomeRouteByRole(
+          auth.user?.role,
+        ),
+      );
     }
   }
 
@@ -48,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // ─── Background gradient ────────────────────────
+          // ─── Background Gradient ─────────────────────────
           Container(
             height: size.height * 0.45,
             decoration: const BoxDecoration(
@@ -58,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 colors: [
                   AppColors.primaryDark,
                   AppColors.primary,
-                  AppColors.primaryLight
+                  AppColors.primaryLight,
                 ],
               ),
             ),
@@ -71,29 +81,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const SizedBox(height: 48),
 
-                  // ─── Logo & Title ──────────────────────
-                  const Icon(Icons.school_rounded,
-                      size: 64, color: Colors.white),
+                  // ─── Logo & Title ───────────────────────
+                  const Icon(
+                    Icons.school_rounded,
+                    size: 64,
+                    color: Colors.white,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     AppStrings.appShortName,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Sistem Informasi Sekolah',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white70,
-                        ),
+                      color: Colors.white70,
+                    ),
                   ),
 
                   const SizedBox(height: 40),
 
-                  // ─── Card ─────────────────────────────
+                  // ─── Login Card ─────────────────────────
                   Card(
                     elevation: 8,
                     shadowColor: Colors.black26,
@@ -118,59 +131,71 @@ class _LoginScreenState extends State<LoginScreen> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: AppColors.grey500,
-                                  ),
+                                color: AppColors.grey500,
+                              ),
                             ),
                             const SizedBox(height: 28),
 
-                            // ─── Username field ──────────
+                            // ─── Username Field ───────────
                             TextFormField(
                               controller: _usernameController,
                               keyboardType: TextInputType.text,
                               textInputAction: TextInputAction.next,
+                              enabled: !auth.isLoading,
                               decoration: const InputDecoration(
                                 labelText: AppStrings.username,
-                                prefixIcon: Icon(Icons.person_outline_rounded),
+                                prefixIcon: Icon(
+                                  Icons.person_outline_rounded,
+                                ),
                               ),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
                                   return 'Username tidak boleh kosong';
                                 }
+
                                 return null;
                               },
                             ),
                             const SizedBox(height: 16),
 
-                            // ─── Password field ──────────
+                            // ─── Password Field ───────────
                             TextFormField(
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               textInputAction: TextInputAction.done,
+                              enabled: !auth.isLoading,
                               onFieldSubmitted: (_) => _handleLogin(),
                               decoration: InputDecoration(
                                 labelText: AppStrings.password,
-                                prefixIcon:
-                                    const Icon(Icons.lock_outline_rounded),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline_rounded,
+                                ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
                                   ),
-                                  onPressed: () => setState(
-                                    () => _obscurePassword = !_obscurePassword,
-                                  ),
+                                  onPressed: auth.isLoading
+                                      ? null
+                                      : () {
+                                    setState(() {
+                                      _obscurePassword =
+                                      !_obscurePassword;
+                                    });
+                                  },
                                 ),
                               ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) {
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
                                   return 'Password tidak boleh kosong';
                                 }
+
                                 return null;
                               },
                             ),
 
-                            // ─── Error message ───────────
+                            // ─── Error Message ────────────
                             if (auth.errorMessage != null) ...[
                               const SizedBox(height: 12),
                               Container(
@@ -184,8 +209,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.error_outline,
-                                        color: AppColors.error, size: 18),
+                                    const Icon(
+                                      Icons.error_outline,
+                                      color: AppColors.error,
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -203,19 +231,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             const SizedBox(height: 28),
 
-                            // ─── Login button ────────────
-                            ElevatedButton(
-                              onPressed: auth.isLoading ? null : _handleLogin,
-                              child: auth.isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(AppStrings.login),
+                            // ─── Login Button ─────────────
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed:
+                                auth.isLoading ? null : _handleLogin,
+                                child: auth.isLoading
+                                    ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                    : const Text(AppStrings.login),
+                              ),
                             ),
                           ],
                         ),
@@ -227,8 +259,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     '© ${DateTime.now().year} SMK Negeri 1 Sigumpar',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.grey500,
-                        ),
+                      color: AppColors.grey500,
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],

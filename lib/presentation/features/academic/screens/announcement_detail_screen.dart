@@ -1,23 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/academic_provider.dart';
-import '../../../../data/repositories/academic_repository.dart';
-import '../../../../core/constants/app_colors.dart';
+
 import '../../../../core/di/injection_container.dart';
-import '../../../common/widgets/loading_widget.dart';
+import '../../../../data/repositories/academic_repository.dart';
 import '../../../common/widgets/error_widget.dart';
+import '../../../common/widgets/loading_widget.dart';
+import '../providers/academic_provider.dart';
 
 class AnnouncementDetailScreen extends StatelessWidget {
   final String announcementId;
 
-  const AnnouncementDetailScreen({super.key, required this.announcementId});
+  const AnnouncementDetailScreen({
+    super.key,
+    required this.announcementId,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AcademicProvider(repository: sl<AcademicRepository>())
-        ..fetchAnnouncements(),
-      child: _AnnouncementDetailView(announcementId: announcementId),
+      create: (_) => AcademicProvider(
+        repository: sl<AcademicRepository>(),
+      )..fetchAnnouncements(refresh: true),
+      child: _AnnouncementDetailView(
+        announcementId: announcementId,
+      ),
     );
   }
 }
@@ -25,70 +31,151 @@ class AnnouncementDetailScreen extends StatelessWidget {
 class _AnnouncementDetailView extends StatelessWidget {
   final String announcementId;
 
-  const _AnnouncementDetailView({required this.announcementId});
+  const _AnnouncementDetailView({
+    required this.announcementId,
+  });
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Pengumuman'),
-      ),
-      body: switch (provider.announcementState) {
-        AcademicLoadState.initial ||
-        AcademicLoadState.loading =>
-          const LoadingWidget(),
-        AcademicLoadState.error => AppErrorWidget(
-            message: 'Gagal memuat pengumuman',
-            onRetry: () => context
-                .read<AcademicProvider>()
-                .fetchAnnouncements(refresh: true),
-          ),
-        AcademicLoadState.loaded => _buildDetail(context, provider),
-      },
-    );
-  }
-
-  Widget _buildDetail(BuildContext context, AcademicProvider provider) {
-    final announcement = provider.announcements
-        .where((a) => a['id']?.toString() == announcementId)
-        .firstOrNull;
-
-    if (announcement == null) {
-      return const Center(child: Text('Pengumuman tidak ditemukan'));
+    if ((provider.announcementState == AcademicLoadState.initial ||
+        provider.announcementState == AcademicLoadState.loading) &&
+        provider.announcements.isEmpty) {
+      return const LoadingWidget();
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            announcement['judul'] ?? announcement['title'] ?? 'Tanpa Judul',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+    if (provider.announcementState == AcademicLoadState.error &&
+        provider.announcements.isEmpty) {
+      return AppErrorWidget(
+        message: provider.announcementError,
+        onRetry: () {
+          context.read<AcademicProvider>().fetchAnnouncements(
+            refresh: true,
+          );
+        },
+      );
+    }
+
+    final item = _findAnnouncement(provider.announcements);
+
+    if (item == null) {
+      return RefreshIndicator(
+        onRefresh: () {
+          return context.read<AcademicProvider>().fetchAnnouncements(
+            refresh: true,
+          );
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          children: const [
+            SizedBox(height: 120),
+            Icon(
+              Icons.campaign_outlined,
+              size: 64,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 16),
+            Center(
+              child: Text(
+                'Pengumuman tidak ditemukan.',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formatDate(announcement['created_at']),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.grey500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final judul = item['judul']?.toString() ?? 'Pengumuman';
+    final isi = item['isi']?.toString() ?? '-';
+    final createdAt = item['created_at']?.toString() ??
+        item['tanggal']?.toString() ??
+        item['updated_at']?.toString();
+
+    return RefreshIndicator(
+      onRefresh: () {
+        return context.read<AcademicProvider>().fetchAnnouncements(
+          refresh: true,
+        );
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Card(
+          elevation: 1,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.campaign_outlined,
+                  size: 36,
+                  color: Color(0xFF2563EB),
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  judul,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (createdAt != null && createdAt.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          createdAt,
+                          style:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 18),
+                Divider(color: Colors.grey.shade200),
+                const SizedBox(height: 18),
+                Text(
+                  isi,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.6,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 32),
-          Text(
-            announcement['isi'] ?? announcement['content'] ?? '',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  String _formatDate(dynamic date) {
-    if (date == null) return '';
-    return date.toString();
+  Map<String, dynamic>? _findAnnouncement(
+      List<Map<String, dynamic>> announcements,
+      ) {
+    for (final item in announcements) {
+      final id = item['id']?.toString();
+
+      if (id == announcementId) {
+        return item;
+      }
+    }
+
+    return null;
   }
 }

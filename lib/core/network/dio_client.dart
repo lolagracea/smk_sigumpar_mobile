@@ -131,6 +131,7 @@ class DioClient {
 }
 
 // ─── Auth Interceptor ──────────────────────────────────
+// ─── Auth Interceptor ──────────────────────────────────
 class _AuthInterceptor extends Interceptor {
   final SecureStorage _secureStorage;
 

@@ -1,89 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../common/providers/auth_provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
-import '../../../core/constants/route_names.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/di/injection_container.dart';
 import '../../../core/utils/role_helper.dart';
+import '../../../data/repositories/academic_repository.dart';
+import '../../common/providers/auth_provider.dart';
+import '../academic/providers/academic_provider.dart';
+import '../../../core/constants/route_names.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final user = auth.user;
+    return ChangeNotifierProvider(
+      create: (_) => AcademicProvider(
+        repository: sl<AcademicRepository>(),
+      )..fetchAnnouncements(refresh: true),
+      child: const _HomeView(),
+    );
+  }
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.appShortName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline_rounded),
-            onPressed: () => context.push(RouteNames.profile),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+class _HomeView extends StatelessWidget {
+  const _HomeView();
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final academicProvider = context.watch<AcademicProvider>();
+
+    return RefreshIndicator(
+      onRefresh: () {
+        return context.read<AcademicProvider>().fetchAnnouncements(
+          refresh: true,
+        );
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ─── Greeting card ───────────────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Selamat Datang,',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user?.name ?? '-',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    RoleHelper.getRoleLabel(user?.role),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.white60),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Text('Menu Utama', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-
-            // ─── Feature grid ────────────────────────────
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.2,
-              children: _buildMenuItems(context, user?.role),
+            _buildWelcomeCard(context, user),
+            const SizedBox(height: 16),
+            _buildAnnouncementCard(
+              context,
+              academicProvider,
             ),
           ],
         ),
@@ -91,152 +56,232 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildMenuItems(BuildContext context, String? role) {
-    final allMenus = <_MenuItem>[
-      _MenuItem(
-        title: AppStrings.academic,
-        icon: Icons.school_outlined,
-        color: AppColors.academic,
-        route: RouteNames.classes,
-        allowedRoles: [
-          AppRoles.admin,
-          AppRoles.principal,
-          AppRoles.vicePrincipal,
-          AppRoles.staff,
-          AppRoles.teacher,
-          AppRoles.homeroom
+  Widget _buildWelcomeCard(BuildContext context, dynamic user) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Selamat Datang',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            user?.name ?? 'Loading...',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            RoleHelper.getRolesLabel(
+              role: user?.role,
+              roles: user?.roles,
+            ),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Sistem informasi sekolah untuk mengelola data akademik dan administrasi pendidikan dengan mudah dan efisien.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
-      _MenuItem(
-        title: AppStrings.student,
-        icon: Icons.people_outline_rounded,
-        color: AppColors.studentService,
-        route: RouteNames.attendanceRecap,
-        allowedRoles: [
-          AppRoles.admin,
-          AppRoles.principal,
-          AppRoles.homeroom,
-          AppRoles.student
-        ],
-      ),
-      _MenuItem(
-        title: AppStrings.learning,
-        icon: Icons.menu_book_outlined,
-        color: AppColors.learning,
-        route: RouteNames.teacherAttendance,
-        allowedRoles: [
-          AppRoles.admin,
-          AppRoles.principal,
-          AppRoles.vicePrincipal,
-          AppRoles.teacher,
-          AppRoles.homeroom
-        ],
-      ),
-      _MenuItem(
-        title: AppStrings.vocational,
-        icon: Icons.engineering_outlined,
-        color: AppColors.vocational,
-        route: RouteNames.scoutClasses,
-        allowedRoles: [
-          AppRoles.admin,
-          AppRoles.principal,
-          AppRoles.teacher,
-          AppRoles.student
-        ],
-      ),
-      _MenuItem(
-        title: AppStrings.asset,
-        icon: Icons.inventory_2_outlined,
-        color: AppColors.assetService,
-        route: RouteNames.submissionInfo,
-        allowedRoles: [
-          AppRoles.admin,
-          AppRoles.principal,
-          AppRoles.staff,
-          AppRoles.treasurer
-        ],
-      ),
-      _MenuItem(
-        title: AppStrings.profile,
-        icon: Icons.person_outline_rounded,
-        color: AppColors.grey600,
-        route: RouteNames.profile,
-        allowedRoles: [
-          AppRoles.admin,
-          AppRoles.principal,
-          AppRoles.vicePrincipal,
-          AppRoles.teacher,
-          AppRoles.homeroom,
-          AppRoles.student,
-          AppRoles.staff,
-          AppRoles.treasurer
-        ],
-      ),
-    ];
-
-    return allMenus
-        .where((m) =>
-            RoleHelper.hasAnyRole(targetRoles: m.allowedRoles, role: role))
-        .map((m) => _MenuCard(item: m))
-        .toList();
+    );
   }
-}
 
-class _MenuItem {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final String route;
-  final List<String> allowedRoles;
+  Widget _buildAnnouncementCard(
+      BuildContext context,
+      AcademicProvider provider,
+      ) {
+    final announcements = provider.announcements;
 
-  _MenuItem({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.route,
-    required this.allowedRoles,
-  });
-}
-
-class _MenuCard extends StatelessWidget {
-  final _MenuItem item;
-  const _MenuCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(item.route),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: item.color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: item.color.withOpacity(0.2)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: item.color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(14),
+    return Container(
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
               ),
-              child: Icon(item.icon, color: item.color, size: 28),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200),
+              ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              item.title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: item.color,
-                    fontWeight: FontWeight.w600,
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Pengumuman Terbaru',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
+                ),
+                if (announcements.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${announcements.length} pengumuman',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (provider.announcementState == AcademicLoadState.loading &&
+              announcements.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (announcements.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 36),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.campaign_outlined,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Belum ada pengumuman aktif saat ini.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Column(
+              children: announcements.take(5).map((item) {
+                final judul = item['judul']?.toString() ?? '-';
+                final isi = item['isi']?.toString() ?? '-';
+
+                return InkWell(
+                  onTap: () {
+                    final id = item['id']?.toString();
+
+                    if (id == null || id.isEmpty) {
+                      return;
+                    }
+
+                    context.go(RouteNames.announcementDetailPath(id));
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade100),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.campaign_outlined,
+                          color: Color(0xFF2563EB),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                judul,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isi,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.grey.shade400,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
       ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ],
     );
   }
 }

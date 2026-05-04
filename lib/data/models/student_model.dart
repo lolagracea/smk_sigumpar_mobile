@@ -2,61 +2,45 @@ import 'package:equatable/equatable.dart';
 
 class StudentModel extends Equatable {
   final String id;
-  final String nis;
-  final String name;
-  final String classId;
-  final String className;
-  final String gender;
-  final String? photoUrl;
-  final String? address;
-  final String? parentName;
-  final String? parentPhone;
-  final bool isActive;
+  final String nisn;
+  final String namaLengkap;
+  final String kelasId;
+  final String namaKelas;
 
   const StudentModel({
     required this.id,
-    required this.nis,
-    required this.name,
-    required this.classId,
-    required this.className,
-    required this.gender,
-    this.photoUrl,
-    this.address,
-    this.parentName,
-    this.parentPhone,
-    this.isActive = true,
+    required this.nisn,
+    required this.namaLengkap,
+    required this.kelasId,
+    required this.namaKelas,
   });
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
     return StudentModel(
       id: json['id']?.toString() ?? '',
-      nis: json['nis'] ?? '',
-      name: json['name'] ?? '',
-      classId: json['class_id']?.toString() ?? '',
-      className: json['class_name'] ?? json['class']?['name'] ?? '',
-      gender: json['gender'] ?? '',
-      photoUrl: json['photo_url'],
-      address: json['address'],
-      parentName: json['parent_name'],
-      parentPhone: json['parent_phone'],
-      isActive: json['is_active'] ?? true,
+      nisn: json['nisn']?.toString() ?? '',
+      namaLengkap: json['nama_lengkap']?.toString() ?? '',
+      kelasId: json['kelas_id']?.toString() ?? '',
+      namaKelas: json['nama_kelas']?.toString() ?? 'Belum Ada Kelas',
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'nis': nis,
-        'name': name,
-        'class_id': classId,
-        'class_name': className,
-        'gender': gender,
-        'photo_url': photoUrl,
-        'address': address,
-        'parent_name': parentName,
-        'parent_phone': parentPhone,
-        'is_active': isActive,
-      };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nisn': nisn,
+      'nama_lengkap': namaLengkap,
+      'kelas_id': kelasId,
+      'nama_kelas': namaKelas,
+    };
+  }
 
   @override
-  List<Object?> get props => [id, nis, name, classId, className, gender, isActive];
+  List<Object?> get props => [
+    id,
+    nisn,
+    namaLengkap,
+    kelasId,
+    namaKelas,
+  ];
 }
