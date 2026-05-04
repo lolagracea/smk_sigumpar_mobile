@@ -43,7 +43,7 @@ import '../../presentation/features/asset/screens/equipment_submission_screen.da
 import '../../presentation/features/asset/screens/loan_response_screen.dart';
 import '../../presentation/features/asset/screens/treasurer_response_screen.dart';
 import '../../presentation/features/asset/screens/principal_response_screen.dart';
-
+import '../../presentation/features/academic/screens/announcement_detail_screen.dart';
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -84,6 +84,34 @@ class AppRouter {
             builder: (_, __) => const ProfileScreen(),
           ),
 
+      // ─── Academic ────────────────────────────────────────
+      GoRoute(path: RouteNames.classes, builder: (_, __) => const ClassesScreen()),
+      GoRoute(path: RouteNames.students, builder: (_, __) => const StudentsScreen()),
+      GoRoute(path: RouteNames.teachers, builder: (_, __) => const TeachersScreen()),
+      GoRoute(path: RouteNames.announcements, builder: (_, __) => const AnnouncementsScreen()),
+      GoRoute(path: RouteNames.schedules, builder: (_, __) => const SchedulesScreen()),
+      GoRoute(path: RouteNames.letters, builder: (_, __) => const LettersScreen()),
+      GoRoute(
+        path: RouteNames.announcementDetail,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
+          return AnnouncementDetailScreen(announcementId: id);
+        },
+      ),
+
+      // ─── Student ─────────────────────────────────────────
+      GoRoute(path: RouteNames.cleanlinessRecap, builder: (_, __) => const CleanlinessRecapScreen()),
+      GoRoute(path: RouteNames.parentingNotes, builder: (_, __) => const ParentingNotesScreen()),
+      GoRoute(path: RouteNames.homeroomReflection, builder: (_, __) => const HomeroomReflectionScreen()),
+      GoRoute(path: RouteNames.summonsLetter, builder: (_, __) => const SummonsLetterScreen()),
+      GoRoute(path: RouteNames.attendanceRecap, builder: (_, __) => const AttendanceRecapScreen()),
+      GoRoute(path: RouteNames.gradesRecap, builder: (_, __) => const GradesRecapScreen()),
+
+      // ─── Learning ────────────────────────────────────────
+      // ⭐ ABSENSI GURU — pakai screen baru kita
+      GoRoute(
+        path: RouteNames.teacherAttendance,
+        builder: (_, __) => const AbsensiGuruScreen(),
           // ─── Home ────────────────────────────────────────
           GoRoute(
             path: RouteNames.home,

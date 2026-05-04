@@ -6,6 +6,8 @@ import 'core/theme/app_theme.dart';
 import 'presentation/common/providers/auth_provider.dart';
 import 'presentation/common/providers/theme_provider.dart';
 import 'presentation/features/learning/providers/absensi_guru_provider.dart';
+import 'presentation/features/academic/providers/announcement_provider.dart';
+
 
 class SmkSigumparApp extends StatelessWidget {
   const SmkSigumparApp({super.key});
@@ -14,6 +16,10 @@ class SmkSigumparApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+
+        ChangeNotifierProvider<AnnouncementProvider>(
+          create: (_) => sl<AnnouncementProvider>(),
+        ),
         ChangeNotifierProvider<ThemeProvider>(
           create: (_) => sl<ThemeProvider>(),
         ),

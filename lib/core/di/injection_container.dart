@@ -17,6 +17,9 @@ import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
 import '../../presentation/features/learning/providers/absensi_guru_provider.dart'; // ← BARU
+import '../../data/repositories/announcement_repository.dart';
+import '../../data/services/announcement_service.dart';
+import '../../presentation/features/academic/providers/announcement_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -36,6 +39,10 @@ Future<void> init() async {
       dioClient: sl<DioClient>(),
       secureStorage: sl<SecureStorage>(),
     ),
+  );
+
+  sl.registerLazySingleton<AnnouncementRepository>(
+        () => AnnouncementService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<AcademicRepository>(
@@ -73,5 +80,9 @@ Future<void> init() async {
   // ─── Providers (Factory — fresh state per screen) ──────
   sl.registerFactory<AbsensiGuruProvider>(
         () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  );
+
+  sl.registerLazySingleton<AnnouncementProvider>(
+        () => AnnouncementProvider(repository: sl<AnnouncementRepository>()),
   );
 }
