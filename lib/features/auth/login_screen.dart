@@ -7,6 +7,12 @@ import '../../providers/auth_provider.dart';
 import '../../shared/shell_scaffold.dart';
 import '../../shared/widgets/app_snackbar.dart';
 
+void showAppSnackBar(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
