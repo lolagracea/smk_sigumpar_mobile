@@ -13,13 +13,13 @@ import '../../presentation/features/academic/screens/announcements_screen.dart';
 import '../../presentation/features/academic/screens/announcement_detail_screen.dart';
 import '../../presentation/features/academic/screens/schedules_screen.dart';
 import '../../presentation/features/academic/screens/letters_screen.dart';
-import '../../presentation/features/academic/screens/subjects_screen.dart';
 import '../../presentation/features/student/screens/attendance_recap_screen.dart';
 import '../../presentation/features/student/screens/grades_recap_screen.dart';
 import '../../presentation/features/student/screens/cleanliness_recap_screen.dart';
 import '../../presentation/features/student/screens/parenting_notes_screen.dart';
 import '../../presentation/features/student/screens/homeroom_reflection_screen.dart';
 import '../../presentation/features/student/screens/summons_letter_screen.dart';
+import '../../presentation/features/academic/screens/subjects_screen.dart';
 
 // ─── LEARNING SCREENS ─────────────────────────────────────
 import '../../presentation/features/learning/screens/absensi_guru_screen.dart';
@@ -31,7 +31,7 @@ import '../../presentation/features/learning/screens/vice_principal_review_scree
 
 import '../../presentation/common/layout/main_shell.dart';
 
-// ─── VOCATIONAL & ASSET ───────────────────────────────────
+// ─── VOCATIONAL & ASSET (tidak berubah) ───────────────────
 import '../../presentation/features/vocational/screens/scout_classes_screen.dart';
 import '../../presentation/features/vocational/screens/scout_attendance_screen.dart';
 import '../../presentation/features/vocational/screens/scout_report_screen.dart';
@@ -61,12 +61,15 @@ class AppRouter {
     },
     routes: [
       // ─── Auth tanpa Shell ────────────────────────────────
+      // Login tidak perlu sidebar, appbar global, dan user icon.
       GoRoute(
         path: RouteNames.login,
         builder: (_, __) => const LoginScreen(),
       ),
 
       // ─── Main App Shell ──────────────────────────────────
+      // Semua halaman setelah login masuk ke sini supaya sidebar
+      // dan user icon menjadi global seperti website.
       ShellRoute(
         builder: (context, state, child) {
           return MainShell(
@@ -75,7 +78,7 @@ class AppRouter {
           );
         },
         routes: [
-          // ─── Profile ─────────────────────────────────────
+          // ─── Auth setelah login ──────────────────────────
           GoRoute(
             path: RouteNames.profile,
             builder: (_, __) => const ProfileScreen(),
@@ -100,21 +103,29 @@ class AppRouter {
             path: RouteNames.teachers,
             builder: (_, __) => const TeachersScreen(),
           ),
-          GoRoute(
-            path: RouteNames.subjects,
-            builder: (_, __) => const SubjectsScreen(),
-          ),
+
+          // Halaman daftar/manajemen Pengumuman.
+          // Route mobile tetap memakai RouteNames.announcements agar tidak
+          // merusak drawer dan screen lama.
           GoRoute(
             path: RouteNames.announcements,
             builder: (_, __) => const AnnouncementsScreen(),
           ),
+
+          // Halaman detail Pengumuman full screen.
+          // Path-nya memakai /academic/pengumuman/:id agar dekat dengan
+          // istilah web dan backend academic-service.
           GoRoute(
             path: RouteNames.announcementDetail,
-            builder: (context, state) {
+            builder: (_, state) {
               final id = state.pathParameters['id'] ?? '';
-              return AnnouncementDetailScreen(announcementId: id);
+
+              return AnnouncementDetailScreen(
+                announcementId: id,
+              );
             },
           ),
+
           GoRoute(
             path: RouteNames.schedules,
             builder: (_, __) => const SchedulesScreen(),
@@ -202,6 +213,10 @@ class AppRouter {
           GoRoute(
             path: RouteNames.submissionInfo,
             builder: (_, __) => const SubmissionInfoScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.subjects,
+            builder: (_, __) => const SubjectsScreen(),
           ),
           GoRoute(
             path: RouteNames.itemLoan,

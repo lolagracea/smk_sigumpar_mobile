@@ -6,7 +6,8 @@ abstract class AuthRepository {
     required String password,
   });
 
-  Future<void> logout();
+// Di auth_repository.dart, ubah signature jadi:
+  Future<void> logout(String? refreshToken);
 
   Future<UserModel> getProfile();
 

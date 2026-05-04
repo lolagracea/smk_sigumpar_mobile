@@ -45,8 +45,6 @@ class ApiEndpoints {
   // ═══════════════════════════════════════════════════════════════
   // === AUTH SERVICE ===
   // ═══════════════════════════════════════════════════════════════
-  static const String login = '/api/auth/login';
-  static const String refreshToken = '/api/auth/refresh';
   static const String authVerify = '/api/auth/verify';
   static const String authUsers = '/api/auth/';
   static const String authUsersSearch = '/api/auth/users/search';
@@ -94,19 +92,14 @@ class ApiEndpoints {
   // === STUDENT SERVICE (SINGULAR /student/, BUKAN /students/) ===
   // ═══════════════════════════════════════════════════════════════
   static const String cleanliness = '/api/student/kebersihan';
-  static const String cleanlinessRecap = '/api/student/rekap-kebersihan';
   static const String studentGrades = '/api/student/nilai';
-  static const String gradesRecap = '/api/student/rekap-nilai';
   static const String studentGradesAssignments =
       '/api/student/nilai/assignments';
   static const String studentGradesSiswa = '/api/student/nilai/siswa';
   static const String studentRekapNilai = '/api/student/rekap-nilai';
   static const String parenting = '/api/student/parenting';
-  static const String parentingNotes = '/api/student/catatan-parenting';
   static const String reflection = '/api/student/refleksi';
-  static const String homeroomReflection = '/api/student/refleksi-wali';
   static const String summons = '/api/student/surat-panggilan';
-  static const String summonsLetter = '/api/student/surat-panggilan';
   static const String attendanceRecap = '/api/student/rekap-kehadiran';
   static const String absensiMapel = '/api/student/absensi-mapel';
   static const String absensiMapelJadwal = '/api/student/absensi-mapel/jadwal';
@@ -120,17 +113,15 @@ class ApiEndpoints {
   static const String teacherAttendance = '/api/learning/absensi-guru';
   static const String teachingNotes = '/api/learning/catatan-mengajar';
   static const String teacherEvaluation = '/api/learning/evaluasi-guru';
-  static const String learningDevice = '/api/learning/perangkat';
-  static const String principalReview = '/api/learning/review-kepsek';
-  static const String vicePrincipalReview = '/api/learning/review-wakasek';
+  static const String learningDevices = '/api/learning/perangkat';
   // Helper untuk endpoint dinamis dengan ID
   static String learningDeviceDownload(int id) =>
-      '$learningDevice/$id/download';
-  static String learningDeviceView(int id) => '$learningDevice/$id/view';
+      '$learningDevices/$id/download';
+  static String learningDeviceView(int id) => '$learningDevices/$id/view';
   static String learningDeviceReviewKepsek(int id) =>
-      '$learningDevice/$id/review-kepsek';
+      '$learningDevices/$id/review-kepsek';
   static String learningDeviceReviewWakasek(int id) =>
-      '$learningDevice/$id/review-wakasek';
+      '$learningDevices/$id/review-wakasek';
 
   // ═══════════════════════════════════════════════════════════════
   // === VOCATIONAL SERVICE ===
@@ -168,7 +159,10 @@ class ApiEndpoints {
       '$attendanceClass/$classId';
 
   /// Get subjects by guru ID
-  static String getSubjectsByGuruId(String guruId) => '$subjectsByGuru/$guruId';
+  static String getSubjectsByGuruId(String guruId) =>
+      '$subjectsByGuru/$guruId';
+
+
 
   // ═══════════════════════════════════════════════════════════════
   // === ENDPOINT TAMBAHAN (untuk auth_service.dart) ===

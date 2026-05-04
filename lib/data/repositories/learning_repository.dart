@@ -1,4 +1,5 @@
 import '../../core/network/api_response.dart';
+import '../models/absensi_guru_model.dart';
 
 abstract class LearningRepository {
   // Teacher Attendance
@@ -19,7 +20,25 @@ abstract class LearningRepository {
 
   // Reviews
   Future<PaginatedResponse<Map<String, dynamic>>> getPrincipalReviews({int page = 1});
-  Future<Map<String, dynamic>> submitPrincipalReview(Map<String, dynamic> data);
   Future<PaginatedResponse<Map<String, dynamic>>> getVicePrincipalReviews({int page = 1});
-  Future<Map<String, dynamic>> submitVicePrincipalReview(Map<String, dynamic> data);
+  Future<Map<String, dynamic>> submitPrincipalReview(int id, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> submitVicePrincipalReview(int id, Map<String, dynamic> data);
+
+
+  /// Photo wajib (base64 encoded)
+  Future<AbsensiGuruModel> submitAbsensiGuru({
+    required String namaGuru,
+    required DateTime tanggal,
+    required String status,
+    required String fotoBase64,
+    String? keterangan,
+  });
+
+  /// Get list absensi guru untuk history
+  ///
+  /// Backend endpoint: GET /api/learning/absensi-guru
+  Future<List<AbsensiGuruModel>> getAbsensiGuruList({
+    int page = 1,
+    String? date,
+  });
 }

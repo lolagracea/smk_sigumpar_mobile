@@ -16,8 +16,7 @@ import '../../data/services/vocational_service.dart';
 import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
-import '../../presentation/features/learning/providers/absensi_guru_provider.dart';
-import '../../presentation/features/academic/providers/announcement_provider.dart';
+import '../../presentation/features/learning/providers/absensi_guru_provider.dart'; // ← BARU
 
 final sl = GetIt.instance;
 
@@ -26,46 +25,46 @@ Future<void> init() async {
   sl.registerLazySingleton<SecureStorage>(() => SecureStorage());
 
   sl.registerLazySingleton<DioClient>(
-    () => DioClient(secureStorage: sl<SecureStorage>()),
+        () => DioClient(secureStorage: sl<SecureStorage>()),
   );
 
   sl.registerLazySingleton<ThemeNotifier>(() => ThemeNotifier());
 
   // ─── Repositories ──────────────────────────────────────
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthService(
+        () => AuthService(
       dioClient: sl<DioClient>(),
       secureStorage: sl<SecureStorage>(),
     ),
   );
 
   sl.registerLazySingleton<AcademicRepository>(
-    () => AcademicService(dioClient: sl<DioClient>()),
+        () => AcademicService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<StudentRepository>(
-    () => StudentService(dioClient: sl<DioClient>()),
+        () => StudentService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<LearningRepository>(
-    () => LearningService(dioClient: sl<DioClient>()),
+        () => LearningService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<VocationalRepository>(
-    () => VocationalService(dioClient: sl<DioClient>()),
+        () => VocationalService(dioClient: sl<DioClient>()),
   );
 
   sl.registerLazySingleton<AssetRepository>(
-    () => AssetService(dioClient: sl<DioClient>()),
+        () => AssetService(dioClient: sl<DioClient>()),
   );
 
   // ─── Providers (Singleton) ─────────────────────────────
   sl.registerLazySingleton<ThemeProvider>(
-    () => ThemeProvider(notifier: sl<ThemeNotifier>()),
+        () => ThemeProvider(notifier: sl<ThemeNotifier>()),
   );
 
   sl.registerLazySingleton<AuthProvider>(
-    () => AuthProvider(
+        () => AuthProvider(
       authRepository: sl<AuthRepository>(),
       secureStorage: sl<SecureStorage>(),
     ),
@@ -73,10 +72,6 @@ Future<void> init() async {
 
   // ─── Providers (Factory — fresh state per screen) ──────
   sl.registerFactory<AbsensiGuruProvider>(
-    () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
-  );
-
-  sl.registerLazySingleton<AnnouncementProvider>(
-    () => AnnouncementProvider(repository: sl<AcademicRepository>()),
+        () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
   );
 }
