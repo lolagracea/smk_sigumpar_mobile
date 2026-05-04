@@ -36,7 +36,7 @@ class _WakilKepsekHomeScreenState extends State<WakilKepsekHomeScreen> {
     return ShellScaffold(
       title: 'Wakil Kepala Sekolah',
       body: RefreshIndicator(
-        onRefresh: _loadData,
+        onRefresh: () async => _loadData(),
         child: ListView(
           children: <Widget>[
             // ── Kartu Sambutan ───────────────────────────────────────────

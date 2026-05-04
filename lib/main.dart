@@ -31,7 +31,7 @@ void main() {
 
   runApp(
     MultiProvider(
-      providers: <ChangeNotifierProvider>[
+      providers: [
         // ── Core ────────────────────────────────────────────────────────────
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
