@@ -1,4 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// lib/data/repositories/vocational_repository.dart
+// ─────────────────────────────────────────────────────────────────────────────
+
+import 'package:dio/dio.dart';
 import '../../core/network/api_response.dart';
+import '../models/laporan_kegiatan_model.dart';
 
 abstract class VocationalRepository {
   // ── Scout Classes (Regu/Kelas) ────────────────────────────────
@@ -8,7 +14,7 @@ abstract class VocationalRepository {
   Future<PaginatedResponse<Map<String, dynamic>>> getScoutReports({int page = 1});
   Future<Map<String, dynamic>> createScoutReport(Map<String, dynamic> data);
 
-  // ── Absensi Pramuka (NEW — mirror web) ───────────────────────
+  // ── Absensi Pramuka (mirror web) ─────────────────────────────
   /// GET /api/vocational/kelas — daftar kelas vokasional
   Future<List<Map<String, dynamic>>> getKelasVokasional();
 
@@ -30,6 +36,23 @@ abstract class VocationalRepository {
     String? tanggalMulai,
     String? tanggalAkhir,
   });
+
+  // ── Laporan Kegiatan Pramuka (mirror web) ────────────────────
+  /// GET /api/vocational/laporan-kegiatan — ambil semua laporan
+  Future<List<LaporanKegiatanModel>> getAllLaporanKegiatan();
+
+  /// POST /api/vocational/laporan-kegiatan — buat laporan baru (multipart)
+  Future<LaporanKegiatanModel> createLaporanKegiatan(FormData formData);
+
+  /// DELETE /api/vocational/laporan-kegiatan/:id — hapus laporan
+  Future<void> deleteLaporanKegiatan(int id);
+
+  /// GET /api/vocational/laporan-kegiatan/:id/view — view/download file
+  /// Returns raw bytes untuk ditampilkan di mobile
+  Future<Response<List<int>>> viewLaporanKegiatanFile(int id);
+
+  /// GET /api/vocational/laporan-kegiatan/:id/download — download file
+  Future<Response<List<int>>> downloadLaporanKegiatanFile(int id);
 
   // ── PKL (Praktik Kerja Lapangan) ─────────────────────────────
   Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports({int page = 1});
