@@ -6,6 +6,7 @@ import '../../core/utils/secure_storage.dart';
 import '../../core/utils/token_helper.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
+import 'package:flutter/material.dart';
 
 class AuthService implements AuthRepository {
   final DioClient _dioClient;
@@ -63,38 +64,31 @@ class AuthService implements AuthRepository {
   // ─── GET PROFILE (FIXED ROLE DETECTION) ──────────────────
   @override
   Future<UserModel> getProfile() async {
-    // 1. Get user info dari Keycloak userinfo endpoint
     final response = await _dioClient.get(ApiEndpoints.keycloakUserInfoUrl);
     final data = response.data;
 
-    // 2. Extract role dari JWT access token
-    // (Keycloak userinfo TIDAK return roles by default)
     final accessToken = await _secureStorage.getAccessToken();
-    String role = 'user';
+
+    String primaryRole = 'user';
+    List<String> roles = [];
 
     if (accessToken != null) {
-      // 🐛 DEBUG: Print untuk verifikasi (HAPUS setelah confirmed working)
-      if (kDebugMode) {
-        final payload = TokenHelper.decodePayload(accessToken);
-        print('🔍 JWT realm_access: ${payload?['realm_access']}');
+      roles = TokenHelper.getRoles(accessToken);
+      primaryRole = TokenHelper.getPrimaryRole(accessToken);
 
-        final roles = TokenHelper.getRoles(accessToken);
-        print('🔍 All roles found: $roles');
-      }
-
-      role = TokenHelper.getPrimaryRole(accessToken);
-
-      if (kDebugMode) {
-        print('🔍 Primary role selected: $role');
-      }
+      debugPrint('✅ MOBILE PRIMARY ROLE: $primaryRole');
+      debugPrint('✅ MOBILE ALL ROLES: $roles');
     }
 
     return UserModel(
-      id: data['sub'] ?? '',
-      username: data['preferred_username'] ?? '',
-      name: data['name'] ?? data['preferred_username'] ?? '',
-      email: data['email'] ?? '',
-      role: role, // ✅ Real role dari JWT
+      id: data['sub']?.toString() ?? '',
+      username: data['preferred_username']?.toString() ?? '',
+      name: data['name']?.toString() ??
+          data['preferred_username']?.toString() ??
+          '',
+      email: data['email']?.toString() ?? '',
+      role: primaryRole,
+      roles: roles,
     );
   }
 
