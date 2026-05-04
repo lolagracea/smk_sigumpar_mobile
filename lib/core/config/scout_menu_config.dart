@@ -6,27 +6,17 @@ import '../utils/role_helper.dart';
 /// ─────────────────────────────────────────────────────────────────
 /// ScoutMenuConfig — konfigurasi menu PRAMUKA (SCOUT)
 ///
-/// ⚠️ ATURAN KETAT:
-/// - Menu HARUS sesuai fitur pramuka di web existing
-/// - Tidak boleh tambah menu yang tidak ada di web
-/// - Tidak boleh hapus menu yang ada di web
-/// - Urutan mengikuti navigasi web PRAMUKA
-///
-/// Web existing fitur PRAMUKA:
+/// Menu yang tersedia (sesuai web):
 ///   1. Beranda (Dashboard)
-///   2. Kelas Pramuka (Scout Groups / Regu)
-///   3. Absensi Pramuka (Scout Attendance)
-///   4. Laporan Kegiatan (Activity Report)
-///   5. Profil
+///   2. Absensi Pramuka (Scout Attendance)
+///   3. Laporan Kegiatan (Activity Report)
+///   4. Profil
 ///
-/// MULTI-ROLE: Menu di sini ditetapkan untuk role [pramuka].
-/// Jika user punya role lain (misal: pramuka + guru-mapel),
-/// menu pramuka tetap tampil selama roles mengandung 'pramuka'.
+/// CATATAN: Kelas Pramuka DIHAPUS — tidak ada di web (source of truth)
 /// ─────────────────────────────────────────────────────────────────
 class ScoutMenuConfig {
   ScoutMenuConfig._();
 
-  /// Menu utama untuk modul PRAMUKA
   static const List<MenuItemModel> menus = [
     // ── UTAMA ────────────────────────────────────────────────
     MenuItemModel(
@@ -37,14 +27,8 @@ class ScoutMenuConfig {
       allowedRoles: [AppRoles.pramuka],
     ),
 
-    // ── MODUL PRAMUKA (sesuai urutan web) ────────────────────
-    MenuItemModel(
-      id: 'scout_classes',
-      label: 'Kelas Pramuka',
-      icon: Icons.groups_rounded,
-      route: RouteNames.scoutClasses,
-      allowedRoles: [AppRoles.pramuka],
-    ),
+    // ── MODUL PRAMUKA ─────────────────────────────────────────
+    // 'scout_classes' DIHAPUS — Kelas Pramuka tidak ada di web
     MenuItemModel(
       id: 'scout_attendance',
       label: 'Absensi Pramuka',
@@ -70,28 +54,18 @@ class ScoutMenuConfig {
     ),
   ];
 
-  /// ✅ MULTI-ROLE: Filter menu berdasarkan SEMUA role user.
-  ///
-  /// Tampilkan menu jika user punya setidaknya satu role
-  /// yang cocok dengan allowedRoles menu tersebut.
-  ///
-  /// Contoh: user punya roles ['pramuka', 'guru-mapel']
-  /// → semua menu pramuka tampil karena 'pramuka' ada di userRoles.
+  /// Filter menu berdasarkan semua role user (multi-role support).
   static List<MenuItemModel> getMenusForRoles(List<String> userRoles) {
     if (userRoles.isEmpty) return [];
-    return menus
-        .where((m) => m.isAccessibleByAny(userRoles))
-        .toList();
+    return menus.where((m) => m.isAccessibleByAny(userRoles)).toList();
   }
 
-  /// @deprecated Gunakan [getMenusForRoles] untuk multi-role support.
-  /// Backward compat: filter menu berdasarkan single role string.
+  /// @deprecated — gunakan [getMenusForRoles].
   static List<MenuItemModel> getMenusForRole(String? role) {
     if (role == null) return [];
     return getMenusForRoles([role]);
   }
 
-  /// Cek apakah user (dengan multi-role) punya akses ke modul pramuka
   static bool hasPramukaAccess(List<String> userRoles) {
     return RoleHelper.hasAccess(userRoles, [AppRoles.pramuka]);
   }

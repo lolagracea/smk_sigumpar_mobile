@@ -37,18 +37,10 @@ class RouteNames {
 
   // ─── Vocational ────────────────────────────────────────
   static const String vocational = '/vocational';
-  static const String scoutClasses = '/vocational/scout-classes';
+  // scoutClasses DIHAPUS — fitur Kelas Pramuka tidak ada di web
   static const String scoutAttendance = '/vocational/scout-attendance';
   static const String scoutReport = '/vocational/scout-report';
   static const String pklLocationReport = '/vocational/pkl-location';
   static const String pklProgressReport = '/vocational/pkl-progress';
 
-  // ─── Asset ─────────────────────────────────────────────
-  static const String asset = '/asset';
-  static const String submissionInfo = '/asset/submissions';
-  static const String itemLoan = '/asset/loans';
-  static const String equipmentSubmission = '/asset/equipment';
-  static const String loanResponse = '/asset/loan-response';
-  static const String treasurerResponse = '/asset/treasurer-response';
-  static const String principalResponse = '/asset/principal-response';
 }

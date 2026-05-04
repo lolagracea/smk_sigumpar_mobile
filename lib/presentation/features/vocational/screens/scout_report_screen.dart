@@ -5,22 +5,16 @@
 //
 // FEATURE PARITY WEB → MOBILE:
 //   ✅ Header: "Laporan Kegiatan Pramuka" + subtitle
-//   ✅ Form tambah laporan:
-//       - Judul (required)
-//       - Tanggal (date picker)
-//       - Deskripsi (multiline)
-//       - Upload File (PDF / DOCX / Gambar) — via file_picker
-//   ✅ Tombol Simpan Laporan
-//   ✅ Daftar laporan (Card — adaptasi table → ListView)
-//       - Judul, Deskripsi, Tanggal, Nama File
-//       - Badge jumlah file
-//   ✅ Per-baris: Lihat File | Download | Hapus
+//   ✅ Form tambah laporan (Judul, Tanggal, Deskripsi, Upload File)
+//   ✅ Daftar laporan — Card (adaptasi dari table web)
+//   ✅ Per-baris: Lihat File | Unduh | Hapus
 //   ✅ Konfirmasi dialog sebelum hapus
-//   ✅ Loading state, error state, empty state
+//   ✅ Loading / error / empty state
 //   ✅ Pull-to-refresh
-//   ✅ Preview file: Image (full screen) | PDF (info + download)
-//   ✅ Semua field sama dengan web (id, judul, deskripsi, tanggal, file_nama)
-//   ✅ API endpoints identik dengan web
+//   ✅ Preview Image → full screen + zoom (InteractiveViewer)
+//   ✅ Preview PDF  → inline viewer (SfPdfViewer) — BUKAN dialog info
+//   ✅ Preview lain → info dialog + tombol Unduh
+//   ✅ Download     → simpan ke /Downloads + buka file (DownloadHelper)
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:typed_data';
@@ -31,9 +25,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/constants/route_names.dart';
+import '../../../../core/utils/download_helper.dart';
 import '../../../../data/models/laporan_kegiatan_model.dart';
 import '../providers/vocational_provider.dart';
 import '../widgets/pramuka_drawer.dart';
+import 'pdf_preview_screen.dart';
 
 class ScoutReportScreen extends StatefulWidget {
   const ScoutReportScreen({super.key});
@@ -51,7 +47,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   // ── File yang dipilih ────────────────────────────────────────
   PlatformFile? _selectedFile;
 
-  // ── Form visibility ──────────────────────────────────────────
+  // ── Visibility form tambah ───────────────────────────────────
   bool _showForm = false;
 
   static const _primaryBlue = Color(0xFF1565C0);
@@ -59,7 +55,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   @override
   void initState() {
     super.initState();
-    // Set tanggal default ke hari ini — mirror web: new Date().toISOString().slice(0,10)
+    // Default tanggal hari ini — mirror web: new Date().toISOString().slice(0,10)
     _tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,19 +71,26 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     super.dispose();
   }
 
-  // ── Pilih file — mirror web input type="file" accept="..." ───
+  // ─────────────────────────────────────────────────────────────
+  // ACTIONS
+  // ─────────────────────────────────────────────────────────────
+
+  // ── Pilih file — mirror web input[type=file] accept="..." ────
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
-      withData: true, // load bytes langsung
+      allowedExtensions: [
+        'pdf', 'doc', 'docx',
+        'jpg', 'jpeg', 'png', 'gif', 'webp',
+      ],
+      withData: true,
     );
     if (result != null && result.files.isNotEmpty) {
       setState(() => _selectedFile = result.files.first);
     }
   }
 
-  // ── Reset form — mirror web setelah handleSimpan() sukses ────
+  // ── Reset form setelah simpan sukses ─────────────────────────
   void _resetForm() {
     _judulCtrl.clear();
     _deskripsiCtrl.clear();
@@ -107,7 +110,6 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     }
 
     final provider = context.read<VocationalProvider>();
-
     final (success, errMsg) = await provider.createLaporanKegiatan(
       judul: judul,
       tanggal: _tanggalCtrl.text,
@@ -127,7 +129,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     }
   }
 
-  // ── Hapus — mirror web handleHapus() dengan konfirmasi ───────
+  // ── Hapus laporan — mirror web handleHapus() dengan konfirmasi
   Future<void> _handleHapus(LaporanKegiatanModel laporan) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -150,7 +152,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Hapus'),
@@ -164,6 +168,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     final provider = context.read<VocationalProvider>();
     final (success, errMsg) = await provider.deleteLaporanKegiatan(laporan.id);
     if (!mounted) return;
+
     if (success) {
       _showSnackbar('Laporan berhasil dihapus');
     } else {
@@ -171,11 +176,18 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     }
   }
 
-  // ── View / Preview file — mirror web PreviewModal ────────────
+  // ── Lihat / Preview file — mirror web PreviewModal ────────────
+  //
+  // Flow:
+  //   Image → _ImagePreviewScreen (full screen + zoom)
+  //   PDF   → PdfPreviewScreen    (SfPdfViewer inline)
+  //   Lain  → _showOtherFileDialog (info + tombol Unduh)
+  //
+  // Jika user klik "Unduh" dari preview screen → trigger _handleDownload
   Future<void> _handleLihatFile(LaporanKegiatanModel laporan) async {
     final provider = context.read<VocationalProvider>();
 
-    // Tampilkan loading dialog
+    // Loading saat fetch bytes
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -191,68 +203,110 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
       _showSnackbar('Gagal memuat file: $errMsg', isError: true);
       return;
     }
-
     if (bytes == null || bytes.isEmpty) {
       _showSnackbar('File kosong atau tidak ditemukan', isError: true);
       return;
     }
 
     final resolvedMime = mime ?? laporan.fileMime ?? 'application/octet-stream';
-
-    // Mirror web: cek apakah bisa di-inline
     final isImage = resolvedMime.startsWith('image/');
-    final isPdf = resolvedMime == 'application/pdf';
+    final isPdf = resolvedMime == 'application/pdf' ||
+        (laporan.fileNama?.toLowerCase().endsWith('.pdf') ?? false);
 
     if (isImage) {
-      // Tampilkan gambar full screen — mirror web ImagePreviewModal
-      await Navigator.push(context, MaterialPageRoute(
-        builder: (_) => _ImagePreviewScreen(
-          bytes: Uint8List.fromList(bytes),
-          title: laporan.judul,
-          fileName: laporan.fileNama ?? '',
+      // ── Gambar: full screen + zoom + pan ──────────────────────
+      final result = await Navigator.push<String?>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _ImagePreviewScreen(
+            bytes: Uint8List.fromList(bytes),
+            title: laporan.judul,
+            fileName: laporan.fileNama ?? '',
+          ),
         ),
-      ));
+      );
+      if (result == 'download' && mounted) {
+        await _handleDownload(laporan);
+      }
     } else if (isPdf) {
-      // PDF tidak bisa inline di mobile — tampilkan info + option download
-      // mirror web fallback untuk non-inline
-      if (mounted) {
-        _showPdfInfoDialog(laporan, bytes);
+      // ── PDF: inline viewer — BUKAN dialog info lagi ───────────
+      final result = await Navigator.push<String?>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfPreviewScreen(
+            bytes: Uint8List.fromList(bytes),
+            title: laporan.judul,
+            fileName: laporan.fileNama ?? '',
+          ),
+        ),
+      );
+      if (result == 'download' && mounted) {
+        await _handleDownload(laporan);
       }
     } else {
-      // File lain — tawarkan download saja
-      if (mounted) {
-        _showSnackbar('Format ini tidak dapat ditampilkan. Gunakan tombol Unduh.');
-      }
+      // ── File lain (doc/docx/xls): info + tombol Unduh ─────────
+      if (mounted) _showOtherFileDialog(laporan);
     }
   }
 
-  // ── Download file ─────────────────────────────────────────────
+  // ── Download file — mirror web download button ────────────────
+  //
+  // Flow: fetch bytes → DownloadHelper.saveAndOpen →
+  //       simpan ke /Downloads → OpenFile.open() → snackbar feedback
   Future<void> _handleDownload(LaporanKegiatanModel laporan) async {
-    _showSnackbar('Mengunduh ${laporan.fileNama ?? 'file'}...');
+    final fileName = laporan.fileNama ?? 'file_laporan';
+    _showSnackbar('Mengunduh $fileName...');
+
     final provider = context.read<VocationalProvider>();
     final (bytes, errMsg) = await provider.downloadLaporanFile(laporan.id);
+
     if (!mounted) return;
+
     if (errMsg != null) {
       _showSnackbar('Gagal mengunduh: $errMsg', isError: true);
+      return;
+    }
+    if (bytes == null || bytes.isEmpty) {
+      _showSnackbar('File tidak ditemukan atau kosong', isError: true);
+      return;
+    }
+
+    // Simpan ke storage + buka dengan app default
+    final result = await DownloadHelper.saveAndOpen(
+      bytes: bytes,
+      fileName: fileName,
+    );
+
+    if (!mounted) return;
+
+    if (result.success) {
+      _showSnackbar('✅ File berhasil diunduh: $fileName');
     } else {
-      _showSnackbar('File berhasil diunduh!');
+      _showSnackbar(
+        result.errorMessage ?? 'Gagal menyimpan file',
+        isError: true,
+      );
     }
   }
 
-  // ── Dialog info PDF (mobile tidak bisa inline render PDF) ────
-  void _showPdfInfoDialog(LaporanKegiatanModel laporan, List<int> bytes) {
+  // ── Dialog info untuk file non-image, non-PDF ─────────────────
+  void _showOtherFileDialog(LaporanKegiatanModel laporan) {
+    final ext = (laporan.fileNama ?? '').split('.').last.toUpperCase();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Text('📄', style: TextStyle(fontSize: 20)),
+            const Text('📎', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 laporan.judul,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -267,9 +321,21 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Format PDF dapat diunduh ke perangkat Anda.',
-              style: TextStyle(fontSize: 13),
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                children: [
+                  const TextSpan(text: 'Format '),
+                  TextSpan(
+                    text: ext,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const TextSpan(
+                    text:
+                        ' tidak dapat ditampilkan langsung.\nUnduh untuk membuka dengan aplikasi yang sesuai.',
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -282,14 +348,16 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green.shade600,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () {
               Navigator.pop(ctx);
               _handleDownload(laporan);
             },
             icon: const Icon(Icons.download_rounded, size: 18),
-            label: const Text('Download'),
+            label: const Text('Unduh File'),
           ),
         ],
       ),
@@ -297,12 +365,15 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   }
 
   void _showSnackbar(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor:
+            isError ? Colors.red.shade600 : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -320,7 +391,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(_showForm ? Icons.close_rounded : Icons.add_rounded),
+            icon: Icon(
+              _showForm ? Icons.close_rounded : Icons.add_rounded,
+            ),
             tooltip: _showForm ? 'Tutup Form' : 'Tambah Laporan',
             onPressed: () => setState(() => _showForm = !_showForm),
           ),
@@ -333,23 +406,17 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             onRefresh: () => provider.fetchLaporanKegiatan(refresh: true),
             child: CustomScrollView(
               slivers: [
-                // ── Header info — mirror web subtitle ───────────
-                SliverToBoxAdapter(
-                  child: _buildPageHeader(),
-                ),
+                // Header halaman
+                SliverToBoxAdapter(child: _buildPageHeader()),
 
-                // ── Form tambah laporan — mirror web "Tambah Laporan Baru" ──
+                // Form tambah laporan
                 if (_showForm)
-                  SliverToBoxAdapter(
-                    child: _buildForm(provider),
-                  ),
+                  SliverToBoxAdapter(child: _buildForm(provider)),
 
-                // ── List header ─────────────────────────────────
-                SliverToBoxAdapter(
-                  child: _buildListHeader(provider),
-                ),
+                // Header daftar laporan
+                SliverToBoxAdapter(child: _buildListHeader(provider)),
 
-                // ── Content ─────────────────────────────────────
+                // Konten
                 if (provider.loadingLaporan)
                   const SliverFillRemaining(
                     child: Center(child: CircularProgressIndicator()),
@@ -367,7 +434,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, i) => _buildLaporanCard(provider.laporanKegiatan[i]),
+                        (_, i) =>
+                            _buildLaporanCard(provider.laporanKegiatan[i]),
                         childCount: provider.laporanKegiatan.length,
                       ),
                     ),
@@ -377,8 +445,6 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
           );
         },
       ),
-
-      // FAB jika form tidak sedang ditampilkan
       floatingActionButton: !_showForm
           ? FloatingActionButton.extended(
               onPressed: () => setState(() => _showForm = true),
@@ -391,7 +457,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     );
   }
 
-  // ── Header halaman — mirror web title + subtitle ──────────────
+  // ─────────────────────────────────────────────────────────────
+  // WIDGETS
+  // ─────────────────────────────────────────────────────────────
+
   Widget _buildPageHeader() {
     return Container(
       width: double.infinity,
@@ -410,17 +479,13 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
           const SizedBox(height: 4),
           Text(
             'Upload, lihat, dan kelola laporan kegiatan pramuka',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           ),
         ],
       ),
     );
   }
 
-  // ── Form tambah laporan — mirror web form section ─────────────
   Widget _buildForm(VocationalProvider provider) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -439,11 +504,12 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Section header ────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade100),
+              ),
             ),
             child: const Row(
               children: [
@@ -460,13 +526,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
               ],
             ),
           ),
-
-          // ── Form fields ───────────────────────────────
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Judul + Tanggal (grid 2 kolom di web → 2 field berurutan di mobile)
                 _buildTextField(
                   controller: _judulCtrl,
                   label: 'Judul Laporan',
@@ -474,12 +537,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                   required: true,
                 ),
                 const SizedBox(height: 12),
-
-                // Tanggal — date picker
                 _buildDateField(),
                 const SizedBox(height: 12),
-
-                // Deskripsi
                 _buildTextField(
                   controller: _deskripsiCtrl,
                   label: 'Deskripsi',
@@ -487,33 +546,37 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 12),
-
-                // File upload — mirror web input[type=file]
                 _buildFileField(),
                 const SizedBox(height: 20),
-
-                // Tombol simpan
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: provider.savingLaporan ? null : _handleSimpan,
+                    onPressed:
+                        provider.savingLaporan ? null : _handleSimpan,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryBlue,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      disabledBackgroundColor: _primaryBlue.withValues(alpha: 0.6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      disabledBackgroundColor:
+                          _primaryBlue.withValues(alpha: 0.6),
                     ),
                     icon: provider.savingLaporan
                         ? const SizedBox(
-                            width: 18, height: 18,
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white,
+                              strokeWidth: 2,
+                              color: Colors.white,
                             ),
                           )
                         : const Icon(Icons.upload_rounded, size: 18),
                     label: Text(
-                      provider.savingLaporan ? 'Menyimpan...' : '⬆ Simpan Laporan',
+                      provider.savingLaporan
+                          ? 'Menyimpan...'
+                          : '⬆ Simpan Laporan',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -549,7 +612,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             ),
             if (required) ...[
               const SizedBox(width: 2),
-              Text('*', style: TextStyle(color: Colors.red.shade500, fontSize: 12)),
+              Text(
+                '*',
+                style: TextStyle(color: Colors.red.shade500, fontSize: 12),
+              ),
             ],
           ],
         ),
@@ -559,7 +625,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+            hintStyle:
+                TextStyle(color: Colors.grey.shade400, fontSize: 13),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -570,9 +637,13 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _primaryBlue, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
           style: const TextStyle(fontSize: 13),
         ),
@@ -587,8 +658,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         Text(
           'TANGGAL',
           style: TextStyle(
-            fontSize: 10, fontWeight: FontWeight.w700,
-            color: Colors.grey.shade500, letterSpacing: 0.5,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 6),
@@ -596,7 +669,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
           controller: _tanggalCtrl,
           readOnly: true,
           decoration: InputDecoration(
-            suffixIcon: const Icon(Icons.calendar_today_rounded, size: 18),
+            suffixIcon:
+                const Icon(Icons.calendar_today_rounded, size: 18),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -607,9 +681,13 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+              borderSide:
+                  const BorderSide(color: _primaryBlue, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
           ),
           style: const TextStyle(fontSize: 13),
           onTap: () async {
@@ -620,7 +698,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
               lastDate: DateTime.now(),
             );
             if (picked != null) {
-              _tanggalCtrl.text = DateFormat('yyyy-MM-dd').format(picked);
+              _tanggalCtrl.text =
+                  DateFormat('yyyy-MM-dd').format(picked);
             }
           },
         ),
@@ -635,8 +714,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         Text(
           'FILE LAPORAN (PDF/DOCX/GAMBAR)',
           style: TextStyle(
-            fontSize: 10, fontWeight: FontWeight.w700,
-            color: Colors.grey.shade500, letterSpacing: 0.5,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 6),
@@ -645,10 +726,13 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
           borderRadius: BorderRadius.circular(10),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               border: Border.all(
-                color: _selectedFile != null ? _primaryBlue : Colors.grey.shade300,
+                color: _selectedFile != null
+                    ? _primaryBlue
+                    : Colors.grey.shade300,
               ),
               borderRadius: BorderRadius.circular(10),
               color: _selectedFile != null
@@ -662,7 +746,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                       ? Icons.attach_file_rounded
                       : Icons.upload_file_outlined,
                   size: 18,
-                  color: _selectedFile != null ? _primaryBlue : Colors.grey.shade500,
+                  color: _selectedFile != null
+                      ? _primaryBlue
+                      : Colors.grey.shade500,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -673,7 +759,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                             Text(
                               _selectedFile!.name,
                               style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
                                 color: _primaryBlue,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -682,7 +769,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                               Text(
                                 _formatFileSize(_selectedFile!.size),
                                 style: TextStyle(
-                                  fontSize: 11, color: Colors.grey.shade500,
+                                  fontSize: 11,
+                                  color: Colors.grey.shade500,
                                 ),
                               ),
                           ],
@@ -690,14 +778,19 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                       : Text(
                           'Pilih file (.pdf, .docx, .jpg, .png...)',
                           style: TextStyle(
-                            fontSize: 13, color: Colors.grey.shade500,
+                            fontSize: 13,
+                            color: Colors.grey.shade500,
                           ),
                         ),
                 ),
                 if (_selectedFile != null)
                   GestureDetector(
                     onTap: () => setState(() => _selectedFile = null),
-                    child: Icon(Icons.close_rounded, size: 18, color: Colors.grey.shade500),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: Colors.grey.shade500,
+                    ),
                   ),
               ],
             ),
@@ -707,11 +800,11 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     );
   }
 
-  // ── List header — mirror web "Daftar Laporan Kegiatan" ────────
   Widget _buildListHeader(VocationalProvider provider) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.only(
@@ -727,13 +820,15 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
           const Text(
             'Daftar Laporan Kegiatan',
             style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF374151),
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
             ),
           ),
           const Spacer(),
-          // Badge jumlah — mirror web "{laporan.length} FILE"
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(20),
@@ -741,7 +836,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
             child: Text(
               '${provider.laporanKegiatan.length} FILE',
               style: TextStyle(
-                fontSize: 10, fontWeight: FontWeight.w700, color: Colors.grey.shade500,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade500,
               ),
             ),
           ),
@@ -750,12 +847,12 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     );
   }
 
-  // ── Card per laporan — adaptasi table row → Card ──────────────
-  // Kolom web: Judul | Deskripsi | Tanggal | File | Aksi
   Widget _buildLaporanCard(LaporanKegiatanModel laporan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
       elevation: 0,
       color: Colors.white,
       child: Padding(
@@ -763,7 +860,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Row 1: Judul ─────────────────────────────
+            // Judul
             Text(
               laporan.judul,
               style: const TextStyle(
@@ -775,30 +872,41 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
 
             const SizedBox(height: 6),
 
-            // ── Row 2: Deskripsi ─────────────────────────
-            if (laporan.deskripsi != null && laporan.deskripsi!.isNotEmpty) ...[
+            // Deskripsi
+            if (laporan.deskripsi != null &&
+                laporan.deskripsi!.isNotEmpty) ...[
               Text(
                 laporan.deskripsi!,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style:
+                    TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
             ],
 
-            // ── Row 3: Tanggal + File nama ────────────────
+            // Tanggal + nama file
             Row(
               children: [
-                Icon(Icons.calendar_today_outlined, size: 13, color: Colors.grey.shade500),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   laporan.tanggal,
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 12,
+                  ),
                 ),
                 if (laporan.hasFile) ...[
                   const SizedBox(width: 12),
                   Icon(
-                    laporan.isImage ? Icons.image_outlined : Icons.attach_file_rounded,
+                    laporan.isImage
+                        ? Icons.image_outlined
+                        : Icons.attach_file_rounded,
                     size: 13,
                     color: Colors.grey.shade400,
                   ),
@@ -806,7 +914,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                   Expanded(
                     child: Text(
                       laporan.fileNama!,
-                      style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 11,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -816,12 +927,11 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
 
             const SizedBox(height: 12),
 
-            // ── Row 4: Tombol aksi — mirror web Lihat | Unduh | Hapus ──
+            // Tombol aksi — mirror web: Lihat | Unduh | Hapus
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 if (laporan.hasFile) ...[
-                  // Tombol Lihat
                   _buildActionButton(
                     label: '👁 Lihat',
                     color: Colors.blue.shade600,
@@ -829,8 +939,6 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                     onTap: () => _handleLihatFile(laporan),
                   ),
                   const SizedBox(width: 8),
-
-                  // Tombol Unduh
                   _buildActionButton(
                     label: '⬇ Unduh',
                     color: Colors.green.shade600,
@@ -839,8 +947,6 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                   ),
                   const SizedBox(width: 8),
                 ],
-
-                // Tombol Hapus — selalu tampil
                 _buildActionButton(
                   label: '🗑 Hapus',
                   color: Colors.red.shade500,
@@ -865,7 +971,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
@@ -873,7 +980,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: color, fontSize: 12, fontWeight: FontWeight.w600,
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -885,12 +994,14 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline_rounded, size: 64, color: Colors.red.shade300),
+          Icon(Icons.error_outline_rounded,
+              size: 64, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(provider.laporanError ?? 'Terjadi kesalahan'),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => provider.fetchLaporanKegiatan(refresh: true),
+            onPressed: () =>
+                provider.fetchLaporanKegiatan(refresh: true),
             child: const Text('Coba Lagi'),
           ),
         ],
@@ -899,44 +1010,48 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   }
 
   Widget _buildEmptyState() {
-  return Center(
-    child: SingleChildScrollView( // 🔥 penting: biar tidak overflow
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min, // 🔥 kunci utama
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('📁', style: TextStyle(fontSize: 48)), // sedikit diperkecil
-          const SizedBox(height: 12),
-          Text(
-            'Belum ada laporan yang diupload',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: () => setState(() => _showForm = true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryBlue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+    return Center(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('📁', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            Text(
+              'Belum ada laporan yang diupload',
+              style:
+                  TextStyle(color: Colors.grey.shade500, fontSize: 14),
+              textAlign: TextAlign.center,
             ),
-            icon: const Icon(Icons.upload_file_rounded, size: 18),
-            label: const Text('Upload Laporan'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () => setState(() => _showForm = true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.upload_file_rounded, size: 18),
+              label: const Text('Upload Laporan'),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-  // ── Helpers ───────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────
 
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
@@ -946,7 +1061,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     return switch (ext) {
       'pdf' => 'application/pdf',
       'doc' => 'application/msword',
-      'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'docx' =>
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'jpg' || 'jpeg' => 'image/jpeg',
       'png' => 'image/png',
       'gif' => 'image/gif',
@@ -957,7 +1073,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Image Preview Screen — mirror web ImagePreviewModal + PreviewModal untuk gambar
+// _ImagePreviewScreen — mirror web ImagePreviewModal
+//
+// Full screen, zoom & pan dengan InteractiveViewer.
+// Tombol "Unduh" di AppBar → return 'download' ke caller.
 // ─────────────────────────────────────────────────────────────────────────────
 class _ImagePreviewScreen extends StatelessWidget {
   final Uint8List bytes;
@@ -980,7 +1099,13 @@ class _ImagePreviewScreen extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             if (fileName.isNotEmpty)
               Text(
                 fileName,
@@ -989,14 +1114,17 @@ class _ImagePreviewScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          // Mirror web: tombol Download di PreviewModal
           TextButton.icon(
-            onPressed: () {
-              // Download dari preview screen — navigasi kembali dan trigger download
-              Navigator.pop(context, 'download');
-            },
-            icon: const Icon(Icons.download_rounded, color: Colors.greenAccent, size: 18),
-            label: const Text('Download', style: TextStyle(color: Colors.greenAccent, fontSize: 12)),
+            onPressed: () => Navigator.pop(context, 'download'),
+            icon: const Icon(
+              Icons.download_rounded,
+              color: Colors.greenAccent,
+              size: 18,
+            ),
+            label: const Text(
+              'Unduh',
+              style: TextStyle(color: Colors.greenAccent, fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -1012,9 +1140,16 @@ class _ImagePreviewScreen extends StatelessWidget {
             errorBuilder: (_, __, ___) => const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.broken_image_rounded, color: Colors.grey, size: 64),
+                Icon(
+                  Icons.broken_image_rounded,
+                  color: Colors.grey,
+                  size: 64,
+                ),
                 SizedBox(height: 12),
-                Text('Gagal menampilkan gambar', style: TextStyle(color: Colors.grey)),
+                Text(
+                  'Gagal menampilkan gambar',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
