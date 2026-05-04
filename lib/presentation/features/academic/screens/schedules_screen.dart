@@ -71,6 +71,7 @@ class _SchedulesView extends StatelessWidget {
       ) {
     final parentContext = context;
     final controller = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -80,26 +81,37 @@ class _SchedulesView extends StatelessWidget {
             final isMatch = controller.text.trim().toUpperCase() == 'HAPUS';
 
             return AlertDialog(
-              title: const Text('Hapus Jadwal Mengajar'),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+              title: Text(
+                'Hapus Jadwal Mengajar',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Anda yakin ingin menghapus jadwal ${item.mataPelajaran} untuk kelas ${item.namaKelas ?? '-'}?',
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Ketik HAPUS untuk konfirmasi.',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Konfirmasi',
                       hintText: 'HAPUS',
+                      labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                      hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                     ),
                   ),
                 ],
@@ -109,9 +121,17 @@ class _SchedulesView extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Batal'),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                  ),
                 ),
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                  ),
                   onPressed: isMatch
                       ? () async {
                     final provider =
@@ -159,6 +179,7 @@ class _SchedulesView extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final canManage = _canManageSchedule(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -166,12 +187,13 @@ class _SchedulesView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Jadwal Mengajar',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -180,6 +202,10 @@ class _SchedulesView extends StatelessWidget {
                   onPressed: () {
                     _openFormSheet(context);
                   },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Tambah Jadwal'),
                 ),
@@ -191,6 +217,7 @@ class _SchedulesView extends StatelessWidget {
             context,
             provider,
             canManage,
+            isDark,
           ),
         ),
       ],
@@ -201,6 +228,7 @@ class _SchedulesView extends StatelessWidget {
       BuildContext context,
       AcademicProvider provider,
       bool canManage,
+      bool isDark,
       ) {
     if ((provider.scheduleState == AcademicLoadState.initial ||
         provider.scheduleState == AcademicLoadState.loading) &&
@@ -223,16 +251,19 @@ class _SchedulesView extends StatelessWidget {
         onRefresh: () => _refresh(context),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 140),
+          children: [
+            const SizedBox(height: 140),
             Icon(
               Icons.schedule_outlined,
               size: 56,
-              color: Colors.grey,
+              color: isDark ? Colors.white24 : Colors.grey,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Center(
-              child: Text('Belum ada jadwal mengajar.'),
+              child: Text(
+                'Belum ada jadwal mengajar.',
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+              ),
             ),
           ],
         ),
@@ -258,26 +289,32 @@ class _SchedulesView extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
                   child: Text(
                     item.hari.isEmpty ? 'Hari Tidak Diisi' : item.hari,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF2563EB),
+                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                     ),
                   ),
                 ),
               ],
               Card(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+                ),
                 child: ListTile(
                   leading: Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.schedule_outlined,
-                      color: Color(0xFF2563EB),
+                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                     ),
                   ),
                   title: Text(
@@ -286,6 +323,7 @@ class _SchedulesView extends StatelessWidget {
                         : item.namaMapel ?? '-',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   subtitle: Padding(
@@ -298,10 +336,13 @@ class _SchedulesView extends StatelessWidget {
                         if ((item.guruNama ?? '').isNotEmpty)
                           item.guruNama!,
                       ].where((e) => e.trim().isNotEmpty).join(' • '),
+                      style: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade600),
                     ),
                   ),
                   trailing: canManage
                       ? PopupMenuButton<String>(
+                    iconColor: isDark ? Colors.white70 : Colors.grey.shade600,
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     onSelected: (value) {
                       if (value == 'edit') {
                         _openFormSheet(
@@ -313,14 +354,14 @@ class _SchedulesView extends StatelessWidget {
                       }
                     },
                     itemBuilder: (_) {
-                      return const [
+                      return [
                         PopupMenuItem(
                           value: 'edit',
-                          child: Text('Edit'),
+                          child: Text('Edit', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                         ),
                         PopupMenuItem(
                           value: 'delete',
-                          child: Text('Hapus'),
+                          child: Text('Hapus', style: TextStyle(color: Colors.red.shade400)),
                         ),
                       ];
                     },
@@ -644,15 +685,16 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -660,58 +702,46 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(999),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isEdit
-                            ? 'Edit Jadwal Mengajar'
-                            : 'Tambah Jadwal Mengajar',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
+                const SizedBox(height: 24),
+                Text(
+                  _isEdit ? 'Edit Jadwal Mengajar' : 'Tambah Jadwal Mengajar',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Pilih guru mapel, lalu pilih mapel dan kelas yang sudah di-assign.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                Text(
+                  'Pilih guru mapel, lalu pilih mapel dan kelas yang sudah di-assign.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _guruController,
                   enabled: !_isSubmitting,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     labelText: 'Guru Pengajar',
                     hintText: 'Ketik nama guru mapel...',
                     prefixIcon: const Icon(Icons.person_search_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                     suffixIcon: _isSearchingGuru
                         ? const Padding(
                       padding: EdgeInsets.all(12),
@@ -733,7 +763,10 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                           _selectedAssignmentMapelId = null;
                         });
                       },
-                      icon: const Icon(Icons.clear_rounded),
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: isDark ? Colors.white54 : Colors.black54,
+                      ),
                     )
                         : null,
                   ),
@@ -742,11 +775,9 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Guru pengajar wajib dipilih';
                     }
-
                     if (_selectedGuru == null) {
                       return 'Pilih guru dari rekomendasi';
                     }
-
                     return null;
                   },
                 ),
@@ -755,8 +786,8 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                   Container(
                     constraints: const BoxConstraints(maxHeight: 200),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade300),
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListView.separated(
@@ -764,25 +795,27 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                       itemCount: _guruSuggestions.length,
                       separatorBuilder: (_, __) => Divider(
                         height: 1,
-                        color: Colors.grey.shade200,
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
                       ),
                       itemBuilder: (context, index) {
                         final guru = _guruSuggestions[index];
 
                         return ListTile(
                           dense: true,
-                          leading: const CircleAvatar(
-                            child: Icon(Icons.person_outline),
+                          leading: CircleAvatar(
+                            backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+                            child: Icon(
+                              Icons.person_outline,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            ),
                           ),
                           title: Text(
-                            guru.fullName.isNotEmpty
-                                ? guru.fullName
-                                : guru.username,
+                            guru.fullName.isNotEmpty ? guru.fullName : guru.username,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                           ),
                           subtitle: Text(
-                            guru.email?.isNotEmpty == true
-                                ? guru.email!
-                                : '@${guru.username}',
+                            guru.email?.isNotEmpty == true ? guru.email! : '@${guru.username}',
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade600),
                           ),
                           onTap: () => _selectGuru(guru),
                         );
@@ -794,17 +827,17 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 16,
-                        color: Colors.green,
+                        color: isDark ? Colors.green.shade400 : Colors.green,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Guru terpilih: ${_guruController.text}',
-                          style: const TextStyle(
-                            color: Colors.green,
+                          style: TextStyle(
+                            color: isDark ? Colors.green.shade400 : Colors.green,
                             fontSize: 12,
                           ),
                         ),
@@ -815,9 +848,12 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   value: _selectedAssignmentMapelId,
-                  decoration: const InputDecoration(
+                  dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Mata Pelajaran & Kelas',
-                    prefixIcon: Icon(Icons.menu_book_outlined),
+                    prefixIcon: const Icon(Icons.menu_book_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                   ),
                   items: _assignments.map((assignment) {
                     return DropdownMenuItem<String>(
@@ -844,21 +880,22 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                     if (_selectedGuru == null) {
                       return 'Pilih guru terlebih dahulu';
                     }
-
                     if (value == null || value.isEmpty) {
                       return 'Mapel dan kelas wajib dipilih';
                     }
-
                     return null;
                   },
                 ),
                 if (_isLoadingAssignments) ...[
                   const SizedBox(height: 8),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Memuat assignment guru mapel...',
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                      ),
                     ),
                   ),
                 ],
@@ -866,13 +903,13 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                     _selectedGuru != null &&
                     _assignments.isEmpty) ...[
                   const SizedBox(height: 8),
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Guru ini belum memiliki assignment mapel dan kelas.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.red,
+                        color: isDark ? Colors.red.shade300 : Colors.red,
                       ),
                     ),
                   ),
@@ -880,9 +917,12 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   value: _selectedHari,
-                  decoration: const InputDecoration(
+                  dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Hari',
-                    prefixIcon: Icon(Icons.calendar_month_outlined),
+                    prefixIcon: const Icon(Icons.calendar_month_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                   ),
                   items: _hariOptions.map((hari) {
                     return DropdownMenuItem<String>(
@@ -901,7 +941,6 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                     if (value == null || value.isEmpty) {
                       return 'Hari wajib dipilih';
                     }
-
                     return null;
                   },
                 ),
@@ -913,14 +952,18 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                         onTap: _isSubmitting ? null : _pickStartTime,
                         borderRadius: BorderRadius.circular(12),
                         child: InputDecorator(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Waktu Mulai',
-                            prefixIcon: Icon(Icons.access_time_outlined),
+                            prefixIcon: const Icon(Icons.access_time_outlined),
+                            labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                           ),
                           child: Text(
-                            _formatTime(_waktuMulai).isEmpty
-                                ? 'Pilih jam'
-                                : _formatTime(_waktuMulai),
+                            _formatTime(_waktuMulai).isEmpty ? 'Pilih jam' : _formatTime(_waktuMulai),
+                            style: TextStyle(
+                              color: _waktuMulai == null
+                                  ? (isDark ? Colors.white54 : Colors.grey.shade600)
+                                  : (isDark ? Colors.white : Colors.black87),
+                            ),
                           ),
                         ),
                       ),
@@ -931,14 +974,18 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                         onTap: _isSubmitting ? null : _pickEndTime,
                         borderRadius: BorderRadius.circular(12),
                         child: InputDecorator(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Waktu Berakhir',
-                            prefixIcon: Icon(Icons.access_time_filled_outlined),
+                            prefixIcon: const Icon(Icons.access_time_filled_outlined),
+                            labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                           ),
                           child: Text(
-                            _formatTime(_waktuBerakhir).isEmpty
-                                ? 'Pilih jam'
-                                : _formatTime(_waktuBerakhir),
+                            _formatTime(_waktuBerakhir).isEmpty ? 'Pilih jam' : _formatTime(_waktuBerakhir),
+                            style: TextStyle(
+                              color: _waktuBerakhir == null
+                                  ? (isDark ? Colors.white54 : Colors.grey.shade600)
+                                  : (isDark ? Colors.white : Colors.black87),
+                            ),
                           ),
                         ),
                       ),
@@ -950,11 +997,19 @@ class _ScheduleFormSheetState extends State<_ScheduleFormSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
                     icon: _isSubmitting
                         ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                         : const Icon(Icons.save_outlined),
                     label: Text(
