@@ -37,7 +37,7 @@ import '../../presentation/features/asset/screens/equipment_submission_screen.da
 import '../../presentation/features/asset/screens/loan_response_screen.dart';
 import '../../presentation/features/asset/screens/treasurer_response_screen.dart';
 import '../../presentation/features/asset/screens/principal_response_screen.dart';
-
+import '../../presentation/features/academic/screens/announcement_detail_screen.dart';
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -77,6 +77,13 @@ class AppRouter {
       GoRoute(path: RouteNames.announcements, builder: (_, __) => const AnnouncementsScreen()),
       GoRoute(path: RouteNames.schedules, builder: (_, __) => const SchedulesScreen()),
       GoRoute(path: RouteNames.letters, builder: (_, __) => const LettersScreen()),
+      GoRoute(
+        path: RouteNames.announcementDetail,
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
+          return AnnouncementDetailScreen(announcementId: id);
+        },
+      ),
 
       // ─── Student ─────────────────────────────────────────
       GoRoute(path: RouteNames.cleanlinessRecap, builder: (_, __) => const CleanlinessRecapScreen()),
