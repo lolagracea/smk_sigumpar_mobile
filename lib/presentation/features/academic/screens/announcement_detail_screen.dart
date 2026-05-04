@@ -166,15 +166,14 @@ class _AnnouncementDetailView extends StatelessWidget {
     );
   }
 
-  Map<String, dynamic>? _findAnnouncement(
-      List<Map<String, dynamic>> announcements,
-      ) {
-    for (final item in announcements) {
-      final id = item['id']?.toString();
-      if (id == announcementId) {
-        return item;
-      }
+  Map<String, dynamic>? _findAnnouncement(List<Map<String, dynamic>> announcements) {
+    try {
+      return announcements.firstWhere(
+            (element) => element['id'].toString() == announcementId,
+      );
+    } catch (_) {
+      print('Debug in Progres Berarti emg tidak ada pengumuman ini di detail screen announcement');
+      return null; // Kalau tidak ketemu, jangan bikin aplikasi crash
     }
-    return null;
   }
 }

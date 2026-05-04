@@ -22,7 +22,7 @@
 // import '../../presentation/features/academic/screens/subjects_screen.dart';
 //
 // // ─── LEARNING SCREENS ─────────────────────────────────────
-// import '../../presentation/features/learning/screens/absensi_guru_screen.dart';
+// import '../../presentation/features/learning/screens/Teacher_Attendance_Screen.dart';
 // import '../../presentation/features/learning/screens/teaching_notes_screen.dart';
 // import '../../presentation/features/learning/screens/teacher_evaluation_screen.dart';
 // import '../../presentation/features/learning/screens/learning_device_screen.dart';
@@ -298,7 +298,7 @@ import '../../presentation/features/student/screens/parenting_notes_screen.dart'
 import '../../presentation/features/student/screens/homeroom_reflection_screen.dart';
 import '../../presentation/features/student/screens/summons_letter_screen.dart';
 import '../../presentation/features/academic/screens/subjects_screen.dart';
-import '../../presentation/features/learning/screens/absensi_guru_screen.dart';
+import '../../presentation/features/learning/screens/Teacher_Attendance_Screen.dart';
 import '../../presentation/features/learning/screens/teaching_notes_screen.dart';
 import '../../presentation/features/learning/screens/teacher_evaluation_screen.dart';
 import '../../presentation/features/learning/screens/learning_device_screen.dart';
@@ -382,7 +382,7 @@ class AppRouter {
             GoRoute(path: RouteNames.summonsLetter, builder: (_, __) => const SummonsLetterScreen()),
             GoRoute(path: RouteNames.attendanceRecap, builder: (_, __) => const AttendanceRecapScreen()),
             GoRoute(path: RouteNames.gradesRecap, builder: (_, __) => const GradesRecapScreen()),
-            GoRoute(path: RouteNames.teacherAttendance, builder: (_, __) => const AbsensiGuruScreen()),
+            GoRoute(path: RouteNames.teacherAttendance, builder: (_, __) => const TeacherAttendanceScreen()),
             GoRoute(path: RouteNames.teachingNotes, builder: (_, __) => const TeachingNotesScreen()),
             GoRoute(path: RouteNames.teacherEvaluation, builder: (_, __) => const TeacherEvaluationScreen()),
             GoRoute(path: RouteNames.learningDevice, builder: (_, __) => const LearningDeviceScreen()),

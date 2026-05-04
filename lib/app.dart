@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart'; // Tambahkan import ini
+import 'package:go_router/go_router.dart';
 import 'core/di/injection_container.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/common/providers/auth_provider.dart';
 import 'presentation/common/providers/theme_provider.dart';
-import 'presentation/features/learning/providers/absensi_guru_provider.dart';
-import 'presentation/features/academic/providers/announcement_provider.dart';
+import '../../presentation/features/learning/providers/learning_provider.dart';
+import 'presentation/features/academic/providers/academic_provider.dart';
 
 class SmkSigumparApp extends StatefulWidget {
   const SmkSigumparApp({super.key});
@@ -34,18 +34,18 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Gunakan .value karena instance sudah dibuat di injection_container
         ChangeNotifierProvider<AuthProvider>.value(
           value: sl<AuthProvider>(),
         ),
-        ChangeNotifierProvider<AnnouncementProvider>(
-          create: (_) => sl<AnnouncementProvider>(),
+        // GANTI AnnouncementProvider menjadi AcademicProvider
+        ChangeNotifierProvider<AcademicProvider>(
+          create: (_) => sl<AcademicProvider>(),
         ),
         ChangeNotifierProvider<ThemeProvider>(
           create: (_) => sl<ThemeProvider>(),
         ),
-        ChangeNotifierProvider<AbsensiGuruProvider>(
-          create: (_) => sl<AbsensiGuruProvider>(),
+        ChangeNotifierProvider<LearningProvider>(
+          create: (_) => sl<LearningProvider>(),
         ),
       ],
       child: MaterialApp.router(

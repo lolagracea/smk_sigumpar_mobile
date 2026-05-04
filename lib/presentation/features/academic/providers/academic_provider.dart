@@ -19,6 +19,14 @@ class AcademicProvider extends ChangeNotifier {
   AcademicProvider({required AcademicRepository repository})
       : _repository = repository;
 
+  // ─── Shared Error Parser (Biar Catch-mu rapi) ──────────────
+  String _parseError(Object error) {
+    final errorStr = error.toString();
+    if (errorStr.contains('SocketException')) return 'Tidak ada koneksi internet';
+    if (errorStr.contains('TimeoutException')) return 'Server tidak merespon';
+    return errorStr.replaceAll('Exception: ', '');
+  }
+
   // ─── Classes ─────────────────────────────────────────────
   AcademicLoadState _classState = AcademicLoadState.initial;
   List<ClassModel> _classes = [];
@@ -31,16 +39,12 @@ class AcademicProvider extends ChangeNotifier {
   String? get classError => _classError;
   bool get hasMoreClasses => _hasMoreClasses;
 
-  Future<void> fetchClasses({
-    bool refresh = false,
-    String? search,
-  }) async {
+  Future<void> fetchClasses({bool refresh = false, String? search}) async {
     if (refresh) {
       _classPage = 1;
       _classes = [];
       _hasMoreClasses = true;
     }
-
     if (!_hasMoreClasses) return;
 
     _classState = AcademicLoadState.loading;
@@ -48,34 +52,21 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getClasses(
-        page: _classPage,
-        search: search,
-      );
-
-      if (refresh) {
-        _classes = result.items;
-      } else {
-        _classes.addAll(result.items);
-      }
-
+      final result = await _repository.getClasses(page: _classPage, search: search);
+      if (refresh) _classes = result.items;
+      else _classes.addAll(result.items);
       _hasMoreClasses = result.hasNextPage;
       _classPage++;
       _classState = AcademicLoadState.loaded;
     } catch (e) {
-      _classError = e.toString();
+      _classError = _parseError(e);
       _classState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
   Future<List<UserSearchModel>> searchWaliKelas(String query) async {
-    try {
-      return await _repository.searchWaliKelas(query);
-    } catch (_) {
-      return [];
-    }
+    try { return await _repository.searchWaliKelas(query); } catch (_) { return []; }
   }
 
   Future<bool> createClass({
@@ -87,19 +78,16 @@ class AcademicProvider extends ChangeNotifier {
     try {
       _classError = null;
       notifyListeners();
-
       await _repository.createClass({
         'nama_kelas': namaKelas,
         'tingkat': tingkat,
         'wali_kelas_id': waliKelasId,
         'wali_kelas_nama': waliKelasNama,
       });
-
       await fetchClasses(refresh: true);
-
       return true;
     } catch (e) {
-      _classError = e.toString();
+      _classError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -117,17 +105,12 @@ class AcademicProvider extends ChangeNotifier {
   String? get studentError => _studentError;
   bool get hasMoreStudents => _hasMoreStudents;
 
-  Future<void> fetchStudents({
-    bool refresh = false,
-    String? classId,
-    String? search,
-  }) async {
+  Future<void> fetchStudents({bool refresh = false, String? classId, String? search}) async {
     if (refresh) {
       _studentPage = 1;
       _students = [];
       _hasMoreStudents = true;
     }
-
     if (!_hasMoreStudents) return;
 
     _studentState = AcademicLoadState.loading;
@@ -135,94 +118,56 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getStudents(
-        page: _studentPage,
-        classId: classId,
-        search: search,
-      );
-
-      if (refresh) {
-        _students = result.items;
-      } else {
-        _students.addAll(result.items);
-      }
-
+      final result = await _repository.getStudents(page: _studentPage, classId: classId, search: search);
+      if (refresh) _students = result.items;
+      else _students.addAll(result.items);
       _hasMoreStudents = result.hasNextPage;
       _studentPage++;
       _studentState = AcademicLoadState.loaded;
     } catch (e) {
-      _studentError = e.toString();
+      _studentError = _parseError(e);
       _studentState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
-  Future<bool> createStudent({
-    required String nisn,
-    required String namaLengkap,
-    required String kelasId,
-  }) async {
+  Future<bool> createStudent({required String nisn, required String namaLengkap, required String kelasId}) async {
     try {
       _studentError = null;
       notifyListeners();
-
-      await _repository.createStudent({
-        'nisn': nisn,
-        'nama_lengkap': namaLengkap,
-        'kelas_id': kelasId,
-      });
-
+      await _repository.createStudent({'nisn': nisn, 'nama_lengkap': namaLengkap, 'kelas_id': kelasId});
       await fetchStudents(refresh: true);
       return true;
     } catch (e) {
-      _studentError = e.toString();
+      _studentError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> updateStudent({
-    required String id,
-    required String nisn,
-    required String namaLengkap,
-    required String kelasId,
-  }) async {
+  Future<bool> updateStudent({required String id, required String nisn, required String namaLengkap, required String kelasId}) async {
     try {
       _studentError = null;
       notifyListeners();
-
-      await _repository.updateStudent(
-        id,
-        {
-          'nisn': nisn,
-          'nama_lengkap': namaLengkap,
-          'kelas_id': kelasId,
-        },
-      );
-
+      await _repository.updateStudent(id, {'nisn': nisn, 'nama_lengkap': namaLengkap, 'kelas_id': kelasId});
       await fetchStudents(refresh: true);
       return true;
     } catch (e) {
-      _studentError = e.toString();
+      _studentError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> deleteStudent({
-    required String id,
-  }) async {
+  Future<bool> deleteStudent({required String id}) async {
     try {
       _studentError = null;
       notifyListeners();
-
       await _repository.deleteStudent(id);
-
       await fetchStudents(refresh: true);
       return true;
     } catch (e) {
-      _studentError = e.toString();
+      _studentError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -239,36 +184,25 @@ class AcademicProvider extends ChangeNotifier {
   List<TeacherModel> get teachers => _teachers;
   String? get teacherError => _teacherError;
 
-  Future<void> fetchTeachers({
-    bool refresh = false,
-    String? search,
-  }) async {
+  Future<void> fetchTeachers({bool refresh = false, String? search}) async {
     if (refresh) {
       _teacherPage = 1;
       _teachers = [];
       _hasMoreTeachers = true;
     }
-
     if (!_hasMoreTeachers) return;
-
     _teacherState = AcademicLoadState.loading;
     notifyListeners();
-
     try {
-      final result = await _repository.getTeachers(
-        page: _teacherPage,
-        search: search,
-      );
-
+      final result = await _repository.getTeachers(page: _teacherPage, search: search);
       _teachers.addAll(result.items);
       _hasMoreTeachers = result.hasNextPage;
       _teacherPage++;
       _teacherState = AcademicLoadState.loaded;
     } catch (e) {
-      _teacherError = e.toString();
+      _teacherError = _parseError(e);
       _teacherState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
@@ -284,104 +218,68 @@ class AcademicProvider extends ChangeNotifier {
   String? get announcementError => _announcementError;
   bool get hasMoreAnnouncements => _hasMoreAnnouncements;
 
-  Future<void> fetchAnnouncements({
-    bool refresh = false,
-  }) async {
+  Future<void> fetchAnnouncements({bool refresh = false}) async {
     if (refresh) {
       _announcementPage = 1;
       _announcements = [];
       _hasMoreAnnouncements = true;
     }
-
     if (!_hasMoreAnnouncements) return;
-
     _announcementState = AcademicLoadState.loading;
     _announcementError = null;
     notifyListeners();
 
     try {
-      final result = await _repository.getAnnouncements(
-        page: _announcementPage,
-      );
-
-      if (refresh) {
-        _announcements = result.items;
-      } else {
-        _announcements.addAll(result.items);
-      }
-
+      final result = await _repository.getAnnouncements(page: _announcementPage);
+      if (refresh) _announcements = result.items;
+      else _announcements.addAll(result.items);
       _hasMoreAnnouncements = result.hasNextPage;
       _announcementPage++;
       _announcementState = AcademicLoadState.loaded;
     } catch (e) {
-      _announcementError = e.toString();
+      _announcementError = _parseError(e);
       _announcementState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
-  Future<bool> createAnnouncement({
-    required String judul,
-    required String isi,
-  }) async {
+  Future<bool> createAnnouncement({required String judul, required String isi}) async {
     try {
       _announcementError = null;
       notifyListeners();
-
-      await _repository.createAnnouncement({
-        'judul': judul,
-        'isi': isi,
-      });
-
+      await _repository.createAnnouncement({'judul': judul, 'isi': isi});
       await fetchAnnouncements(refresh: true);
       return true;
     } catch (e) {
-      _announcementError = e.toString();
+      _announcementError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> updateAnnouncement({
-    required String id,
-    required String judul,
-    required String isi,
-  }) async {
+  Future<bool> updateAnnouncement({required String id, required String judul, required String isi}) async {
     try {
       _announcementError = null;
       notifyListeners();
-
-      await _repository.updateAnnouncement(
-        id,
-        {
-          'judul': judul,
-          'isi': isi,
-        },
-      );
-
+      await _repository.updateAnnouncement(id, {'judul': judul, 'isi': isi});
       await fetchAnnouncements(refresh: true);
       return true;
     } catch (e) {
-      _announcementError = e.toString();
+      _announcementError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> deleteAnnouncement({
-    required String id,
-  }) async {
+  Future<bool> deleteAnnouncement({required String id}) async {
     try {
       _announcementError = null;
       notifyListeners();
-
       await _repository.deleteAnnouncement(id);
-
       await fetchAnnouncements(refresh: true);
       return true;
     } catch (e) {
-      _announcementError = e.toString();
+      _announcementError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -396,43 +294,26 @@ class AcademicProvider extends ChangeNotifier {
   List<ScheduleModel> get schedules => _schedules;
   String? get scheduleError => _scheduleError;
 
-  Future<void> fetchSchedules({
-    String? classId,
-    String? teacherId,
-  }) async {
+  Future<void> fetchSchedules({String? classId, String? teacherId}) async {
     _scheduleState = AcademicLoadState.loading;
     _scheduleError = null;
     notifyListeners();
-
     try {
-      _schedules = await _repository.getSchedules(
-        classId: classId,
-        teacherId: teacherId,
-      );
-
+      _schedules = await _repository.getSchedules(classId: classId, teacherId: teacherId);
       _scheduleState = AcademicLoadState.loaded;
     } catch (e) {
-      _scheduleError = e.toString();
+      _scheduleError = _parseError(e);
       _scheduleState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
   Future<List<UserSearchModel>> searchGuruMapel(String query) async {
-    try {
-      return await _repository.searchGuruMapel(query);
-    } catch (_) {
-      return [];
-    }
+    try { return await _repository.searchGuruMapel(query); } catch (_) { return []; }
   }
 
   Future<List<MapelAssignmentModel>> getMapelByGuru(String guruId) async {
-    try {
-      return await _repository.getMapelByGuru(guruId);
-    } catch (_) {
-      return [];
-    }
+    try { return await _repository.getMapelByGuru(guruId); } catch (_) { return []; }
   }
 
   Future<bool> createSchedule({
@@ -448,7 +329,6 @@ class AcademicProvider extends ChangeNotifier {
     try {
       _scheduleError = null;
       notifyListeners();
-
       await _repository.createSchedule({
         'guru_id': guruId,
         'guru_nama': guruNama,
@@ -459,11 +339,10 @@ class AcademicProvider extends ChangeNotifier {
         'waktu_mulai': waktuMulai,
         'waktu_berakhir': waktuBerakhir,
       });
-
-      await fetchSchedules();
+      await fetchSchedules(classId: kelasId);
       return true;
     } catch (e) {
-      _scheduleError = e.toString();
+      _scheduleError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -483,43 +362,34 @@ class AcademicProvider extends ChangeNotifier {
     try {
       _scheduleError = null;
       notifyListeners();
-
-      await _repository.updateSchedule(
-        id,
-        {
-          'guru_id': guruId,
-          'guru_nama': guruNama,
-          'kelas_id': kelasId,
-          'mapel_id': mapelId,
-          'mata_pelajaran': mataPelajaran,
-          'hari': hari,
-          'waktu_mulai': waktuMulai,
-          'waktu_berakhir': waktuBerakhir,
-        },
-      );
-
-      await fetchSchedules();
+      await _repository.updateSchedule(id, {
+        'guru_id': guruId,
+        'guru_nama': guruNama,
+        'kelas_id': kelasId,
+        'mapel_id': mapelId,
+        'mata_pelajaran': mataPelajaran,
+        'hari': hari,
+        'waktu_mulai': waktuMulai,
+        'waktu_berakhir': waktuBerakhir,
+      });
+      await fetchSchedules(classId: kelasId);
       return true;
     } catch (e) {
-      _scheduleError = e.toString();
+      _scheduleError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> deleteSchedule({
-    required String id,
-  }) async {
+  Future<bool> deleteSchedule({required String id}) async {
     try {
       _scheduleError = null;
       notifyListeners();
-
       await _repository.deleteSchedule(id);
-
       await fetchSchedules();
       return true;
     } catch (e) {
-      _scheduleError = e.toString();
+      _scheduleError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -537,15 +407,8 @@ class AcademicProvider extends ChangeNotifier {
   String? get letterError => _letterError;
   bool get hasMoreLetters => _hasMoreLetters;
 
-  Future<void> fetchLetters({
-    bool refresh = false,
-  }) async {
-    if (refresh) {
-      _letterPage = 1;
-      _letters = [];
-      _hasMoreLetters = true;
-    }
-
+  Future<void> fetchLetters({bool refresh = false}) async {
+    if (refresh) { _letterPage = 1; _letters = []; _hasMoreLetters = true; }
     if (!_hasMoreLetters) return;
 
     _letterState = AcademicLoadState.loading;
@@ -553,86 +416,56 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getLetters(
-        page: _letterPage,
-      );
-
-      if (refresh) {
-        _letters = result.items;
-      } else {
-        _letters.addAll(result.items);
-      }
-
+      final result = await _repository.getLetters(page: _letterPage);
+      if (refresh) _letters = result.items;
+      else _letters.addAll(result.items);
       _hasMoreLetters = result.hasNextPage;
       _letterPage++;
       _letterState = AcademicLoadState.loaded;
     } catch (e) {
-      _letterError = e.toString();
+      _letterError = _parseError(e);
       _letterState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
-  Future<bool> createLetter({
-    required String nomorSurat,
-    required PlatformFile file,
-  }) async {
+  Future<bool> createLetter({required String nomorSurat, required PlatformFile file}) async {
     try {
       _letterError = null;
       notifyListeners();
-
-      await _repository.createLetter(
-        nomorSurat: nomorSurat,
-        file: file,
-      );
-
+      await _repository.createLetter(nomorSurat: nomorSurat, file: file);
       await fetchLetters(refresh: true);
       return true;
     } catch (e) {
-      _letterError = e.toString();
+      _letterError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> updateLetter({
-    required String id,
-    required String nomorSurat,
-    PlatformFile? file,
-  }) async {
+  Future<bool> updateLetter({required String id, required String nomorSurat, PlatformFile? file}) async {
     try {
       _letterError = null;
       notifyListeners();
-
-      await _repository.updateLetter(
-        id: id,
-        nomorSurat: nomorSurat,
-        file: file,
-      );
-
+      await _repository.updateLetter(id: id, nomorSurat: nomorSurat, file: file);
       await fetchLetters(refresh: true);
       return true;
     } catch (e) {
-      _letterError = e.toString();
+      _letterError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> deleteLetter({
-    required String id,
-  }) async {
+  Future<bool> deleteLetter({required String id}) async {
     try {
       _letterError = null;
       notifyListeners();
-
       await _repository.deleteLetter(id);
-
       await fetchLetters(refresh: true);
       return true;
     } catch (e) {
-      _letterError = e.toString();
+      _letterError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -650,18 +483,8 @@ class AcademicProvider extends ChangeNotifier {
   String? get subjectError => _subjectError;
   bool get hasMoreSubjects => _hasMoreSubjects;
 
-  Future<void> fetchSubjects({
-    bool refresh = false,
-    String? classId,
-    String? teacherId,
-    String? search,
-  }) async {
-    if (refresh) {
-      _subjectPage = 1;
-      _subjects = [];
-      _hasMoreSubjects = true;
-    }
-
+  Future<void> fetchSubjects({bool refresh = false, String? classId, String? teacherId, String? search}) async {
+    if (refresh) { _subjectPage = 1; _subjects = []; _hasMoreSubjects = true; }
     if (!_hasMoreSubjects) return;
 
     _subjectState = AcademicLoadState.loading;
@@ -669,27 +492,16 @@ class AcademicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _repository.getSubjects(
-        page: _subjectPage,
-        classId: classId,
-        teacherId: teacherId,
-        search: search,
-      );
-
-      if (refresh) {
-        _subjects = result.items;
-      } else {
-        _subjects.addAll(result.items);
-      }
-
+      final result = await _repository.getSubjects(page: _subjectPage, classId: classId, teacherId: teacherId, search: search);
+      if (refresh) _subjects = result.items;
+      else _subjects.addAll(result.items);
       _hasMoreSubjects = result.hasNextPage;
       _subjectPage++;
       _subjectState = AcademicLoadState.loaded;
     } catch (e) {
-      _subjectError = e.toString();
+      _subjectError = _parseError(e);
       _subjectState = AcademicLoadState.error;
     }
-
     notifyListeners();
   }
 
@@ -702,18 +514,16 @@ class AcademicProvider extends ChangeNotifier {
     try {
       _subjectError = null;
       notifyListeners();
-
       await _repository.createSubject({
         'nama_mapel': namaMapel,
         'kelas_id': kelasId,
         'guru_mapel_id': guruMapelId,
         'guru_mapel_nama': guruMapelNama,
       });
-
       await fetchSubjects(refresh: true);
       return true;
     } catch (e) {
-      _subjectError = e.toString();
+      _subjectError = _parseError(e);
       notifyListeners();
       return false;
     }
@@ -729,39 +539,30 @@ class AcademicProvider extends ChangeNotifier {
     try {
       _subjectError = null;
       notifyListeners();
-
-      await _repository.updateSubject(
-        id,
-        {
-          'nama_mapel': namaMapel,
-          'kelas_id': kelasId,
-          'guru_mapel_id': guruMapelId,
-          'guru_mapel_nama': guruMapelNama,
-        },
-      );
-
+      await _repository.updateSubject(id, {
+        'nama_mapel': namaMapel,
+        'kelas_id': kelasId,
+        'guru_mapel_id': guruMapelId,
+        'guru_mapel_nama': guruMapelNama,
+      });
       await fetchSubjects(refresh: true);
       return true;
     } catch (e) {
-      _subjectError = e.toString();
+      _subjectError = _parseError(e);
       notifyListeners();
       return false;
     }
   }
 
-  Future<bool> deleteSubject({
-    required String id,
-  }) async {
+  Future<bool> deleteSubject({required String id}) async {
     try {
       _subjectError = null;
       notifyListeners();
-
       await _repository.deleteSubject(id);
-
       await fetchSubjects(refresh: true);
       return true;
     } catch (e) {
-      _subjectError = e.toString();
+      _subjectError = _parseError(e);
       notifyListeners();
       return false;
     }
