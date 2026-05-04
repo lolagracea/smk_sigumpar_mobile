@@ -20,7 +20,9 @@ class _PklLocationReportScreenState extends State<PklLocationReportScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VocationalProvider>().fetchPklClasses(refresh: true);
+      final provider = context.read<VocationalProvider>();
+      provider.fetchPklClasses(refresh: true);
+      provider.fetchPklLocationReports(refresh: true);
     });
   }
 
@@ -31,6 +33,12 @@ class _PklLocationReportScreenState extends State<PklLocationReportScreen> {
       classId: provider.selectedPklClass?.id,
       studentId: provider.selectedPklStudent?.id,
     );
+  }
+
+  void _loadAllReports() {
+    final provider = context.read<VocationalProvider>();
+    provider.clearSelection();
+    provider.fetchPklLocationReports(refresh: true);
   }
 
   @override

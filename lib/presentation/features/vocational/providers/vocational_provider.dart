@@ -11,7 +11,7 @@ class VocationalProvider extends ChangeNotifier {
   final VocationalRepository _repository;
 
   VocationalProvider({required VocationalRepository repository})
-    : _repository = repository;
+      : _repository = repository;
 
   VocationalLoadState _state = VocationalLoadState.initial;
   String? _error;
@@ -142,17 +142,22 @@ class VocationalProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submitPklLocationReport(Map<String, dynamic> data) async {
+  Future<PklLocationModel> submitPklLocationReport(
+      Map<String, dynamic> data) async {
     _state = VocationalLoadState.loading;
     notifyListeners();
     try {
-      await _repository.submitPklLocationReport(data);
+      final result = await _repository.submitPklLocationReport(data);
+      _pklLocationReports.insert(0, result);
       _state = VocationalLoadState.loaded;
+      notifyListeners();
+      return result;
     } catch (e) {
       _error = e.toString();
       _state = VocationalLoadState.error;
+      notifyListeners();
+      rethrow;
     }
-    notifyListeners();
   }
 
   // PKL Progress Reports
@@ -178,16 +183,21 @@ class VocationalProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submitPklProgressReport(Map<String, dynamic> data) async {
+  Future<PklProgressModel> submitPklProgressReport(
+      Map<String, dynamic> data) async {
     _state = VocationalLoadState.loading;
     notifyListeners();
     try {
-      await _repository.submitPklProgressReport(data);
+      final result = await _repository.submitPklProgressReport(data);
+      _pklProgressReports.insert(0, result);
       _state = VocationalLoadState.loaded;
+      notifyListeners();
+      return result;
     } catch (e) {
       _error = e.toString();
       _state = VocationalLoadState.error;
+      notifyListeners();
+      rethrow;
     }
-    notifyListeners();
   }
 }

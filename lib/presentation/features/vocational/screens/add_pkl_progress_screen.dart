@@ -109,6 +109,8 @@ class _AddPklProgressScreenState extends State<AddPklProgressScreen> {
 
     provider.submitPklProgressReport(data).then((_) {
       if (context.mounted) {
+        provider.fetchPklProgressReports(refresh: true);
+        provider.fetchPklLocationReports(refresh: true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Laporan kemajuan PKL berhasil disimpan')),
