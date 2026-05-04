@@ -7,6 +7,8 @@ import 'package:smk_sigumpar/data/models/user_search_model.dart';
 import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:smk_sigumpar/data/models/arsip_surat_model.dart';
+import 'package:smk_sigumpar/data/models/mapel_assignment_model.dart';
+import 'package:smk_sigumpar/data/models/schedule_model.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 
@@ -379,6 +381,144 @@ class AcademicProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _announcementError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── Schedules / Jadwal Mengajar ─────────────────────────
+  AcademicLoadState _scheduleState = AcademicLoadState.initial;
+  List<ScheduleModel> _schedules = [];
+  String? _scheduleError;
+
+  AcademicLoadState get scheduleState => _scheduleState;
+  List<ScheduleModel> get schedules => _schedules;
+  String? get scheduleError => _scheduleError;
+
+  Future<void> fetchSchedules({
+    String? classId,
+    String? teacherId,
+  }) async {
+    _scheduleState = AcademicLoadState.loading;
+    _scheduleError = null;
+    notifyListeners();
+
+    try {
+      _schedules = await _repository.getSchedules(
+        classId: classId,
+        teacherId: teacherId,
+      );
+
+      _scheduleState = AcademicLoadState.loaded;
+    } catch (e) {
+      _scheduleError = e.toString();
+      _scheduleState = AcademicLoadState.error;
+    }
+
+    notifyListeners();
+  }
+
+  Future<List<UserSearchModel>> searchGuruMapel(String query) async {
+    try {
+      return await _repository.searchGuruMapel(query);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<MapelAssignmentModel>> getMapelByGuru(String guruId) async {
+    try {
+      return await _repository.getMapelByGuru(guruId);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<bool> createSchedule({
+    required String guruId,
+    required String guruNama,
+    required String kelasId,
+    required String mapelId,
+    required String mataPelajaran,
+    required String hari,
+    required String waktuMulai,
+    required String waktuBerakhir,
+  }) async {
+    try {
+      _scheduleError = null;
+      notifyListeners();
+
+      await _repository.createSchedule({
+        'guru_id': guruId,
+        'guru_nama': guruNama,
+        'kelas_id': kelasId,
+        'mapel_id': mapelId,
+        'mata_pelajaran': mataPelajaran,
+        'hari': hari,
+        'waktu_mulai': waktuMulai,
+        'waktu_berakhir': waktuBerakhir,
+      });
+
+      await fetchSchedules();
+      return true;
+    } catch (e) {
+      _scheduleError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateSchedule({
+    required String id,
+    required String guruId,
+    required String guruNama,
+    required String kelasId,
+    required String mapelId,
+    required String mataPelajaran,
+    required String hari,
+    required String waktuMulai,
+    required String waktuBerakhir,
+  }) async {
+    try {
+      _scheduleError = null;
+      notifyListeners();
+
+      await _repository.updateSchedule(
+        id,
+        {
+          'guru_id': guruId,
+          'guru_nama': guruNama,
+          'kelas_id': kelasId,
+          'mapel_id': mapelId,
+          'mata_pelajaran': mataPelajaran,
+          'hari': hari,
+          'waktu_mulai': waktuMulai,
+          'waktu_berakhir': waktuBerakhir,
+        },
+      );
+
+      await fetchSchedules();
+      return true;
+    } catch (e) {
+      _scheduleError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteSchedule({
+    required String id,
+  }) async {
+    try {
+      _scheduleError = null;
+      notifyListeners();
+
+      await _repository.deleteSchedule(id);
+
+      await fetchSchedules();
+      return true;
+    } catch (e) {
+      _scheduleError = e.toString();
       notifyListeners();
       return false;
     }

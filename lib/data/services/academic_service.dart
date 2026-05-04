@@ -8,7 +8,8 @@ import '../models/user_search_model.dart';
 import '../repositories/academic_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
-
+import '../models/mapel_assignment_model.dart';
+import '../models/schedule_model.dart';
 import '../models/arsip_surat_model.dart';
 
 class AcademicService implements AcademicRepository {
@@ -367,31 +368,161 @@ class AcademicService implements AcademicRepository {
     await _dioClient.delete('${ApiEndpoints.announcements}/$id');
   }
 
-  // ─── Schedules ────────────────────────────────────────────
+  // ─── Schedules / Jadwal Mengajar ─────────────────────────
   @override
-  Future<List<Map<String, dynamic>>> getSchedules({
+  Future<List<ScheduleModel>> getSchedules({
     String? classId,
     String? teacherId,
   }) async {
     final response = await _dioClient.get(
       ApiEndpoints.schedules,
       queryParameters: {
-        if (classId != null) 'class_id': classId,
-        if (teacherId != null) 'teacher_id': teacherId,
+        if (classId != null && classId.isNotEmpty) 'kelas_id': classId,
+        if (teacherId != null && teacherId.isNotEmpty) 'guru_id': teacherId,
       },
     );
 
     final raw = response.data;
 
+    List<dynamic> rows = [];
+
     if (raw is List) {
-      return List<Map<String, dynamic>>.from(raw);
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['data'] is Map<String, dynamic> &&
+          raw['data']['data'] is List) {
+        rows = raw['data']['data'] as List;
+      }
     }
 
-    if (raw is Map<String, dynamic> && raw['data'] is List) {
-      return List<Map<String, dynamic>>.from(raw['data']);
+    return rows
+        .map(
+          (item) => ScheduleModel.fromJson(
+        Map<String, dynamic>.from(item as Map),
+      ),
+    )
+        .toList();
+  }
+
+  @override
+  Future<ScheduleModel> createSchedule(Map<String, dynamic> data) async {
+    final response = await _dioClient.post(
+      ApiEndpoints.schedules,
+      data: data,
+    );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return ScheduleModel.fromJson(raw['data'] as Map<String, dynamic>);
     }
 
-    return [];
+    return ScheduleModel.fromJson(
+      Map<String, dynamic>.from(raw as Map),
+    );
+  }
+
+  @override
+  Future<ScheduleModel> updateSchedule(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.schedules}/$id',
+      data: data,
+    );
+
+    final raw = response.data;
+
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return ScheduleModel.fromJson(raw['data'] as Map<String, dynamic>);
+    }
+
+    return ScheduleModel.fromJson(
+      Map<String, dynamic>.from(raw as Map),
+    );
+  }
+
+  @override
+  Future<void> deleteSchedule(String id) async {
+    await _dioClient.delete('${ApiEndpoints.schedules}/$id');
+  }
+
+  @override
+  Future<List<UserSearchModel>> searchGuruMapel(String query) async {
+    final keyword = query.trim();
+
+    if (keyword.isEmpty) {
+      return [];
+    }
+
+    final response = await _dioClient.get(
+      ApiEndpoints.authUsersSearch,
+      queryParameters: {
+        'q': keyword,
+        'role': 'guru-mapel',
+      },
+    );
+
+    final raw = response.data;
+
+    List<dynamic> rows = [];
+
+    if (raw is List) {
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['users'] is List) {
+        rows = raw['users'] as List;
+      }
+    }
+
+    return rows
+        .map(
+          (item) => UserSearchModel.fromJson(
+        Map<String, dynamic>.from(item as Map),
+      ),
+    )
+        .where((user) => user.id.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  Future<List<MapelAssignmentModel>> getMapelByGuru(String guruId) async {
+    if (guruId.trim().isEmpty) {
+      return [];
+    }
+
+    final response = await _dioClient.get(
+      ApiEndpoints.getSubjectsByGuruId(guruId),
+    );
+
+    final raw = response.data;
+
+    List<dynamic> rows = [];
+
+    if (raw is List) {
+      rows = raw;
+    } else if (raw is Map<String, dynamic>) {
+      if (raw['data'] is List) {
+        rows = raw['data'] as List;
+      } else if (raw['data'] is Map<String, dynamic> &&
+          raw['data']['data'] is List) {
+        rows = raw['data']['data'] as List;
+      }
+    }
+
+    return rows
+        .map(
+          (item) => MapelAssignmentModel.fromJson(
+        Map<String, dynamic>.from(item as Map),
+      ),
+    )
+        .where((item) => item.mapelId.isNotEmpty && item.kelasId.isNotEmpty)
+        .toList();
   }
 
   // ─── Letters / Arsip Surat ──────────────────────────────

@@ -5,6 +5,8 @@ import '../models/user_search_model.dart';
 import '../../core/network/api_response.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/arsip_surat_model.dart';
+import '../models/mapel_assignment_model.dart';
+import '../models/schedule_model.dart';
 
 abstract class AcademicRepository {
   // Classes
@@ -60,11 +62,24 @@ abstract class AcademicRepository {
 
   Future<void> deleteAnnouncement(String id);
 
-  // Schedules
-  Future<List<Map<String, dynamic>>> getSchedules({
+  // ─── Schedules / Jadwal Mengajar ─────────────────────────
+  Future<List<ScheduleModel>> getSchedules({
     String? classId,
     String? teacherId,
   });
+
+  Future<ScheduleModel> createSchedule(Map<String, dynamic> data);
+
+  Future<ScheduleModel> updateSchedule(
+      String id,
+      Map<String, dynamic> data,
+      );
+
+  Future<void> deleteSchedule(String id);
+
+  Future<List<UserSearchModel>> searchGuruMapel(String query);
+
+  Future<List<MapelAssignmentModel>> getMapelByGuru(String guruId);
 
   // ─── Letters / Arsip Surat ──────────────────────────────
   Future<PaginatedResponse<ArsipSuratModel>> getLetters({
