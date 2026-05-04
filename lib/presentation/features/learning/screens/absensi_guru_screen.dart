@@ -6,10 +6,10 @@ import 'package:provider/provider.dart';
 
 import '../../../common/providers/auth_provider.dart';
 import '../providers/absensi_guru_provider.dart';
-import '../../home/widgets/guru_mapel_drawer.dart';
 import '../../../../data/models/absensi_guru_model.dart';
 import '../../../../core/utils/absensi_time_validator.dart';
-import '../../../../core/constants/route_names.dart';
+// import '../../home/widgets/guru_mapel_drawer.dart'; // Dihapus karena tidak dipakai lagi
+// import '../../../../core/constants/route_names.dart'; // Dihapus karena tidak dipakai lagi
 
 class AbsensiGuruScreen extends StatefulWidget {
   const AbsensiGuruScreen({super.key});
@@ -61,23 +61,28 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   // ─── Show Photo Picker Bottom Sheet ─────────────────────
   void _showPhotoPickerSheet(BuildContext context) {
     final provider = context.read<AbsensiGuruProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (sheetContext) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Ambil dari Kamera'),
+              leading: Icon(Icons.camera_alt, color: isDark ? Colors.white70 : Colors.black87),
+              title: Text('Ambil dari Kamera', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () async {
                 Navigator.pop(sheetContext);
                 await provider.pickPhotoFromCamera();
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Pilih dari Galeri'),
+              leading: Icon(Icons.photo_library, color: isDark ? Colors.white70 : Colors.black87),
+              title: Text('Pilih dari Galeri', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () async {
                 Navigator.pop(sheetContext);
                 await provider.pickPhotoFromGallery();
@@ -109,27 +114,36 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   void _showSuccessDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        icon: Icon(
           Icons.check_circle,
-          color: Colors.green,
+          color: isDark ? Colors.green.shade400 : Colors.green,
           size: 64,
         ),
-        title: const Text(
+        title: Text(
           'Absensi Berhasil!',
           textAlign: TextAlign.center,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
         ),
-        content: const Text(
+        content: Text(
           'Absensi Anda hari ini sudah tercatat.',
           textAlign: TextAlign.center,
+          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
         ),
         actions: [
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('OK'),
             ),
@@ -152,49 +166,31 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      drawer: const GuruMapelDrawer(currentRoute: RouteNames.absensiGuru),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.school, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'SMK Negeri 1 Sigumpar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // ✅ LANGSUNG KEMBALIKAN KONTEN UTAMA (Tanpa Scaffold & AppBar)
+    return Container(
+      color: isDark ? Theme.of(context).scaffoldBackgroundColor : const Color(0xFFF5F7FA),
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildUserCard(),
+            _buildUserCard(isDark),
             const SizedBox(height: 16),
-            _buildTimeStatusBanner(),
+            _buildTimeStatusBanner(isDark),
             const SizedBox(height: 16),
-            _buildDateField(),
+            _buildDateField(isDark),
             const SizedBox(height: 16),
-            _buildStatusDropdown(),
+            _buildStatusDropdown(isDark),
             const SizedBox(height: 16),
-            _buildKeteranganField(),
+            _buildKeteranganField(isDark),
             const SizedBox(height: 16),
-            _buildPhotoUpload(),
+            _buildPhotoUpload(isDark),
             const SizedBox(height: 16),
-            _buildPhotoInfo(),
+            _buildPhotoInfo(isDark),
             const SizedBox(height: 24),
-            _buildSubmitButton(),
+            _buildSubmitButton(isDark),
             const SizedBox(height: 24),
           ],
         ),
@@ -203,18 +199,18 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── User Info Card ─────────────────────────────────────
-  Widget _buildUserCard() {
+  Widget _buildUserCard(bool isDark) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -224,11 +220,11 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundColor: Colors.grey.shade200,
-            child: const Icon(
+            backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+            child: Icon(
               Icons.person,
               size: 32,
-              color: Colors.grey,
+              color: isDark ? Colors.white70 : Colors.grey,
             ),
           ),
           const SizedBox(width: 12),
@@ -238,17 +234,18 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
               children: [
                 Text(
                   user?.name ?? 'Loading...',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Guru Mata Pelajaran',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey,
+                    color: isDark ? Colors.white54 : Colors.grey,
                   ),
                 ),
               ],
@@ -256,10 +253,10 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
           ),
           Text(
             '$_currentTime WIB',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Colors.grey,
+              color: isDark ? Colors.white54 : Colors.grey,
             ),
           ),
         ],
@@ -268,7 +265,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Time Status Banner ─────────────────────────────────
-  Widget _buildTimeStatusBanner() {
+  Widget _buildTimeStatusBanner(bool isDark) {
     final provider = context.watch<AbsensiGuruProvider>();
 
     if (provider.isWithinWindow) {
@@ -277,19 +274,19 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.green.shade50,
+          color: isDark ? Colors.green.withOpacity(0.1) : Colors.green.shade50,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.green.shade200),
+          border: Border.all(color: isDark ? Colors.green.shade800 : Colors.green.shade200),
         ),
         child: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+            Icon(Icons.check_circle, color: isDark ? Colors.green.shade400 : Colors.green.shade700, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Absensi tersedia. Batas waktu: $countdown',
                 style: TextStyle(
-                  color: Colors.green.shade900,
+                  color: isDark ? Colors.green.shade200 : Colors.green.shade900,
                   fontSize: 13,
                 ),
               ),
@@ -302,19 +299,19 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.red.shade50,
+          color: isDark ? Colors.red.withOpacity(0.1) : Colors.red.shade50,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.shade200),
+          border: Border.all(color: isDark ? Colors.red.shade800 : Colors.red.shade200),
         ),
         child: Row(
           children: [
-            Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+            Icon(Icons.warning, color: isDark ? Colors.red.shade400 : Colors.red.shade700, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 provider.timeValidationMessage ?? 'Di luar waktu absensi',
                 style: TextStyle(
-                  color: Colors.red.shade900,
+                  color: isDark ? Colors.red.shade200 : Colors.red.shade900,
                   fontSize: 13,
                 ),
               ),
@@ -326,32 +323,33 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Date Field (Read Only) ─────────────────────────────
-  Widget _buildDateField() {
+  Widget _buildDateField(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Pilih Tanggal Absensi',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
           ),
           child: Row(
             children: [
-              const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
+              Icon(Icons.calendar_today, size: 18, color: isDark ? Colors.white54 : Colors.grey),
               const SizedBox(width: 12),
               Text(
                 AbsensiTimeValidator.getCurrentDateFormatted(),
-                style: const TextStyle(fontSize: 14, color: Colors.black87),  // ← explicit hitam
+                style: TextStyle(fontSize: 14, color: isDark ? Colors.white : Colors.black87),
               ),
             ],
           ),
@@ -361,32 +359,35 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Status Dropdown ────────────────────────────────────
-  Widget _buildStatusDropdown() {
+  Widget _buildStatusDropdown(bool isDark) {
     final provider = context.watch<AbsensiGuruProvider>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Status Kehadiran',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<StatusKehadiran>(
               value: provider.selectedStatus,
+              dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
               isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down),
+              style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
+              icon: Icon(Icons.keyboard_arrow_down, color: isDark ? Colors.white54 : Colors.black87),
               items: StatusKehadiran.selectableStatuses.map((status) {
                 return DropdownMenuItem(
                   value: status,
@@ -408,31 +409,33 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Keterangan Field ───────────────────────────────────
-  Widget _buildKeteranganField() {
+  Widget _buildKeteranganField(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Keterangan/Catatan',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
           ),
           child: TextField(
             controller: _keteranganController,
             maxLines: 4,
             maxLength: 500,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
               hintText: 'Tulis alasan jika sakit / izin',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
               counterText: '',
@@ -447,7 +450,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Photo Upload ───────────────────────────────────────
-  Widget _buildPhotoUpload() {
+  Widget _buildPhotoUpload(bool isDark) {
     final provider = context.watch<AbsensiGuruProvider>();
     final photo = provider.selectedPhoto;
 
@@ -456,36 +459,36 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       child: Container(
         height: photo == null ? 180 : 240,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.grey.shade300,
-            style: photo == null ? BorderStyle.solid : BorderStyle.solid,
+            color: isDark ? Colors.white24 : Colors.grey.shade300,
+            style: BorderStyle.solid,
             width: photo == null ? 1.5 : 1,
           ),
         ),
         child: photo == null
-            ? _buildEmptyPhotoPlaceholder()
+            ? _buildEmptyPhotoPlaceholder(isDark)
             : _buildPhotoPreview(photo.path, provider),
       ),
     );
   }
 
-  Widget _buildEmptyPhotoPlaceholder() {
+  Widget _buildEmptyPhotoPlaceholder(bool isDark) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
           Icons.camera_alt_outlined,
           size: 48,
-          color: Colors.grey.shade400,
+          color: isDark ? Colors.white30 : Colors.grey.shade400,
         ),
         const SizedBox(height: 12),
         Text(
           'Klik untuk ambil foto / upload',
           style: TextStyle(
             fontSize: 13,
-            color: Colors.grey.shade600,
+            color: isDark ? Colors.white54 : Colors.grey.shade600,
           ),
         ),
       ],
@@ -529,23 +532,23 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Photo Info ─────────────────────────────────────────
-  Widget _buildPhotoInfo() {
+  Widget _buildPhotoInfo(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : Colors.blue.shade50,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+          Icon(Icons.info_outline, size: 16, color: isDark ? const Color(0xFF60A5FA) : Colors.blue.shade700),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
               'Pastikan foto jelas dan sesuai dengan lokasi kerja.\nFormat yang didukung: JPG, PNG (maks 5MB)',
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.black87,
+                color: isDark ? Colors.white70 : Colors.black87,
               ),
             ),
           ),
@@ -555,18 +558,18 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
   }
 
   // ─── Submit Button ──────────────────────────────────────
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(bool isDark) {
     final provider = context.watch<AbsensiGuruProvider>();
 
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        disabledBackgroundColor: Colors.grey.shade300,
+        disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
       ),
       onPressed: provider.canSubmit ? _handleSubmit : null,
       child: provider.isSubmitting
