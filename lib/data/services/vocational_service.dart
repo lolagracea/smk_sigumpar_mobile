@@ -7,6 +7,7 @@ class VocationalService implements VocationalRepository {
   final DioClient _dioClient;
   VocationalService({required DioClient dioClient}) : _dioClient = dioClient;
 
+  // ── Scout Classes (existing) ─────────────────────────────────
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses({int page = 1}) async {
     final r = await _dioClient.get(ApiEndpoints.scoutGroups, queryParameters: {'page': page});
@@ -36,6 +37,79 @@ class VocationalService implements VocationalRepository {
     return r.data['data'] as Map<String, dynamic>;
   }
 
+  // ── Absensi Pramuka (NEW — mirror web vocationalApi) ─────────
+
+  @override
+  Future<List<Map<String, dynamic>>> getKelasVokasional() async {
+    // GET /api/vocational/kelas — sama dengan web getKelasVokasi()
+    final r = await _dioClient.get(ApiEndpoints.vocationalClasses);
+    final data = r.data['data'];
+    if (data is List) {
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getSiswaPramuka({required String kelasId}) async {
+    // GET /api/vocational/siswa?kelas_id=X — sama dengan web getSiswaVokasi({ kelas_id })
+    final r = await _dioClient.get(ApiEndpoints.vocationalStudents, queryParameters: {'kelas_id': kelasId});
+    final data = r.data['data'];
+    if (data is List) {
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRiwayatAbsensiPramuka({
+    String? kelasId,
+    String? tanggal,
+  }) async {
+    // GET /api/vocational/absensi — sama dengan web getAbsensiPramuka(params)
+    final params = <String, dynamic>{};
+    if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
+    if (tanggal != null && tanggal.isNotEmpty) params['tanggal'] = tanggal;
+
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendance, queryParameters: params);
+    final data = r.data['data'];
+    if (data is List) {
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    }
+    return [];
+  }
+
+  @override
+  Future<void> submitAbsensiPramukaBulk(Map<String, dynamic> payload) async {
+    // POST /api/vocational/absensi — sama dengan web submitAbsensiPramuka(payload)
+    // Payload structure (mirror web):
+    // {
+    //   kelas_id, tanggal, deskripsi,
+    //   data_absensi: [{ siswa_id, nama_lengkap, nisn, status, keterangan }]
+    // }
+    await _dioClient.post(ApiEndpoints.scoutAttendance, data: payload);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRekapAbsensiPramuka({
+    required String kelasId,
+    String? tanggalMulai,
+    String? tanggalAkhir,
+  }) async {
+    // GET /api/vocational/absensi/rekap — sama dengan web getRekapAbsensiPramuka(params)
+    final params = <String, dynamic>{'kelas_id': kelasId};
+    if (tanggalMulai != null && tanggalMulai.isNotEmpty) params['tanggal_mulai'] = tanggalMulai;
+    if (tanggalAkhir != null && tanggalAkhir.isNotEmpty) params['tanggal_akhir'] = tanggalAkhir;
+
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendanceRecap, queryParameters: params);
+    final data = r.data['data'];
+    if (data is List) {
+      return data.map((e) => e as Map<String, dynamic>).toList();
+    }
+    return [];
+  }
+
+  // ── PKL (existing) ───────────────────────────────────────────
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports({int page = 1}) async {
     final r = await _dioClient.get(ApiEndpoints.pklLocation, queryParameters: {'page': page});
