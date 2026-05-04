@@ -1,22 +1,24 @@
 import 'package:get_it/get_it.dart';
-import '../network/dio_client.dart';
-import '../theme/theme_notifier.dart';
-import '../utils/secure_storage.dart';
-import '../../data/repositories/auth_repository.dart';
-import '../../data/repositories/academic_repository.dart';
-import '../../data/repositories/student_repository.dart';
-import '../../data/repositories/learning_repository.dart';
-import '../../data/repositories/vocational_repository.dart';
-import '../../data/repositories/asset_repository.dart';
-import '../../data/services/auth_service.dart';
-import '../../data/services/academic_service.dart';
-import '../../data/services/student_service.dart';
-import '../../data/services/learning_service.dart';
-import '../../data/services/vocational_service.dart';
-import '../../data/services/asset_service.dart';
-import '../../presentation/common/providers/auth_provider.dart';
-import '../../presentation/common/providers/theme_provider.dart';
-import '../../presentation/features/learning/providers/absensi_guru_provider.dart'; // ← BARU
+import 'package:smk_sigumpar/core/network/dio_client.dart';
+import 'package:smk_sigumpar/core/theme/theme_notifier.dart';
+import 'package:smk_sigumpar/core/utils/secure_storage.dart';
+import 'package:smk_sigumpar/data/repositories/auth_repository.dart';
+import 'package:smk_sigumpar/data/repositories/academic_repository.dart';
+import 'package:smk_sigumpar/data/repositories/student_repository.dart';
+import 'package:smk_sigumpar/data/repositories/learning_repository.dart';
+import 'package:smk_sigumpar/data/repositories/vocational_repository.dart';
+import 'package:smk_sigumpar/data/repositories/asset_repository.dart';
+import 'package:smk_sigumpar/data/services/auth_service.dart';
+import 'package:smk_sigumpar/data/services/academic_service.dart';
+import 'package:smk_sigumpar/data/services/student_service.dart';
+import 'package:smk_sigumpar/data/services/learning_service.dart';
+import 'package:smk_sigumpar/data/services/vocational_service.dart';
+import 'package:smk_sigumpar/data/services/asset_service.dart';
+import 'package:smk_sigumpar/presentation/common/providers/auth_provider.dart';
+import 'package:smk_sigumpar/presentation/common/providers/theme_provider.dart';
+import 'package:smk_sigumpar/presentation/features/learning/providers/absensi_guru_provider.dart';
+import 'package:smk_sigumpar/presentation/features/student/providers/student_provider.dart';
+import 'package:smk_sigumpar/presentation/features/academic/providers/academic_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -73,5 +75,13 @@ Future<void> init() async {
   // ─── Providers (Factory — fresh state per screen) ──────
   sl.registerFactory<AbsensiGuruProvider>(
         () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  );
+
+  sl.registerFactory<StudentProvider>(
+        () => StudentProvider(repository: sl<StudentRepository>()),
+  );
+
+  sl.registerFactory<AcademicProvider>(
+        () => AcademicProvider(repository: sl<AcademicRepository>()),
   );
 }

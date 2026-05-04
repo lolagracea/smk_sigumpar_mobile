@@ -1,13 +1,24 @@
+import 'package:dio/dio.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/network/api_response.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../models/attendance_model.dart';
+import '../models/attendance_summary_model.dart';
 import '../models/grade_model.dart';
+import '../models/parenting_note_model.dart';
+import '../models/student_model.dart';
 import '../repositories/student_repository.dart';
 
 class StudentService implements StudentRepository {
   final DioClient _dioClient;
   StudentService({required DioClient dioClient}) : _dioClient = dioClient;
+
+  @override
+  Future<List<StudentModel>> getAllStudents() async {
+    final response = await _dioClient.get(ApiEndpoints.students);
+    final List<dynamic> data = response.data['data'] ?? response.data;
+    return data.map((json) => StudentModel.fromJson(json)).toList();
+  }
 
   @override
   Future<PaginatedResponse<AttendanceModel>> getAttendanceRecap({
@@ -29,6 +40,24 @@ class StudentService implements StudentRepository {
       response.data,
       (json) => AttendanceModel.fromJson(json),
     );
+  }
+
+  @override
+  Future<List<AttendanceSummaryModel>> getAttendanceSummary({
+    required String classId,
+    String? month,
+    String? year,
+  }) async {
+    final response = await _dioClient.get(
+      '${ApiEndpoints.attendanceRecap}/summary',
+      queryParameters: {
+        'class_id': classId,
+        if (month != null) 'month': month,
+        if (year != null) 'year': year,
+      },
+    );
+    final List<dynamic> data = response.data['data'] ?? response.data;
+    return data.map((json) => AttendanceSummaryModel.fromJson(json)).toList();
   }
 
   @override
@@ -56,6 +85,23 @@ class StudentService implements StudentRepository {
   }
 
   @override
+  Future<List<GradeModel>> getStudentGrades({
+    required String studentId,
+    String? semester,
+    String? academicYear,
+  }) async {
+    final response = await _dioClient.get(
+      '${ApiEndpoints.studentRekapNilai}/student/$studentId',
+      queryParameters: {
+        if (semester != null) 'semester': semester,
+        if (academicYear != null) 'academic_year': academicYear,
+      },
+    );
+    final List<dynamic> data = response.data['data'] ?? response.data;
+    return data.map((json) => GradeModel.fromJson(json)).toList();
+  }
+
+  @override
   Future<GradeModel> submitGrade(Map<String, dynamic> data) async {
     final response = await _dioClient.post(ApiEndpoints.studentRekapNilai, data: data);
     return GradeModel.fromJson(response.data['data']);
@@ -80,15 +126,28 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getParentingNotes({int page = 1}) async {
+  Future<PaginatedResponse<ParentingNoteModel>> getParentingNotes({int page = 1}) async {
     final r = await _dioClient.get(ApiEndpoints.parenting, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+    
+    if (r.data['data'] is List) {
+      final List rawList = r.data['data'];
+      return PaginatedResponse<ParentingNoteModel>(
+        items: rawList.map((e) => ParentingNoteModel.fromJson(e as Map<String, dynamic>)).toList(),
+        currentPage: 1,
+        lastPage: 1,
+        perPage: rawList.length,
+        total: rawList.length,
+      );
+    }
+    
+    return PaginatedResponse.fromJson(r.data, (j) => ParentingNoteModel.fromJson(j as Map<String, dynamic>));
   }
 
   @override
-  Future<Map<String, dynamic>> createParentingNote(Map<String, dynamic> data) async {
+  Future<ParentingNoteModel> createParentingNote(Map<String, dynamic> data) async {
     final r = await _dioClient.post(ApiEndpoints.parenting, data: data);
-    return r.data['data'] as Map<String, dynamic>;
+    final responseData = r.data['data'] ?? r.data;
+    return ParentingNoteModel.fromJson(responseData as Map<String, dynamic>);
   }
 
   @override

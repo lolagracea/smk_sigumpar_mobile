@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../constants/api_endpoints.dart';
 import '../utils/secure_storage.dart';
-import '../utils/token_helper.dart';
 import 'network_exceptions.dart';
 
 class DioClient {
@@ -121,9 +120,7 @@ class DioClient {
       return await _dio.post(
         path,
         data: formData,
-        options: Options(
-          headers: {'Content-Type': 'multipart/form-data'},
-        ),
+        // Dio akan otomatis mengatur Content-Type menjadi multipart/form-data dengan boundary yang benar
       );
     } on DioException catch (e) {
       throw NetworkExceptions.fromDioError(e);
@@ -132,7 +129,6 @@ class DioClient {
 }
 
 // ─── Auth Interceptor ──────────────────────────────────
-// ─── Auth Interceptor ──────────────────────────────────
 class _AuthInterceptor extends Interceptor {
   final SecureStorage _secureStorage;
 
@@ -140,9 +136,9 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onRequest(
-      RequestOptions options,
-      RequestInterceptorHandler handler,
-      ) async {
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final token = await _secureStorage.getAccessToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
@@ -153,15 +149,14 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401 || err.response?.statusCode == 403) {
-      // Coba refresh token langsung ke Keycloak
       try {
         final refreshToken = await _secureStorage.getRefreshToken();
         if (refreshToken != null) {
-          final dio = Dio(); // Gunakan instance Dio baru tanpa interceptor agar tidak terjadi loop
+          final dio = Dio(); 
           final response = await dio.post(
-            'http://10.0.2.2:8080/realms/smk-sigumpar/protocol/openid-connect/token',
+            ApiEndpoints.keycloakTokenUrl, // Gunakan endpoint dari konstanta
             data: {
-              'client_id': 'smk-sigumpar',
+              'client_id': ApiEndpoints.keycloakClientId,
               'grant_type': 'refresh_token',
               'refresh_token': refreshToken,
             },
@@ -171,7 +166,6 @@ class _AuthInterceptor extends Interceptor {
           final newToken = response.data['access_token'];
           await _secureStorage.saveAccessToken(newToken);
 
-          // Retry request semula yang ditolak tadi dengan Token baru
           err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
           final clonedRequest = await dio.fetch(err.requestOptions);
           return handler.resolve(clonedRequest);
