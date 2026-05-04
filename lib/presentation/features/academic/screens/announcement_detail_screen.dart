@@ -4,15 +4,16 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/announcement_provider.dart';
-
-class AnnouncementDetailScreen extends StatefulWidget {
-  final int announcementId;
-
 import '../../../../core/di/injection_container.dart';
 import '../../../../data/repositories/academic_repository.dart';
 import '../../../common/widgets/error_widget.dart';
 import '../../../common/widgets/loading_widget.dart';
 import '../providers/academic_provider.dart';
+
+class AnnouncementDetailScreen extends StatefulWidget {
+  final int announcementId;
+
+
 
 class AnnouncementDetailScreen extends StatelessWidget {
   final String announcementId;

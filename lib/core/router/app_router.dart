@@ -266,7 +266,7 @@ class AppRouter {
             path: RouteNames.principalResponse,
             builder: (_, __) => const PrincipalResponseScreen(),
           ),
-        ],
+      )],
       ),
     ],
     errorBuilder: (_, state) => Scaffold(
