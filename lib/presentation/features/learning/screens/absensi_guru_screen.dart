@@ -6,10 +6,8 @@ import 'package:provider/provider.dart';
 
 import '../../../common/providers/auth_provider.dart';
 import '../providers/absensi_guru_provider.dart';
-import '../../home/widgets/guru_mapel_drawer.dart';
 import '../../../../data/models/absensi_guru_model.dart';
 import '../../../../core/utils/absensi_time_validator.dart';
-import '../../../../core/constants/route_names.dart';
 
 class AbsensiGuruScreen extends StatefulWidget {
   const AbsensiGuruScreen({super.key});
@@ -152,52 +150,28 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      drawer: const GuruMapelDrawer(currentRoute: RouteNames.absensiGuru),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.school, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'SMK Negeri 1 Sigumpar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildUserCard(),
-            const SizedBox(height: 16),
-            _buildTimeStatusBanner(),
-            const SizedBox(height: 16),
-            _buildDateField(),
-            const SizedBox(height: 16),
-            _buildStatusDropdown(),
-            const SizedBox(height: 16),
-            _buildKeteranganField(),
-            const SizedBox(height: 16),
-            _buildPhotoUpload(),
-            const SizedBox(height: 16),
-            _buildPhotoInfo(),
-            const SizedBox(height: 24),
-            _buildSubmitButton(),
-            const SizedBox(height: 24),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildUserCard(),
+          const SizedBox(height: 16),
+          _buildTimeStatusBanner(),
+          const SizedBox(height: 16),
+          _buildDateField(),
+          const SizedBox(height: 16),
+          _buildStatusDropdown(),
+          const SizedBox(height: 16),
+          _buildKeteranganField(),
+          const SizedBox(height: 16),
+          _buildPhotoUpload(),
+          const SizedBox(height: 16),
+          _buildPhotoInfo(),
+          const SizedBox(height: 24),
+          _buildSubmitButton(),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
@@ -272,7 +246,6 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
     final provider = context.watch<AbsensiGuruProvider>();
 
     if (provider.isWithinWindow) {
-      // Window terbuka — show countdown ke deadline
       final countdown = AbsensiTimeValidator.getCountdownToDeadline();
       return Container(
         padding: const EdgeInsets.all(12),
@@ -298,7 +271,6 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
         ),
       );
     } else {
-      // Di luar window
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -332,10 +304,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       children: [
         const Text(
           'Pilih Tanggal Absensi',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Container(
@@ -351,7 +320,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
               const SizedBox(width: 12),
               Text(
                 AbsensiTimeValidator.getCurrentDateFormatted(),
-                style: const TextStyle(fontSize: 14, color: Colors.black87),  // ← explicit hitam
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
             ],
           ),
@@ -369,10 +338,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       children: [
         const Text(
           'Status Kehadiran',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Container(
@@ -414,10 +380,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       children: [
         const Text(
           'Keterangan/Catatan',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Container(
@@ -460,7 +423,6 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: Colors.grey.shade300,
-            style: photo == null ? BorderStyle.solid : BorderStyle.solid,
             width: photo == null ? 1.5 : 1,
           ),
         ),
@@ -475,18 +437,11 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.camera_alt_outlined,
-          size: 48,
-          color: Colors.grey.shade400,
-        ),
+        Icon(Icons.camera_alt_outlined, size: 48, color: Colors.grey.shade400),
         const SizedBox(height: 12),
         Text(
           'Klik untuk ambil foto / upload',
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
         ),
       ],
     );
@@ -516,11 +471,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
                 color: Colors.black54,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 18,
-              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 18),
             ),
           ),
         ),
@@ -543,10 +494,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
           const Expanded(
             child: Text(
               'Pastikan foto jelas dan sesuai dengan lokasi kerja.\nFormat yang didukung: JPG, PNG (maks 5MB)',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.black87,
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.black87),
             ),
           ),
         ],
@@ -580,10 +528,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       )
           : const Text(
         'Kirim Absensi',
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
     );
   }

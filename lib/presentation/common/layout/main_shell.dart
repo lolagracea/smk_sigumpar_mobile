@@ -16,7 +16,7 @@ class MainShell extends StatelessWidget {
   });
 
   String get _title {
-    if (currentRoute.startsWith('/academic/pengumuman/')) {
+    if (currentRoute.startsWith('/academic/announcements/')) {
       return 'Detail Pengumuman';
     }
     switch (currentRoute) {
