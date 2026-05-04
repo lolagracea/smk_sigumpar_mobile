@@ -16,6 +16,8 @@ import '../../data/services/vocational_service.dart';
 import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
+import '../../presentation/features/learning/providers/absensi_guru_provider.dart';
+import '../../presentation/features/academic/providers/announcement_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -31,7 +33,10 @@ Future<void> init() async {
 
   // ─── Repositories ──────────────────────────────────────
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthService(dioClient: sl<DioClient>()),
+    () => AuthService(
+      dioClient: sl<DioClient>(),
+      secureStorage: sl<SecureStorage>(),
+    ),
   );
 
   sl.registerLazySingleton<AcademicRepository>(
@@ -54,15 +59,24 @@ Future<void> init() async {
     () => AssetService(dioClient: sl<DioClient>()),
   );
 
-  // ─── Providers ─────────────────────────────────────────
+  // ─── Providers (Singleton) ─────────────────────────────
   sl.registerLazySingleton<ThemeProvider>(
     () => ThemeProvider(notifier: sl<ThemeNotifier>()),
   );
 
-  sl.registerFactory<AuthProvider>(
+  sl.registerLazySingleton<AuthProvider>(
     () => AuthProvider(
       authRepository: sl<AuthRepository>(),
       secureStorage: sl<SecureStorage>(),
     ),
+  );
+
+  // ─── Providers (Factory — fresh state per screen) ──────
+  sl.registerFactory<AbsensiGuruProvider>(
+    () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  );
+
+  sl.registerLazySingleton<AnnouncementProvider>(
+    () => AnnouncementProvider(repository: sl<AcademicRepository>()),
   );
 }

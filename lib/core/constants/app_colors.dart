@@ -4,10 +4,10 @@ class AppColors {
   AppColors._();
 
   // ─── Brand ─────────────────────────────────────────────
-  static const Color primary = Color(0xFF1565C0);       // Deep Blue
+  static const Color primary = Color(0xFF1565C0); // Deep Blue
   static const Color primaryLight = Color(0xFF5E92F3);
   static const Color primaryDark = Color(0xFF003C8F);
-  static const Color secondary = Color(0xFFE65100);     // Deep Orange (aksen)
+  static const Color secondary = Color(0xFFE65100); // Deep Orange (aksen)
   static const Color secondaryLight = Color(0xFFFF833A);
   static const Color secondaryDark = Color(0xFFAC1900);
 
@@ -50,4 +50,22 @@ class AppColors {
   static const Color learning = Color(0xFF6A1B9A);
   static const Color vocational = Color(0xFFE65100);
   static const Color assetService = Color(0xFF00695C);
+
+  // ─── Legacy / Absensi Colors ───────────────────────────
+  static const Color hadir = Color(0xFF2E7D32);
+  static const Color terlambat = Color(0xFFF57F17);
+  static const Color izin = Color(0xFF0277BD);
+  static const Color sakit = Color(0xFF6A1B9A);
+  static const Color alpa = Color(0xFFC62828);
+  static const Color textPrimary = Color(0xFF212121);
+  static const Color textSecondary = Color(0xFF757575);
+  static const Color textTertiary = Color(0xFF9E9E9E);
+  static const Color border = Color(0xFFE0E0E0);
+  static const Color accent = Color(0xFFE65100);
+  static const Color divider = Color(0xFFEEEEEE);
+  static const List<Color> primaryGradient = [
+    primaryDark,
+    primary,
+    primaryLight
+  ];
 }

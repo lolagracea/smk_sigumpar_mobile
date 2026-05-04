@@ -72,8 +72,7 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            Text('Menu Utama',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text('Menu Utama', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
 
             // ─── Feature grid ────────────────────────────
@@ -99,47 +98,85 @@ class HomeScreen extends StatelessWidget {
         icon: Icons.school_outlined,
         color: AppColors.academic,
         route: RouteNames.classes,
-        allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.vicePrincipal, AppRoles.staff, AppRoles.teacher, AppRoles.homeroom],
+        allowedRoles: [
+          AppRoles.admin,
+          AppRoles.principal,
+          AppRoles.vicePrincipal,
+          AppRoles.staff,
+          AppRoles.teacher,
+          AppRoles.homeroom
+        ],
       ),
       _MenuItem(
         title: AppStrings.student,
         icon: Icons.people_outline_rounded,
         color: AppColors.studentService,
         route: RouteNames.attendanceRecap,
-        allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.homeroom, AppRoles.student],
+        allowedRoles: [
+          AppRoles.admin,
+          AppRoles.principal,
+          AppRoles.homeroom,
+          AppRoles.student
+        ],
       ),
       _MenuItem(
         title: AppStrings.learning,
         icon: Icons.menu_book_outlined,
         color: AppColors.learning,
         route: RouteNames.teacherAttendance,
-        allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.vicePrincipal, AppRoles.teacher, AppRoles.homeroom],
+        allowedRoles: [
+          AppRoles.admin,
+          AppRoles.principal,
+          AppRoles.vicePrincipal,
+          AppRoles.teacher,
+          AppRoles.homeroom
+        ],
       ),
       _MenuItem(
         title: AppStrings.vocational,
         icon: Icons.engineering_outlined,
         color: AppColors.vocational,
         route: RouteNames.scoutClasses,
-        allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.teacher, AppRoles.student],
+        allowedRoles: [
+          AppRoles.admin,
+          AppRoles.principal,
+          AppRoles.teacher,
+          AppRoles.student
+        ],
       ),
       _MenuItem(
         title: AppStrings.asset,
         icon: Icons.inventory_2_outlined,
         color: AppColors.assetService,
         route: RouteNames.submissionInfo,
-        allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.staff, AppRoles.treasurer],
+        allowedRoles: [
+          AppRoles.admin,
+          AppRoles.principal,
+          AppRoles.staff,
+          AppRoles.treasurer
+        ],
       ),
       _MenuItem(
         title: AppStrings.profile,
         icon: Icons.person_outline_rounded,
         color: AppColors.grey600,
         route: RouteNames.profile,
-        allowedRoles: [AppRoles.admin, AppRoles.principal, AppRoles.vicePrincipal, AppRoles.teacher, AppRoles.homeroom, AppRoles.student, AppRoles.staff, AppRoles.treasurer],
+        allowedRoles: [
+          AppRoles.admin,
+          AppRoles.principal,
+          AppRoles.vicePrincipal,
+          AppRoles.teacher,
+          AppRoles.homeroom,
+          AppRoles.student,
+          AppRoles.staff,
+          AppRoles.treasurer
+        ],
       ),
     ];
 
     return allMenus
-        .where((m) => RoleHelper.hasRole(role, m.allowedRoles))
+        .where((m) =>
+            RoleHelper.hasAnyRole(targetRoles: m.allowedRoles, role: role))
         .map((m) => _MenuCard(item: m))
         .toList();
   }

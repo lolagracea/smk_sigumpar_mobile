@@ -1,34 +1,72 @@
+import 'package:dio/dio.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../models/user_model.dart';
 import '../repositories/auth_repository.dart';
+import '../../core/utils/secure_storage.dart';
 
 class AuthService implements AuthRepository {
   final DioClient _dioClient;
+  final SecureStorage _secureStorage;
 
-  AuthService({required DioClient dioClient}) : _dioClient = dioClient;
+  AuthService({
+    required DioClient dioClient,
+    required SecureStorage secureStorage,
+  })  : _dioClient = dioClient,
+        _secureStorage = secureStorage;
 
   @override
   Future<Map<String, dynamic>> login({
     required String username,
     required String password,
   }) async {
-    final response = await _dioClient.post(
-      ApiEndpoints.login,
-      data: {'username': username, 'password': password},
+    final dio = Dio();
+    final response = await dio.post(
+      ApiEndpoints.keycloakTokenUrl,
+      data: {
+        'client_id': ApiEndpoints.keycloakClientId,
+        'grant_type': 'password',
+        'username': username,
+        'password': password,
+      },
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     return response.data as Map<String, dynamic>;
   }
 
   @override
   Future<void> logout() async {
-    await _dioClient.post(ApiEndpoints.logout);
+    final refreshToken = await _secureStorage.getRefreshToken();
+    if (refreshToken != null) {
+      try {
+        final dio = Dio();
+        await dio.post(
+          ApiEndpoints.keycloakLogoutUrl,
+          data: {
+            'client_id': ApiEndpoints.keycloakClientId,
+            'refresh_token': refreshToken,
+          },
+          options: Options(
+            contentType: Headers.formUrlEncodedContentType,
+          ),
+        );
+      } catch (_) {}
+    }
   }
 
   @override
   Future<UserModel> getProfile() async {
-    final response = await _dioClient.get(ApiEndpoints.profile);
-    return UserModel.fromJson(response.data['data']);
+    final dio = Dio();
+    final token = await _secureStorage.getAccessToken();
+    final response = await dio.get(
+      ApiEndpoints.keycloakUserInfoUrl,
+      options: Options(
+        headers: {'Authorization': 'Bearer $token'},
+      ),
+    );
+    return UserModel.fromJson(response.data);
   }
 
   @override
@@ -36,35 +74,28 @@ class AuthService implements AuthRepository {
     String? name,
     String? phone,
     String? email,
-  }) async {
-    final data = <String, dynamic>{};
-    if (name != null) data['name'] = name;
-    if (phone != null) data['phone'] = phone;
-    if (email != null) data['email'] = email;
-    await _dioClient.put('${ApiEndpoints.profile}/update', data: data);
-  }
+  }) async {}
 
   @override
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
     required String confirmPassword,
-  }) async {
-    await _dioClient.post(
-      '${ApiEndpoints.profile}/change-password',
-      data: {
-        'current_password': currentPassword,
-        'new_password': newPassword,
-        'confirm_password': confirmPassword,
-      },
-    );
-  }
+  }) async {}
 
   @override
   Future<Map<String, dynamic>> refreshToken(String refreshToken) async {
-    final response = await _dioClient.post(
-      ApiEndpoints.refreshToken,
-      data: {'refresh_token': refreshToken},
+    final dio = Dio();
+    final response = await dio.post(
+      ApiEndpoints.keycloakTokenUrl,
+      data: {
+        'client_id': ApiEndpoints.keycloakClientId,
+        'grant_type': 'refresh_token',
+        'refresh_token': refreshToken,
+      },
+      options: Options(
+        contentType: Headers.formUrlEncodedContentType,
+      ),
     );
     return response.data as Map<String, dynamic>;
   }

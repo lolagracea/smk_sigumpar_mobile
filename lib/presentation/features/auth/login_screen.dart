@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../common/providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/constants/route_names.dart';
 import '../../../core/utils/role_helper.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -56,7 +55,11 @@ class _LoginScreenState extends State<LoginScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primaryDark, AppColors.primary, AppColors.primaryLight],
+                colors: [
+                  AppColors.primaryDark,
+                  AppColors.primary,
+                  AppColors.primaryLight
+                ],
               ),
             ),
           ),
@@ -69,22 +72,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 48),
 
                   // ─── Logo & Title ──────────────────────
-                  const Icon(Icons.school_rounded, size: 64, color: Colors.white),
+                  const Icon(Icons.school_rounded,
+                      size: 64, color: Colors.white),
                   const SizedBox(height: 12),
                   Text(
                     AppStrings.appShortName,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Sistem Informasi Sekolah',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
-                    ),
+                          color: Colors.white70,
+                        ),
                   ),
 
                   const SizedBox(height: 40),
@@ -110,9 +114,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 4),
                             Text(
                               AppStrings.loginSubtitle,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.grey500,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.grey500,
+                                  ),
                             ),
                             const SizedBox(height: 28),
 
@@ -142,7 +149,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               onFieldSubmitted: (_) => _handleLogin(),
                               decoration: InputDecoration(
                                 labelText: AppStrings.password,
-                                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                                prefixIcon:
+                                    const Icon(Icons.lock_outline_rounded),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
@@ -219,8 +227,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     '© ${DateTime.now().year} SMK Negeri 1 Sigumpar',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.grey500,
-                    ),
+                          color: AppColors.grey500,
+                        ),
                   ),
                   const SizedBox(height: 24),
                 ],

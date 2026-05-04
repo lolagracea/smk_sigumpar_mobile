@@ -19,7 +19,8 @@ class RoleBasedWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final role = context.select<AuthProvider, String?>((p) => p.user?.role);
-    final allowed = RoleHelper.hasRole(role, allowedRoles);
+    final allowed =
+        RoleHelper.hasAnyRole(targetRoles: allowedRoles, role: role);
     if (allowed) return child;
     return fallback ?? const SizedBox.shrink();
   }

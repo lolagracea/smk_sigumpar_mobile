@@ -140,11 +140,11 @@ class _ClassesViewState extends State<_ClassesView> {
                                     color: AppColors.academic,
                                   ),
                                 ),
-                                title: Text(cls.name,
+                                title: Text(cls.namaKelas,
                                     style:
                                         Theme.of(context).textTheme.titleSmall),
                                 subtitle: Text(
-                                  '${cls.major} • ${cls.studentCount} Siswa',
+                                  'Tingkat ${cls.tingkat}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall

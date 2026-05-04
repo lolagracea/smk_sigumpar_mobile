@@ -3,7 +3,6 @@ import '../../../../data/models/class_model.dart';
 import '../../../../data/models/student_model.dart';
 import '../../../../data/models/teacher_model.dart';
 import '../../../../data/repositories/academic_repository.dart';
-import '../../../../core/network/api_response.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 

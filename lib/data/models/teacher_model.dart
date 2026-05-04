@@ -38,16 +38,16 @@ class TeacherModel extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'nip': nip,
-        'name': name,
-        'subject': subject,
-        'photo_url': photoUrl,
-        'phone': phone,
-        'email': email,
-        'address': address,
-        'is_active': isActive,
-      };
+    'id': id,
+    'nip': nip,
+    'name': name,
+    'subject': subject,
+    'photo_url': photoUrl,
+    'phone': phone,
+    'email': email,
+    'address': address,
+    'is_active': isActive,
+  };
 
   @override
   List<Object?> get props => [id, nip, name, subject, isActive];
