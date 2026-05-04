@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import 'data/models/wakil_kepsek_model.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -9,13 +9,14 @@ import 'features/tata_usaha/kelas/kelas_screen.dart';
 import 'features/tata_usaha/pengumuman/pengumuman_screen.dart';
 import 'features/tata_usaha/siswa/siswa_screen.dart';
 
-// ── Wakil Kepsek ──────────────────────────────────────────────────────────────
-import 'features/wakil_kepsek/wakil_kepsek_home_screen.dart';
-import 'features/wakil_kepsek/perangkat/perangkat_guru_list_screen.dart';
-import 'features/wakil_kepsek/perangkat/perangkat_guru_detail_screen.dart';
-import 'features/wakil_kepsek/jadwal/jadwal_monitoring_screen.dart';
-import 'features/wakil_kepsek/jadwal/rekap_jadwal_screen.dart';
-import 'features/wakil_kepsek/laporan/laporan_ringkas_screen.dart';
+// Wakil Kepala Sekolah  <-- import baru
+import 'features/wakil_kepsek/wakasek_dashboard_screen.dart';
+import 'features/wakil_kepsek/perangkat/perangkat_screen.dart';
+import 'features/wakil_kepsek/evaluasi_guru/evaluasi_guru_screen.dart';
+import 'features/wakil_kepsek/catatan_mengajar/catatan_mengajar_screen.dart';
+import 'providers/wakasek/perangkat_provider.dart';
+import 'providers/wakasek/evaluasi_guru_provider.dart';
+import 'providers/wakasek/catatan_mengajar_provider.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -34,55 +35,55 @@ class AppRouter {
         builder: (context, state) => const ProfileScreen(),
       ),
 
-      // ── Tata Usaha ────────────────────────────────────────────────────────
+      // ─── Tata Usaha ───────────────────────────────────────
       GoRoute(
-        path: '/tata-usaha/kelas',
+        path: '/kelas',
         builder: (context, state) => const KelasScreen(),
       ),
       GoRoute(
-        path: '/tata-usaha/siswa',
+        path: '/siswa',
         builder: (context, state) => const SiswaScreen(),
       ),
       GoRoute(
-        path: '/tata-usaha/pengumuman',
+        path: '/pengumuman',
         builder: (context, state) => const PengumumanScreen(),
       ),
       GoRoute(
-        path: '/tata-usaha/arsip-surat',
+        path: '/arsip-surat',
         builder: (context, state) => const ArsipSuratScreen(),
       ),
 
-      // ── Wakil Kepala Sekolah ──────────────────────────────────────────────
+      // ─── Wakil Kepala Sekolah ─────────────────────────────
       GoRoute(
-        path: '/wakil-kepsek',
-        builder: (context, state) => const WakilKepsekHomeScreen(),
+        path: '/wakasek',
+        builder: (context, state) => const WakasekDashboardScreen(),
       ),
       GoRoute(
-        path: '/wakil-kepsek/perangkat',
-        builder: (context, state) => const PerangkatGuruListScreen(),
+        path: '/wakasek/perangkat',
+        builder: (context, state) => ChangeNotifierProvider(
+          create: (_) => PerangkatProvider(
+            context.read(),
+          ),
+          child: const PerangkatScreen(),
+        ),
       ),
       GoRoute(
-        path: '/wakil-kepsek/perangkat/:guruId',
-        builder: (context, state) {
-          final guruId = int.tryParse(state.pathParameters['guruId'] ?? '') ?? 0;
-          final extra = state.extra as GuruPerangkatModel?;
-          return PerangkatGuruDetailScreen(
-            guruId: guruId,
-            guruInfo: extra,
-          );
-        },
+        path: '/wakasek/evaluasi-guru',
+        builder: (context, state) => ChangeNotifierProvider(
+          create: (_) => EvaluasiGuruProvider(
+            context.read(),
+          ),
+          child: const EvaluasiGuruScreen(),
+        ),
       ),
       GoRoute(
-        path: '/wakil-kepsek/jadwal',
-        builder: (context, state) => const JadwalMonitoringScreen(),
-      ),
-      GoRoute(
-        path: '/wakil-kepsek/jadwal/rekap',
-        builder: (context, state) => const RekapJadwalScreen(),
-      ),
-      GoRoute(
-        path: '/wakil-kepsek/laporan',
-        builder: (context, state) => const LaporanRingkasScreen(),
+        path: '/wakasek/catatan-mengajar',
+        builder: (context, state) => ChangeNotifierProvider(
+          create: (_) => CatatanMengajarProvider(
+            context.read(),
+          ),
+          child: const CatatanMengajarScreen(),
+        ),
       ),
     ],
   );

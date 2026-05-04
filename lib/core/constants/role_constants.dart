@@ -4,5 +4,5 @@ class RoleConstants {
   static const String waliKelas = 'wali-kelas';
   static const String guruMapel = 'guru-mapel';
   static const String kepalaSekolah = 'kepala-sekolah';
-  static const String wakilKepsek = 'wakil-kepsek';
+  static const String wakaSekolah = 'waka-sekolah'; // <-- TAMBAH INI
 }

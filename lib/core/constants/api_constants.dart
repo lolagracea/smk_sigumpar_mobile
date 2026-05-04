@@ -1,15 +1,13 @@
 class ApiConstants {
-  static const String baseUrl = 'http://localhost:8001';
+  static const String baseUrl = 'http://10.0.2.2:8001';
 
   static const String authBase = '/api/auth';
   static const String academicBase = '/api/academic';
-  static const String learningBase = '/api/learning';
+  static const String learningBase = '/api/learning'; // <-- TAMBAH INI
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
   static const String login = '$authBase/login';
   static const String usersSearch = '$authBase/users/search';
 
-  // ── Academic ──────────────────────────────────────────────────────────────
   static const String kelas = '$academicBase/kelas';
   static const String siswa = '$academicBase/siswa';
   static const String pengumuman = '$academicBase/pengumuman';
@@ -20,11 +18,8 @@ class ApiConstants {
   static const String piket = '$academicBase/piket';
   static const String upacara = '$academicBase/upacara';
 
-  // ── Learning — Wakil Kepala Sekolah ───────────────────────────────────────
-  static const String wakilPerangkatGuru = '$learningBase/wakil/perangkat-guru';
-  static const String wakilPerangkat = '$learningBase/wakil/perangkat';
-  static const String wakilJadwal = '$learningBase/wakil/jadwal';
-  static const String wakilJadwalRekapHari = '$learningBase/wakil/jadwal/rekap-hari';
-  static const String wakilParenting = '$learningBase/wakil/parenting-monitoring';
-  static const String wakilLaporanRingkas = '$learningBase/wakil/laporan-ringkas';
+  // Learning-service endpoints (wakasek)
+  static const String perangkat = '$learningBase/perangkat';
+  static const String evaluasiGuru = '$learningBase/evaluasi-guru';
+  static const String catatanMengajar = '$learningBase/catatan-mengajar';
 }
