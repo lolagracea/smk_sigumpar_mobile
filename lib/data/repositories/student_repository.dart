@@ -10,7 +10,9 @@ abstract class StudentRepository {
     String? year,
     int page = 1,
   });
-  Future<void> submitAttendance(List<Map<String, dynamic>> data);
+
+  // ⚠️ PERUBAHAN DI SINI: Parameter diganti menjadi Map
+  Future<void> submitAttendance(Map<String, dynamic> data);
 
   // Grades
   Future<PaginatedResponse<GradeModel>> getGradesRecap({

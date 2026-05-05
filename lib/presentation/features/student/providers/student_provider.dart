@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:smk_sigumpar/data/models/attendance_model.dart';
-import 'package:smk_sigumpar/data/models/grade_model.dart';
-import 'package:smk_sigumpar/data/repositories/student_repository.dart';
+import '../../../../data/models/attendance_model.dart';
+import '../../../../data/models/grade_model.dart';
+import '../../../../data/repositories/student_repository.dart';
 
+// Enum untuk status loading
 enum StudentLoadState { initial, loading, loaded, error }
 
 class StudentProvider extends ChangeNotifier {
@@ -11,52 +12,85 @@ class StudentProvider extends ChangeNotifier {
   StudentProvider({required StudentRepository repository})
       : _repository = repository;
 
-  // ─── Attendance ───────────────────────────────────────────
+  // ─── STATE UNTUK REKAP ABSENSI ──────────────────────────
   StudentLoadState _attendanceState = StudentLoadState.initial;
   List<AttendanceModel> _attendances = [];
   String? _attendanceError;
-  bool _hasMoreAttendance = true;
+  bool _hasMoreAttendances = true;
   int _attendancePage = 1;
 
   StudentLoadState get attendanceState => _attendanceState;
   List<AttendanceModel> get attendances => _attendances;
   String? get attendanceError => _attendanceError;
+  bool get hasMoreAttendances => _hasMoreAttendances;
 
-  Future<void> fetchAttendance({
-    required String classId,
+  Future<void> fetchAttendanceRecap({
     bool refresh = false,
+    required String classId,
     String? month,
     String? year,
   }) async {
     if (refresh) {
       _attendancePage = 1;
       _attendances = [];
-      _hasMoreAttendance = true;
+      _hasMoreAttendances = true;
     }
-    if (!_hasMoreAttendance) return;
+
+    if (!_hasMoreAttendances) return;
 
     _attendanceState = StudentLoadState.loading;
+    _attendanceError = null;
     notifyListeners();
 
     try {
       final result = await _repository.getAttendanceRecap(
         classId: classId,
-        page: _attendancePage,
         month: month,
         year: year,
+        page: _attendancePage,
       );
-      _attendances.addAll(result.items);
-      _hasMoreAttendance = result.hasNextPage;
+
+      if (refresh) {
+        _attendances = result.items;
+      } else {
+        _attendances.addAll(result.items);
+      }
+
+      _hasMoreAttendances = result.hasNextPage;
       _attendancePage++;
       _attendanceState = StudentLoadState.loaded;
     } catch (e) {
       _attendanceError = e.toString();
       _attendanceState = StudentLoadState.error;
     }
+
     notifyListeners();
   }
 
-  // ─── Grades ───────────────────────────────────────────────
+  // ─── STATE UNTUK INPUT (SUBMIT) ABSENSI ──────────────────────────
+  bool _isSubmittingAttendance = false;
+  bool get isSubmittingAttendance => _isSubmittingAttendance;
+
+  // Parameter sudah disesuaikan menjadi Map<String, dynamic>
+  Future<bool> submitAttendance(Map<String, dynamic> data) async {
+    _isSubmittingAttendance = true;
+    _attendanceError = null;
+    notifyListeners();
+
+    try {
+      await _repository.submitAttendance(data);
+      _isSubmittingAttendance = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _attendanceError = e.toString();
+      _isSubmittingAttendance = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── STATE UNTUK REKAP NILAI (GRADES) ──────────────────────────
   StudentLoadState _gradeState = StudentLoadState.initial;
   List<GradeModel> _grades = [];
   String? _gradeError;
