@@ -140,6 +140,7 @@ class _SubjectsViewState extends State<_SubjectsView> {
   void _openDeleteDialog(SubjectModel subject) {
     final parentContext = context;
     final controller = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -149,25 +150,35 @@ class _SubjectsViewState extends State<_SubjectsView> {
             final isMatch = controller.text.trim() == subject.namaMapel;
 
             return AlertDialog(
-              title: const Text('Hapus Mata Pelajaran'),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+              title: Text(
+                'Hapus Mata Pelajaran',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Tindakan ini akan menghapus assignment mapel ke guru dan kelas.',
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     subject.namaMapel,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Ketik nama mata pelajaran',
+                      labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                     ),
                   ),
                 ],
@@ -175,9 +186,17 @@ class _SubjectsViewState extends State<_SubjectsView> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Batal'),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                  ),
                 ),
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                  ),
                   onPressed: isMatch
                       ? () async {
                     final provider =
@@ -221,6 +240,7 @@ class _SubjectsViewState extends State<_SubjectsView> {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final canManage = _canManageSubject(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -228,18 +248,23 @@ class _SubjectsViewState extends State<_SubjectsView> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Mata Pelajaran',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
               if (canManage)
                 FilledButton.icon(
                   onPressed: () => _openFormSheet(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Tambah Mapel'),
                 ),
@@ -250,9 +275,12 @@ class _SubjectsViewState extends State<_SubjectsView> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: TextField(
             controller: _searchController,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
               hintText: 'Cari mapel, kelas, atau guru...',
-              prefixIcon: const Icon(Icons.search_rounded),
+              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
+              prefixIcon: Icon(Icons.search_rounded, color: isDark ? Colors.white54 : Colors.grey.shade600),
+              fillColor: isDark ? const Color(0xFF1E293B) : Colors.grey.shade100,
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                 onPressed: () {
@@ -265,7 +293,7 @@ class _SubjectsViewState extends State<_SubjectsView> {
 
                   setState(() {});
                 },
-                icon: const Icon(Icons.clear_rounded),
+                icon: Icon(Icons.clear_rounded, color: isDark ? Colors.white54 : Colors.grey.shade600),
               )
                   : null,
             ),
@@ -277,9 +305,12 @@ class _SubjectsViewState extends State<_SubjectsView> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: DropdownButtonFormField<String>(
             value: _selectedClassId,
-            decoration: const InputDecoration(
+            dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
               labelText: 'Filter Kelas',
-              prefixIcon: Icon(Icons.class_outlined),
+              prefixIcon: const Icon(Icons.class_outlined),
+              labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
             ),
             items: [
               const DropdownMenuItem<String>(
@@ -313,6 +344,7 @@ class _SubjectsViewState extends State<_SubjectsView> {
             context,
             provider,
             canManage,
+            isDark,
           ),
         ),
       ],
@@ -323,6 +355,7 @@ class _SubjectsViewState extends State<_SubjectsView> {
       BuildContext context,
       AcademicProvider provider,
       bool canManage,
+      bool isDark,
       ) {
     if ((provider.subjectState == AcademicLoadState.initial ||
         provider.subjectState == AcademicLoadState.loading) &&
@@ -345,11 +378,16 @@ class _SubjectsViewState extends State<_SubjectsView> {
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 140),
-            Icon(Icons.menu_book_outlined, size: 56, color: Colors.grey),
-            SizedBox(height: 12),
-            Center(child: Text('Belum ada data mata pelajaran.')),
+          children: [
+            const SizedBox(height: 140),
+            Icon(Icons.menu_book_outlined, size: 56, color: isDark ? Colors.white24 : Colors.grey),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'Belum ada data mata pelajaran.',
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+              ),
+            ),
           ],
         ),
       );
@@ -375,23 +413,30 @@ class _SubjectsViewState extends State<_SubjectsView> {
           final subject = provider.subjects[index];
 
           return Card(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+            ),
             child: ListTile(
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.menu_book_outlined,
-                  color: Color(0xFF2563EB),
+                  color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                 ),
               ),
               title: Text(
                 subject.namaMapel,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               subtitle: Padding(
@@ -402,10 +447,13 @@ class _SubjectsViewState extends State<_SubjectsView> {
                     if (subject.guruMapelNama.isNotEmpty)
                       subject.guruMapelNama,
                   ].join(' • '),
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade600),
                 ),
               ),
               trailing: canManage
                   ? PopupMenuButton<String>(
+                iconColor: isDark ? Colors.white70 : Colors.grey.shade600,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 onSelected: (value) {
                   if (value == 'edit') {
                     _openFormSheet(subject: subject);
@@ -414,14 +462,14 @@ class _SubjectsViewState extends State<_SubjectsView> {
                   }
                 },
                 itemBuilder: (_) {
-                  return const [
+                  return [
                     PopupMenuItem(
                       value: 'edit',
-                      child: Text('Edit'),
+                      child: Text('Edit', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Hapus'),
+                      child: Text('Hapus', style: TextStyle(color: Colors.red.shade400)),
                     ),
                   ];
                 },
@@ -607,76 +655,71 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(999),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  _isEdit ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isEdit
-                            ? 'Edit Mata Pelajaran'
-                            : 'Tambah Mata Pelajaran',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _namaMapelController,
                   enabled: !_isSubmitting,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Nama Mata Pelajaran',
                     hintText: 'Contoh: Matematika',
-                    prefixIcon: Icon(Icons.menu_book_outlined),
+                    prefixIcon: const Icon(Icons.menu_book_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nama mata pelajaran wajib diisi';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
-                  value:
-                  _selectedKelasId?.isEmpty == true ? null : _selectedKelasId,
-                  decoration: const InputDecoration(
+                  value: _selectedKelasId?.isEmpty == true ? null : _selectedKelasId,
+                  dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Kelas',
-                    prefixIcon: Icon(Icons.class_outlined),
+                    prefixIcon: const Icon(Icons.class_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                   ),
                   items: provider.classes.map((kelas) {
                     return DropdownMenuItem<String>(
@@ -695,7 +738,6 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                     if (value == null || value.isEmpty) {
                       return 'Kelas wajib dipilih';
                     }
-
                     return null;
                   },
                 ),
@@ -703,10 +745,13 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                 TextFormField(
                   controller: _guruController,
                   enabled: !_isSubmitting,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     labelText: 'Guru Mapel',
                     hintText: 'Ketik nama guru mapel',
                     prefixIcon: const Icon(Icons.person_search_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                     suffixIcon: _isSearchingGuru
                         ? const Padding(
                       padding: EdgeInsets.all(12),
@@ -725,7 +770,10 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                           _guruSuggestions = [];
                         });
                       },
-                      icon: const Icon(Icons.clear_rounded),
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: isDark ? Colors.white54 : Colors.black54,
+                      ),
                     )
                         : null,
                   ),
@@ -734,11 +782,9 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Guru mapel wajib dipilih';
                     }
-
                     if (_selectedGuru == null) {
                       return 'Pilih guru dari rekomendasi';
                     }
-
                     return null;
                   },
                 ),
@@ -747,8 +793,8 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                   Container(
                     constraints: const BoxConstraints(maxHeight: 200),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade300),
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      border: Border.all(color: isDark ? Colors.white24 : Colors.grey.shade300),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListView.separated(
@@ -756,25 +802,27 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                       itemCount: _guruSuggestions.length,
                       separatorBuilder: (_, __) => Divider(
                         height: 1,
-                        color: Colors.grey.shade200,
+                        color: isDark ? Colors.white12 : Colors.grey.shade200,
                       ),
                       itemBuilder: (context, index) {
                         final guru = _guruSuggestions[index];
 
                         return ListTile(
                           dense: true,
-                          leading: const CircleAvatar(
-                            child: Icon(Icons.person_outline),
+                          leading: CircleAvatar(
+                            backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+                            child: Icon(
+                              Icons.person_outline,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            ),
                           ),
                           title: Text(
-                            guru.fullName.isNotEmpty
-                                ? guru.fullName
-                                : guru.username,
+                            guru.fullName.isNotEmpty ? guru.fullName : guru.username,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                           ),
                           subtitle: Text(
-                            guru.email?.isNotEmpty == true
-                                ? guru.email!
-                                : '@${guru.username}',
+                            guru.email?.isNotEmpty == true ? guru.email! : '@${guru.username}',
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade600),
                           ),
                           onTap: () => _selectGuru(guru),
                         );
@@ -786,17 +834,17 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 16,
-                        color: Colors.green,
+                        color: isDark ? Colors.green.shade400 : Colors.green,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Guru terpilih: ${_guruController.text}',
-                          style: const TextStyle(
-                            color: Colors.green,
+                          style: TextStyle(
+                            color: isDark ? Colors.green.shade400 : Colors.green,
                             fontSize: 12,
                           ),
                         ),
@@ -809,11 +857,19 @@ class _SubjectFormSheetState extends State<_SubjectFormSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
                     icon: _isSubmitting
                         ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                         : const Icon(Icons.save_outlined),
                     label: Text(

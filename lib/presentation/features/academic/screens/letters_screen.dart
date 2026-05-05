@@ -70,6 +70,7 @@ class _LettersView extends StatelessWidget {
       ) {
     final parentContext = context;
     final controller = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -79,29 +80,42 @@ class _LettersView extends StatelessWidget {
             final isMatch = controller.text.trim() == item.nomorSurat;
 
             return AlertDialog(
-              title: const Text('Hapus Arsip Surat'),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+              title: Text(
+                'Hapus Arsip Surat',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Tindakan ini akan menghapus data arsip dan file surat. Ketik ulang nomor surat untuk konfirmasi.',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     item.nomorSurat,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     onChanged: (_) {
                       setState(() {});
                     },
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nomor surat',
+                      labelStyle: TextStyle(
+                        color: isDark ? Colors.white54 : Colors.grey.shade700,
+                      ),
                     ),
                   ),
                 ],
@@ -111,9 +125,19 @@ class _LettersView extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Batal'),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
                 ),
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                  ),
                   onPressed: isMatch
                       ? () async {
                     final provider =
@@ -204,6 +228,7 @@ class _LettersView extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final canManage = _canManageLetter(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -211,12 +236,13 @@ class _LettersView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Arsip Surat',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -225,6 +251,10 @@ class _LettersView extends StatelessWidget {
                   onPressed: () {
                     _openFormSheet(context);
                   },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Tambah Arsip'),
                 ),
@@ -236,6 +266,7 @@ class _LettersView extends StatelessWidget {
             context,
             provider,
             canManage,
+            isDark,
           ),
         ),
       ],
@@ -246,6 +277,7 @@ class _LettersView extends StatelessWidget {
       BuildContext context,
       AcademicProvider provider,
       bool canManage,
+      bool isDark,
       ) {
     if ((provider.letterState == AcademicLoadState.initial ||
         provider.letterState == AcademicLoadState.loading) &&
@@ -270,16 +302,19 @@ class _LettersView extends StatelessWidget {
         onRefresh: () => _refresh(context),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 140),
+          children: [
+            const SizedBox(height: 140),
             Icon(
               Icons.archive_outlined,
               size: 56,
-              color: Colors.grey,
+              color: isDark ? Colors.white24 : Colors.grey,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Center(
-              child: Text('Belum ada arsip surat.'),
+              child: Text(
+                'Belum ada arsip surat.',
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+              ),
             ),
           ],
         ),
@@ -298,23 +333,30 @@ class _LettersView extends StatelessWidget {
           final item = provider.letters[index];
 
           return Card(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+            ),
             child: ListTile(
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.description_outlined,
-                  color: Color(0xFF2563EB),
+                  color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                 ),
               ),
               title: Text(
                 item.nomorSurat,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               subtitle: Padding(
@@ -323,12 +365,15 @@ class _LettersView extends StatelessWidget {
                   item.fileName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade600),
                 ),
               ),
               onTap: () {
                 _openFile(context, item);
               },
               trailing: PopupMenuButton<String>(
+                iconColor: isDark ? Colors.white70 : Colors.grey.shade600,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 onSelected: (value) {
                   if (value == 'view') {
                     _openFile(context, item);
@@ -345,23 +390,23 @@ class _LettersView extends StatelessWidget {
                 },
                 itemBuilder: (_) {
                   return [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'view',
-                      child: Text('Lihat'),
+                      child: Text('Lihat', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'download',
-                      child: Text('Unduh'),
+                      child: Text('Unduh', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                     ),
                     if (canManage)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
-                        child: Text('Edit'),
+                        child: Text('Edit', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                       ),
                     if (canManage)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
-                        child: Text('Hapus'),
+                        child: Text('Hapus', style: TextStyle(color: Colors.red.shade400)),
                       ),
                   ];
                 },
@@ -495,15 +540,16 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -511,52 +557,44 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(999),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  _isEdit ? 'Edit Arsip Surat' : 'Tambah Arsip Surat',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isEdit ? 'Edit Arsip Surat' : 'Tambah Arsip Surat',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _nomorSuratController,
                   enabled: !_isSubmitting,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Nomor Surat',
                     hintText: 'Contoh: 123/SMKN1/2026',
-                    prefixIcon: Icon(Icons.numbers_outlined),
+                    prefixIcon: const Icon(Icons.numbers_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nomor surat wajib diisi';
                     }
-
                     return null;
                   },
                 ),
@@ -566,11 +604,10 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                   borderRadius: BorderRadius.circular(12),
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: _isEdit
-                          ? 'File Surat Baru Opsional'
-                          : 'File Surat',
+                      labelText: _isEdit ? 'File Surat Baru Opsional' : 'File Surat',
                       prefixIcon: const Icon(Icons.upload_file_outlined),
                       suffixIcon: const Icon(Icons.folder_open_outlined),
+                      labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                     ),
                     child: Text(
                       _selectedFile?.name ??
@@ -581,8 +618,8 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: _selectedFile == null
-                            ? Colors.grey.shade600
-                            : Colors.black87,
+                            ? (isDark ? Colors.white54 : Colors.grey.shade600)
+                            : (isDark ? Colors.white : Colors.black87),
                       ),
                     ),
                   ),
@@ -595,7 +632,7 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                       'File saat ini: ${widget.initialData!.fileName}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
                       ),
                     ),
                   ),
@@ -605,11 +642,19 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
                     icon: _isSubmitting
                         ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                         : const Icon(Icons.save_outlined),
                     label: Text(

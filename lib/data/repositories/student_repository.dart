@@ -10,7 +10,8 @@ abstract class StudentRepository {
     String? year,
     int page = 1,
   });
-  Future<void> submitAttendance(List<Map<String, dynamic>> data);
+
+  Future<void> submitAttendance(Map<String, dynamic> data);
 
   // ─── Grades (lama) ────────────────────────────────────────
   Future<PaginatedResponse<GradeModel>> getGradesRecap({

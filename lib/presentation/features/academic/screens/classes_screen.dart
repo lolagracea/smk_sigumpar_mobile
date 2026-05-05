@@ -138,6 +138,7 @@ class _ClassesViewState extends State<_ClassesView> {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final canManageClass = _canManageClass(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -145,18 +146,23 @@ class _ClassesViewState extends State<_ClassesView> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Manajemen Kelas',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
               if (canManageClass)
                 FilledButton.icon(
                   onPressed: _openAddClassSheet,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Tambah Kelas'),
                 ),
@@ -167,13 +173,16 @@ class _ClassesViewState extends State<_ClassesView> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: TextField(
             controller: _searchController,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
               hintText: AppStrings.search,
-              prefixIcon: const Icon(Icons.search_rounded),
+              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
+              prefixIcon: Icon(Icons.search_rounded, color: isDark ? Colors.white54 : Colors.grey.shade600),
+              fillColor: isDark ? const Color(0xFF1E293B) : Colors.grey.shade100,
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                 onPressed: _clearSearch,
-                icon: const Icon(Icons.clear_rounded),
+                icon: Icon(Icons.clear_rounded, color: isDark ? Colors.white54 : Colors.grey.shade600),
               )
                   : null,
             ),
@@ -188,13 +197,13 @@ class _ClassesViewState extends State<_ClassesView> {
           ),
         ),
         Expanded(
-          child: _buildClassContent(provider),
+          child: _buildClassContent(provider, isDark),
         ),
       ],
     );
   }
 
-  Widget _buildClassContent(AcademicProvider provider) {
+  Widget _buildClassContent(AcademicProvider provider, bool isDark) {
     if ((provider.classState == AcademicLoadState.initial ||
         provider.classState == AcademicLoadState.loading) &&
         provider.classes.isEmpty) {
@@ -218,10 +227,13 @@ class _ClassesViewState extends State<_ClassesView> {
         onRefresh: _refreshClasses,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 160),
+          children: [
+            const SizedBox(height: 160),
             Center(
-              child: Text(AppStrings.noData),
+              child: Text(
+                AppStrings.noData,
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+              ),
             ),
           ],
         ),
@@ -234,8 +246,7 @@ class _ClassesViewState extends State<_ClassesView> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        itemCount:
-        provider.classes.length + (provider.hasMoreClasses ? 1 : 0),
+        itemCount: provider.classes.length + (provider.hasMoreClasses ? 1 : 0),
         separatorBuilder: (_, __) {
           return const SizedBox(height: 8);
         },
@@ -252,23 +263,30 @@ class _ClassesViewState extends State<_ClassesView> {
           final kelas = provider.classes[index];
 
           return Card(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+            ),
             child: ListTile(
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.academic.withOpacity(0.1),
+                  color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : AppColors.academic.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.class_outlined,
-                  color: AppColors.academic,
+                  color: isDark ? const Color(0xFF60A5FA) : AppColors.academic,
                 ),
               ),
               title: Text(
                 kelas.namaKelas,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               subtitle: Padding(
@@ -280,13 +298,13 @@ class _ClassesViewState extends State<_ClassesView> {
                       'Wali: ${kelas.waliKelasNama}',
                   ].join(' • '),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.grey500,
+                    color: isDark ? Colors.white70 : AppColors.grey500,
                   ),
                 ),
               ),
-              trailing: const Icon(
+              trailing: Icon(
                 Icons.chevron_right_rounded,
-                color: AppColors.grey400,
+                color: isDark ? Colors.white30 : AppColors.grey400,
               ),
             ),
           );
@@ -353,9 +371,7 @@ class _AddClassSheetState extends State<_AddClassSheet> {
         _isSearching = true;
       });
 
-      final result = await context
-          .read<AcademicProvider>()
-          .searchWaliKelas(keyword);
+      final result = await context.read<AcademicProvider>().searchWaliKelas(keyword);
 
       if (!mounted) return;
 
@@ -417,15 +433,16 @@ class _AddClassSheetState extends State<_AddClassSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -433,60 +450,57 @@ class _AddClassSheetState extends State<_AddClassSheet> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(999),
+                // Drag handle bar
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Judul
+                Text(
+                  'Tambah Kelas',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Tambah Kelas',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _namaKelasController,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Nama Kelas',
                     hintText: 'Contoh: X RPL 1',
-                    prefixIcon: Icon(Icons.class_outlined),
+                    prefixIcon: const Icon(Icons.class_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nama kelas wajib diisi';
                     }
-
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   value: _selectedTingkat,
-                  decoration: const InputDecoration(
+                  dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Tingkat',
-                    prefixIcon: Icon(Icons.school_outlined),
+                    prefixIcon: const Icon(Icons.school_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                   ),
                   items: _tingkatOptions.map((tingkat) {
                     return DropdownMenuItem<String>(
@@ -505,7 +519,6 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                     if (value == null || value.isEmpty) {
                       return 'Tingkat wajib dipilih';
                     }
-
                     return null;
                   },
                 ),
@@ -513,10 +526,13 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                 TextFormField(
                   controller: _waliKelasController,
                   enabled: !_isSubmitting,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     labelText: 'Wali Kelas',
                     hintText: 'Ketik nama wali kelas',
                     prefixIcon: const Icon(Icons.person_search_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                     suffixIcon: _isSearching
                         ? const Padding(
                       padding: EdgeInsets.all(12),
@@ -537,7 +553,10 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                           _suggestions = [];
                         });
                       },
-                      icon: const Icon(Icons.clear_rounded),
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        color: isDark ? Colors.white54 : Colors.black54,
+                      ),
                     )
                         : null,
                   ),
@@ -546,11 +565,9 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Wali kelas wajib dipilih';
                     }
-
                     if (_selectedWaliKelas == null) {
                       return 'Pilih wali kelas dari rekomendasi';
                     }
-
                     return null;
                   },
                 ),
@@ -561,9 +578,9 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                       maxHeight: 220,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
                       border: Border.all(
-                        color: Colors.grey.shade300,
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -573,7 +590,7 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                       separatorBuilder: (_, __) {
                         return Divider(
                           height: 1,
-                          color: Colors.grey.shade200,
+                          color: isDark ? Colors.white12 : Colors.grey.shade200,
                         );
                       },
                       itemBuilder: (context, index) {
@@ -581,26 +598,26 @@ class _AddClassSheetState extends State<_AddClassSheet> {
 
                         return ListTile(
                           dense: true,
-                          leading: const CircleAvatar(
-                            child: Icon(Icons.person_outline),
+                          leading: CircleAvatar(
+                            backgroundColor: isDark ? Colors.white12 : Colors.grey.shade200,
+                            child: Icon(
+                              Icons.person_outline,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            ),
                           ),
                           title: Text(
-                            user.fullName.isNotEmpty
-                                ? user.fullName
-                                : user.username,
+                            user.fullName.isNotEmpty ? user.fullName : user.username,
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                           ),
                           subtitle: Text(
-                            user.email?.isNotEmpty == true
-                                ? user.email!
-                                : '@${user.username}',
+                            user.email?.isNotEmpty == true ? user.email! : '@${user.username}',
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade600),
                           ),
                           onTap: () {
                             setState(() {
                               _selectedWaliKelas = user;
                               _waliKelasController.text =
-                              user.fullName.isNotEmpty
-                                  ? user.fullName
-                                  : user.username;
+                              user.fullName.isNotEmpty ? user.fullName : user.username;
                               _suggestions = [];
                               _isSearching = false;
                             });
@@ -614,17 +631,17 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 16,
-                        color: Colors.green,
+                        color: isDark ? Colors.green.shade400 : Colors.green,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Wali kelas terpilih: ${_selectedWaliKelas!.fullName.isNotEmpty ? _selectedWaliKelas!.fullName : _selectedWaliKelas!.username}',
-                          style: const TextStyle(
-                            color: Colors.green,
+                          style: TextStyle(
+                            color: isDark ? Colors.green.shade400 : Colors.green,
                             fontSize: 12,
                           ),
                         ),
@@ -637,12 +654,18 @@ class _AddClassSheetState extends State<_AddClassSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
                     icon: _isSubmitting
                         ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
+                        color: Colors.white,
                       ),
                     )
                         : const Icon(Icons.save_outlined),

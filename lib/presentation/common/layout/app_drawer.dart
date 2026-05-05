@@ -19,7 +19,7 @@ class AppDrawer extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 
-    final items = _getMenuItemsByUser(
+    final categories = _getMenuCategoriesByUser(
       role: user?.role,
       roles: user?.roles,
     );
@@ -44,6 +44,7 @@ class AppDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
+                  // Menu Beranda selalu ada di luar dropdown
                   _DrawerMenuItem(
                     icon: Icons.home_filled,
                     label: 'Beranda',
@@ -51,11 +52,11 @@ class AppDrawer extends StatelessWidget {
                     currentRoute: currentRoute,
                   ),
                   const SizedBox(height: 8),
-                  ...items.map(
-                        (item) => _DrawerMenuItem(
-                      icon: item.icon,
-                      label: item.label,
-                      route: item.route,
+
+                  // Menampilkan menu dalam bentuk Dropdown (Accordion)
+                  ...categories.map(
+                        (category) => _DrawerMenuCategory(
+                      category: category,
                       currentRoute: currentRoute,
                     ),
                   ),
@@ -73,57 +74,34 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  List<_MenuItemData> _getMenuItemsByUser({
+  /// Menghasilkan daftar kategori menu berdasarkan role pengguna
+  List<_MenuCategoryData> _getMenuCategoriesByUser({
     required String? role,
     required List<String>? roles,
   }) {
-    final items = <_MenuItemData>[];
+    final categories = <_MenuCategoryData>[];
 
     // ─── Tata Usaha / Staff ───────────────────────────────
-    // User dengan role utama apa pun tetap mendapat menu ini
-    // selama salah satu role-nya adalah tata-usaha.
     if (RoleHelper.hasRole(
       targetRole: AppRoles.staff,
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.class_outlined,
-          label: 'Data Kelas',
-          route: RouteNames.classes,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Tata Usaha',
+          icon: Icons.admin_panel_settings_outlined,
+          items: [
+            _MenuItemData(icon: Icons.class_outlined, label: 'Data Kelas', route: RouteNames.classes),
+            _MenuItemData(icon: Icons.groups_outlined, label: 'Data Siswa', route: RouteNames.students),
+            _MenuItemData(icon: Icons.person_outline, label: 'Data Guru', route: RouteNames.teachers),
+            _MenuItemData(icon: Icons.campaign_outlined, label: 'Pengumuman', route: RouteNames.announcements),
+            _MenuItemData(icon: Icons.archive_outlined, label: 'Arsip Surat', route: RouteNames.letters),
+            _MenuItemData(icon: Icons.schedule_outlined, label: 'Jadwal Mengajar', route: RouteNames.schedules),
+            _MenuItemData(icon: Icons.menu_book_outlined, label: 'Mata Pelajaran', route: RouteNames.subjects),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.groups_outlined,
-          label: 'Data Siswa',
-          route: RouteNames.students,
-        ),
-        _MenuItemData(
-          icon: Icons.person_outline,
-          label: 'Data Guru',
-          route: RouteNames.teachers,
-        ),
-        _MenuItemData(
-          icon: Icons.campaign_outlined,
-          label: 'Pengumuman',
-          route: RouteNames.announcements,
-        ),
-        _MenuItemData(
-          icon: Icons.archive_outlined,
-          label: 'Arsip Surat',
-          route: RouteNames.letters,
-        ),
-        _MenuItemData(
-          icon: Icons.schedule_outlined,
-          label: 'Jadwal Mengajar',
-          route: RouteNames.schedules,
-        ),
-        _MenuItemData(
-          icon: Icons.menu_book_outlined,
-          label: 'Mata Pelajaran',
-          route: RouteNames.subjects,
-        ),
-      ]);
+      );
     }
 
     // ─── Guru Mapel ───────────────────────────────────────
@@ -132,28 +110,18 @@ class AppDrawer extends StatelessWidget {
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.access_time,
-          label: 'Absensi Guru',
-          route: RouteNames.teacherAttendance,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Guru Mapel',
+          icon: Icons.school_outlined,
+          items: [
+            _MenuItemData(icon: Icons.access_time, label: 'Absensi Guru', route: RouteNames.teacherAttendance),
+            _MenuItemData(icon: Icons.group, label: 'Absensi Siswa', route: RouteNames.attendanceRecap),
+            _MenuItemData(icon: Icons.description_outlined, label: 'Perangkat Ajar', route: RouteNames.learningDevice),
+            _MenuItemData(icon: Icons.bar_chart, label: 'Input & Kelola Nilai', route: RouteNames.gradesRecap),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.group,
-          label: 'Absensi Siswa',
-          route: RouteNames.attendanceRecap,
-        ),
-        _MenuItemData(
-          icon: Icons.description_outlined,
-          label: 'Perangkat Ajar',
-          route: RouteNames.learningDevice,
-        ),
-        _MenuItemData(
-          icon: Icons.bar_chart,
-          label: 'Input & Kelola Nilai',
-          route: RouteNames.gradesRecap,
-        ),
-      ]);
+      );
     }
 
     // ─── Wali Kelas ───────────────────────────────────────
@@ -162,38 +130,20 @@ class AppDrawer extends StatelessWidget {
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.how_to_reg_outlined,
-          label: 'Presensi Kelas',
-          route: RouteNames.attendanceRecap,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Wali Kelas',
+          icon: Icons.supervised_user_circle_outlined,
+          items: [
+            _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Presensi Kelas', route: RouteNames.attendanceRecap),
+            _MenuItemData(icon: Icons.bar_chart_outlined, label: 'Rekap Nilai', route: RouteNames.gradesRecap),
+            _MenuItemData(icon: Icons.family_restroom_outlined, label: 'Parenting', route: RouteNames.parentingNotes),
+            _MenuItemData(icon: Icons.cleaning_services_outlined, label: 'Kebersihan Kelas', route: RouteNames.cleanlinessRecap),
+            _MenuItemData(icon: Icons.edit_note_outlined, label: 'Refleksi', route: RouteNames.homeroomReflection),
+            _MenuItemData(icon: Icons.mail_outline, label: 'Surat Panggilan', route: RouteNames.summonsLetter),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.bar_chart_outlined,
-          label: 'Rekap Nilai',
-          route: RouteNames.gradesRecap,
-        ),
-        _MenuItemData(
-          icon: Icons.family_restroom_outlined,
-          label: 'Parenting',
-          route: RouteNames.parentingNotes,
-        ),
-        _MenuItemData(
-          icon: Icons.cleaning_services_outlined,
-          label: 'Kebersihan Kelas',
-          route: RouteNames.cleanlinessRecap,
-        ),
-        _MenuItemData(
-          icon: Icons.edit_note_outlined,
-          label: 'Refleksi',
-          route: RouteNames.homeroomReflection,
-        ),
-        _MenuItemData(
-          icon: Icons.mail_outline,
-          label: 'Surat Panggilan',
-          route: RouteNames.summonsLetter,
-        ),
-      ]);
+      );
     }
 
     // ─── Kepala Sekolah / Waka Sekolah ────────────────────
@@ -205,28 +155,18 @@ class AppDrawer extends StatelessWidget {
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.fact_check_outlined,
-          label: 'Rekap Absensi Guru',
-          route: RouteNames.teacherAttendance,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Pimpinan',
+          icon: Icons.account_balance_outlined,
+          items: [
+            _MenuItemData(icon: Icons.fact_check_outlined, label: 'Rekap Absensi Guru', route: RouteNames.teacherAttendance),
+            _MenuItemData(icon: Icons.groups_outlined, label: 'Rekap Absensi Siswa', route: RouteNames.attendanceRecap),
+            _MenuItemData(icon: Icons.folder_copy_outlined, label: 'Pemeriksaan Perangkat', route: RouteNames.principalReview),
+            _MenuItemData(icon: Icons.assessment_outlined, label: 'Evaluasi Kinerja', route: RouteNames.teacherEvaluation),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.groups_outlined,
-          label: 'Rekap Absensi Siswa',
-          route: RouteNames.attendanceRecap,
-        ),
-        _MenuItemData(
-          icon: Icons.folder_copy_outlined,
-          label: 'Pemeriksaan Perangkat',
-          route: RouteNames.principalReview,
-        ),
-        _MenuItemData(
-          icon: Icons.assessment_outlined,
-          label: 'Evaluasi Kinerja',
-          route: RouteNames.teacherEvaluation,
-        ),
-      ]);
+      );
     }
 
     // ─── Pramuka ──────────────────────────────────────────
@@ -235,23 +175,17 @@ class AppDrawer extends StatelessWidget {
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.groups_2_outlined,
-          label: 'Kelas Pramuka',
-          route: RouteNames.scoutClasses,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Pramuka',
+          icon: Icons.park_outlined,
+          items: [
+            _MenuItemData(icon: Icons.groups_2_outlined, label: 'Kelas Pramuka', route: RouteNames.scoutClasses),
+            _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Absensi Pramuka', route: RouteNames.scoutAttendance),
+            _MenuItemData(icon: Icons.description_outlined, label: 'Laporan Pramuka', route: RouteNames.scoutReport),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.how_to_reg_outlined,
-          label: 'Absensi Pramuka',
-          route: RouteNames.scoutAttendance,
-        ),
-        _MenuItemData(
-          icon: Icons.description_outlined,
-          label: 'Laporan Pramuka',
-          route: RouteNames.scoutReport,
-        ),
-      ]);
+      );
     }
 
     // ─── Vokasi / PKL ─────────────────────────────────────
@@ -260,18 +194,16 @@ class AppDrawer extends StatelessWidget {
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.location_on_outlined,
-          label: 'Lokasi PKL',
-          route: RouteNames.pklLocationReport,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Vokasi',
+          icon: Icons.work_outline,
+          items: [
+            _MenuItemData(icon: Icons.location_on_outlined, label: 'Lokasi PKL', route: RouteNames.pklLocationReport),
+            _MenuItemData(icon: Icons.timeline_outlined, label: 'Progres PKL', route: RouteNames.pklProgressReport),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.timeline_outlined,
-          label: 'Progres PKL',
-          route: RouteNames.pklProgressReport,
-        ),
-      ]);
+      );
     }
 
     // ─── Bendahara ────────────────────────────────────────
@@ -280,41 +212,26 @@ class AppDrawer extends StatelessWidget {
       role: role,
       roles: roles,
     )) {
-      items.addAll(const [
-        _MenuItemData(
-          icon: Icons.inventory_2_outlined,
-          label: 'Informasi Pengajuan',
-          route: RouteNames.submissionInfo,
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Bendahara',
+          icon: Icons.account_balance_wallet_outlined,
+          items: [
+            _MenuItemData(icon: Icons.inventory_2_outlined, label: 'Informasi Pengajuan', route: RouteNames.submissionInfo),
+            _MenuItemData(icon: Icons.handshake_outlined, label: 'Peminjaman Barang', route: RouteNames.itemLoan),
+            _MenuItemData(icon: Icons.payments_outlined, label: 'Respon Bendahara', route: RouteNames.treasurerResponse),
+          ],
         ),
-        _MenuItemData(
-          icon: Icons.handshake_outlined,
-          label: 'Peminjaman Barang',
-          route: RouteNames.itemLoan,
-        ),
-        _MenuItemData(
-          icon: Icons.payments_outlined,
-          label: 'Respon Bendahara',
-          route: RouteNames.treasurerResponse,
-        ),
-      ]);
+      );
     }
 
-    return _removeDuplicateRoutes(items);
-  }
-
-  List<_MenuItemData> _removeDuplicateRoutes(List<_MenuItemData> items) {
-    final seenRoutes = <String>{};
-    final result = <_MenuItemData>[];
-
-    for (final item in items) {
-      if (seenRoutes.add(item.route)) {
-        result.add(item);
-      }
-    }
-
-    return result;
+    return categories;
   }
 }
+
+// ============================================================================
+// WIDGETS
+// ============================================================================
 
 class _UserHeader extends StatelessWidget {
   final String name;
@@ -363,7 +280,7 @@ class _UserHeader extends StatelessWidget {
                 Text(
                   roleLabel,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: Colors.white.withOpacity(0.8),
                     fontSize: 12,
                   ),
                   maxLines: 2,
@@ -373,6 +290,58 @@ class _UserHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Widget untuk menampilkan ExpansionTile (Dropdown/Accordion) berdasarkan kategori Role
+class _DrawerMenuCategory extends StatelessWidget {
+  final _MenuCategoryData category;
+  final String currentRoute;
+
+  const _DrawerMenuCategory({
+    required this.category,
+    required this.currentRoute,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Buka dropdown secara otomatis jika salah satu submenu di dalamnya sedang aktif
+    final isExpanded = category.items.any((item) => item.route == currentRoute);
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent, // Menghilangkan garis border bawaan ExpansionTile
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: isExpanded,
+        iconColor: Colors.white,
+        collapsedIconColor: Colors.white70,
+        leading: Icon(
+          category.icon,
+          color: Colors.white,
+          size: 24,
+        ),
+        title: Text(
+          category.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        children: category.items.map((item) {
+          return Padding(
+            padding: const EdgeInsets.only(left: 16.0), // Indentasi agar terlihat seperti submenu
+            child: _DrawerMenuItem(
+              icon: item.icon,
+              label: item.label,
+              route: item.route,
+              currentRoute: currentRoute,
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -419,10 +388,10 @@ class _DrawerMenuItem extends StatelessWidget {
           ),
         ),
         onTap: () {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(); // Tutup Drawer saat item di klik
 
           if (!isActive) {
-            context.go(route);
+            context.go(route); // Navigasi via go_router
           }
         },
       ),
@@ -488,7 +457,7 @@ class _LogoutButton extends StatelessWidget {
             Text(
               'KELUAR',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Colors.white.withOpacity(0.9),
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -498,6 +467,23 @@ class _LogoutButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ============================================================================
+// DATA MODELS
+// ============================================================================
+
+/// Model untuk membungkus kategori menu beserta isinya
+class _MenuCategoryData {
+  final String title;
+  final IconData icon;
+  final List<_MenuItemData> items;
+
+  const _MenuCategoryData({
+    required this.title,
+    required this.icon,
+    required this.items,
+  });
 }
 
 class _MenuItemData {

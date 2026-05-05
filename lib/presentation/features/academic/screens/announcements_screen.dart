@@ -11,7 +11,6 @@ import '../../../common/widgets/loading_widget.dart';
 import '../providers/academic_provider.dart';
 import '../../../../core/constants/route_names.dart';
 
-
 class AnnouncementsScreen extends StatelessWidget {
   const AnnouncementsScreen({super.key});
 
@@ -67,15 +66,24 @@ class _AnnouncementsView extends StatelessWidget {
       BuildContext context,
       Map<String, dynamic> item,
       ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: Text(item['judul']?.toString() ?? 'Detail Pengumuman'),
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          title: Text(
+            item['judul']?.toString() ?? 'Detail Pengumuman',
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+          ),
           content: SingleChildScrollView(
             child: Text(
               item['isi']?.toString() ?? '-',
-              style: const TextStyle(height: 1.5),
+              style: TextStyle(
+                height: 1.5,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
             ),
           ),
           actions: [
@@ -83,7 +91,12 @@ class _AnnouncementsView extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Tutup'),
+              child: Text(
+                'Tutup',
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                ),
+              ),
             ),
           ],
         );
@@ -99,6 +112,7 @@ class _AnnouncementsView extends StatelessWidget {
     final controller = TextEditingController();
     final title = item['judul']?.toString() ?? '';
     final id = item['id']?.toString() ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -108,22 +122,34 @@ class _AnnouncementsView extends StatelessWidget {
             final isMatch = controller.text.trim() == title;
 
             return AlertDialog(
-              title: const Text('Hapus Pengumuman'),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+              title: Text(
+                'Hapus Pengumuman',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Ketik ulang judul "$title" untuk menghapus pengumuman ini.',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     onChanged: (_) {
                       setState(() {});
                     },
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Judul Pengumuman',
+                      labelStyle: TextStyle(
+                        color: isDark ? Colors.white54 : Colors.grey.shade700,
+                      ),
                     ),
                   ),
                 ],
@@ -133,9 +159,19 @@ class _AnnouncementsView extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Batal'),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
                 ),
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                  ),
                   onPressed: isMatch
                       ? () async {
                     final provider =
@@ -185,6 +221,7 @@ class _AnnouncementsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final canManage = _canManageAnnouncement(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -192,12 +229,13 @@ class _AnnouncementsView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Manajemen Pengumuman',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -206,6 +244,10 @@ class _AnnouncementsView extends StatelessWidget {
                   onPressed: () {
                     _openFormSheet(context);
                   },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Tambah Pengumuman'),
                 ),
@@ -217,6 +259,7 @@ class _AnnouncementsView extends StatelessWidget {
             context,
             provider,
             canManage,
+            isDark,
           ),
         ),
       ],
@@ -227,6 +270,7 @@ class _AnnouncementsView extends StatelessWidget {
       BuildContext context,
       AcademicProvider provider,
       bool canManage,
+      bool isDark,
       ) {
     if ((provider.announcementState == AcademicLoadState.initial ||
         provider.announcementState == AcademicLoadState.loading) &&
@@ -251,16 +295,19 @@ class _AnnouncementsView extends StatelessWidget {
         onRefresh: () => _refresh(context),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 140),
+          children: [
+            const SizedBox(height: 140),
             Icon(
               Icons.campaign_outlined,
               size: 56,
-              color: Colors.grey,
+              color: isDark ? Colors.white24 : Colors.grey,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Center(
-              child: Text('Belum ada pengumuman.'),
+              child: Text(
+                'Belum ada pengumuman.',
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+              ),
             ),
           ],
         ),
@@ -281,23 +328,30 @@ class _AnnouncementsView extends StatelessWidget {
           final isi = item['isi']?.toString() ?? '-';
 
           return Card(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+            ),
             child: ListTile(
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.campaign_outlined,
-                  color: Color(0xFF2563EB),
+                  color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                 ),
               ),
               title: Text(
                 judul,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               subtitle: Padding(
@@ -306,6 +360,7 @@ class _AnnouncementsView extends StatelessWidget {
                   isi,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade600),
                 ),
               ),
               onTap: () {
@@ -319,6 +374,8 @@ class _AnnouncementsView extends StatelessWidget {
               },
               trailing: canManage
                   ? PopupMenuButton<String>(
+                iconColor: isDark ? Colors.white70 : Colors.grey.shade600,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 onSelected: (value) {
                   if (value == 'detail') {
                     final id = item['id']?.toString();
@@ -338,23 +395,23 @@ class _AnnouncementsView extends StatelessWidget {
                   }
                 },
                 itemBuilder: (_) {
-                  return const [
+                  return [
                     PopupMenuItem(
                       value: 'detail',
-                      child: Text('Detail'),
+                      child: Text('Detail', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                     ),
                     PopupMenuItem(
                       value: 'edit',
-                      child: Text('Edit'),
+                      child: Text('Edit', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Hapus'),
+                      child: Text('Hapus', style: TextStyle(color: Colors.red.shade400)),
                     ),
                   ];
                 },
               )
-                  : const Icon(Icons.chevron_right_rounded),
+                  : Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white30 : Colors.grey.shade400),
             ),
           );
         },
@@ -457,15 +514,16 @@ class _AnnouncementFormSheetState extends State<_AnnouncementFormSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -473,73 +531,67 @@ class _AnnouncementFormSheetState extends State<_AnnouncementFormSheet> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(999),
+                // Indikator "Drag Handle" di bagian atas untuk digeser
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Judul Form
+                Text(
+                  _isEdit ? 'Edit Pengumuman' : 'Tambah Pengumuman',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isEdit
-                            ? 'Edit Pengumuman'
-                            : 'Tambah Pengumuman',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _judulController,
                   enabled: !_isSubmitting,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Judul Pengumuman',
                     hintText: 'Contoh: Libur Semester Ganjil',
-                    prefixIcon: Icon(Icons.title_outlined),
+                    prefixIcon: const Icon(Icons.title_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Judul pengumuman wajib diisi';
                     }
-
                     return null;
                   },
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _isiController,
                   enabled: !_isSubmitting,
                   maxLines: 7,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Isi Pengumuman',
                     hintText: 'Tuliskan isi pengumuman secara lengkap...',
                     alignLabelWithHint: true,
-                    prefixIcon: Icon(Icons.notes_outlined),
+                    prefixIcon: const Icon(Icons.notes_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Isi pengumuman wajib diisi';
                     }
-
                     return null;
                   },
                 ),
@@ -548,12 +600,18 @@ class _AnnouncementFormSheetState extends State<_AnnouncementFormSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
                     icon: _isSubmitting
                         ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
+                        color: Colors.white,
                       ),
                     )
                         : const Icon(Icons.save_outlined),

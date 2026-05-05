@@ -6,7 +6,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/common/providers/auth_provider.dart';
 import 'presentation/common/providers/theme_provider.dart';
-import '../../presentation/features/learning/providers/learning_provider.dart';
+import 'presentation/features/learning/providers/learning_provider.dart';
 import 'presentation/features/academic/providers/academic_provider.dart';
 
 class SmkSigumparApp extends StatefulWidget {
@@ -22,11 +22,10 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
   @override
   void initState() {
     super.initState();
-    // 1. Ambil AuthProvider dari Service Locator
+    // Ambil AuthProvider dari Service Locator
     final authProvider = sl<AuthProvider>();
 
-    // 2. Inisialisasi router dengan menyuntikkan authProvider
-    // agar routerConfig bisa menggunakan 'refreshListenable'
+    // Inisialisasi router dengan refreshListenable → tidak balik ke login saat reload
     _router = AppRouter.createRouter(authProvider);
   }
 
@@ -37,7 +36,6 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
         ChangeNotifierProvider<AuthProvider>.value(
           value: sl<AuthProvider>(),
         ),
-        // GANTI AnnouncementProvider menjadi AcademicProvider
         ChangeNotifierProvider<AcademicProvider>(
           create: (_) => sl<AcademicProvider>(),
         ),
@@ -48,14 +46,20 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
           create: (_) => sl<LearningProvider>(),
         ),
       ],
-      child: MaterialApp.router(
-        title: 'SMK Negeri 1 Sigumpar',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        // FORCE LIGHT THEME tetap dipertahankan sesuai permintaanmu
-        themeMode: ThemeMode.light,
-        // 3. Gunakan instance router yang sudah mendengarkan AuthProvider
-        routerConfig: _router,
+      // Consumer agar MaterialApp rebuild saat tema berubah (dari team lead)
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            title: 'SMK Negeri 1 Sigumpar',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            // Tema dinamis dari team lead
+            themeMode: themeProvider.themeMode,
+            // Router dengan refreshListenable dari HEAD → auth persist
+            routerConfig: _router,
+          );
+        },
       ),
     );
   }

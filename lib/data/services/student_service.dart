@@ -33,9 +33,13 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<void> submitAttendance(List<Map<String, dynamic>> data) async {
-    await _dioClient.post(ApiEndpoints.attendanceRecap,
-        data: {'records': data});
+  // ✅ IKUTI TEAM LEAD: parameter Map + rethrow
+  Future<void> submitAttendance(Map<String, dynamic> data) async {
+    try {
+      await _dioClient.post(ApiEndpoints.absensiMapel, data: data);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // ─── Grades (lama) ────────────────────────────────────────
@@ -172,7 +176,6 @@ class StudentService implements StudentRepository {
     );
     final data = response.data;
     if (data is List) return data.cast<Map<String, dynamic>>();
-    // BE mengembalikan { success, jadwal, data: [...] }
     final list = data['data'] ?? [];
     return (list as List).cast<Map<String, dynamic>>();
   }

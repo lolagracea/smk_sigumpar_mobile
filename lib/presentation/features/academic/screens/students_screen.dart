@@ -127,6 +127,7 @@ class _StudentsViewState extends State<_StudentsView> {
   void _openDeleteDialog(StudentModel student) {
     final parentContext = context;
     final controller = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -136,29 +137,37 @@ class _StudentsViewState extends State<_StudentsView> {
             final isMatch = controller.text.trim() == student.namaLengkap;
 
             return AlertDialog(
-              title: const Text('Hapus Data Siswa'),
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+              title: Text(
+                'Hapus Data Siswa',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Tindakan ini bersifat permanen. Ketik ulang nama lengkap siswa untuk konfirmasi.',
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     student.namaLengkap,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     onChanged: (_) {
                       setState(() {});
                     },
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Nama lengkap siswa',
+                      labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                     ),
                   ),
                 ],
@@ -168,9 +177,17 @@ class _StudentsViewState extends State<_StudentsView> {
                   onPressed: () {
                     Navigator.pop(dialogContext);
                   },
-                  child: const Text('Batal'),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                  ),
                 ),
                 FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                  ),
                   onPressed: isMatch
                       ? () async {
                     final provider =
@@ -214,6 +231,7 @@ class _StudentsViewState extends State<_StudentsView> {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final canManage = _canManageStudent(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -221,18 +239,23 @@ class _StudentsViewState extends State<_StudentsView> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Manajemen Siswa',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
               if (canManage)
                 FilledButton.icon(
                   onPressed: () => _openFormSheet(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Tambah Siswa'),
                 ),
@@ -243,9 +266,12 @@ class _StudentsViewState extends State<_StudentsView> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: TextField(
             controller: _searchController,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
               hintText: 'Cari NISN, nama siswa, atau kelas...',
-              prefixIcon: const Icon(Icons.search_rounded),
+              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
+              prefixIcon: Icon(Icons.search_rounded, color: isDark ? Colors.white54 : Colors.grey.shade600),
+              fillColor: isDark ? const Color(0xFF1E293B) : Colors.grey.shade100,
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                 onPressed: () {
@@ -258,7 +284,7 @@ class _StudentsViewState extends State<_StudentsView> {
 
                   setState(() {});
                 },
-                icon: const Icon(Icons.clear_rounded),
+                icon: Icon(Icons.clear_rounded, color: isDark ? Colors.white54 : Colors.grey.shade600),
               )
                   : null,
             ),
@@ -270,9 +296,12 @@ class _StudentsViewState extends State<_StudentsView> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: DropdownButtonFormField<String>(
             value: _selectedClassId,
-            decoration: const InputDecoration(
+            dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
               labelText: 'Filter Kelas',
-              prefixIcon: Icon(Icons.class_outlined),
+              prefixIcon: const Icon(Icons.class_outlined),
+              labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
             ),
             items: [
               const DropdownMenuItem<String>(
@@ -308,6 +337,7 @@ class _StudentsViewState extends State<_StudentsView> {
             context,
             provider,
             canManage,
+            isDark,
           ),
         ),
       ],
@@ -318,6 +348,7 @@ class _StudentsViewState extends State<_StudentsView> {
       BuildContext context,
       AcademicProvider provider,
       bool canManage,
+      bool isDark,
       ) {
     if ((provider.studentState == AcademicLoadState.initial ||
         provider.studentState == AcademicLoadState.loading) &&
@@ -340,16 +371,19 @@ class _StudentsViewState extends State<_StudentsView> {
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 140),
+          children: [
+            const SizedBox(height: 140),
             Icon(
               Icons.groups_outlined,
               size: 56,
-              color: Colors.grey,
+              color: isDark ? Colors.white24 : Colors.grey,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Center(
-              child: Text('Belum ada data siswa.'),
+              child: Text(
+                'Belum ada data siswa.',
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+              ),
             ),
           ],
         ),
@@ -380,23 +414,30 @@ class _StudentsViewState extends State<_StudentsView> {
           final siswa = provider.students[index];
 
           return Card(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+            ),
             child: ListTile(
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_outline,
-                  color: Color(0xFF2563EB),
+                  color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
                 ),
               ),
               title: Text(
                 siswa.namaLengkap,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
                 ),
               ),
               subtitle: Padding(
@@ -406,10 +447,13 @@ class _StudentsViewState extends State<_StudentsView> {
                     if (siswa.nisn.isNotEmpty) 'NISN: ${siswa.nisn}',
                     if (siswa.namaKelas.isNotEmpty) siswa.namaKelas,
                   ].join(' • '),
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade600),
                 ),
               ),
               trailing: canManage
                   ? PopupMenuButton<String>(
+                iconColor: isDark ? Colors.white70 : Colors.grey.shade600,
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 onSelected: (value) {
                   if (value == 'edit') {
                     _openFormSheet(student: siswa);
@@ -418,14 +462,14 @@ class _StudentsViewState extends State<_StudentsView> {
                   }
                 },
                 itemBuilder: (_) {
-                  return const [
+                  return [
                     PopupMenuItem(
                       value: 'edit',
-                      child: Text('Edit'),
+                      child: Text('Edit', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Text('Hapus'),
+                      child: Text('Hapus', style: TextStyle(color: Colors.red.shade400)),
                     ),
                   ];
                 },
@@ -537,15 +581,16 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
   Widget build(BuildContext context) {
     final provider = context.watch<AcademicProvider>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -553,45 +598,38 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(999),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  _isEdit ? 'Edit Data Siswa' : 'Tambah Siswa Baru',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isEdit ? 'Edit Data Siswa' : 'Tambah Siswa Baru',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: _nisnController,
                   enabled: !_isSubmitting,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'NISN',
                     hintText: 'Masukkan NISN',
-                    prefixIcon: Icon(Icons.badge_outlined),
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
@@ -599,7 +637,6 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
                     if (value == null || value.trim().isEmpty) {
                       return 'NISN wajib diisi';
                     }
-
                     return null;
                   },
                 ),
@@ -607,17 +644,19 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
                 TextFormField(
                   controller: _namaLengkapController,
                   enabled: !_isSubmitting,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Nama Lengkap',
                     hintText: 'Nama lengkap sesuai ijazah',
-                    prefixIcon: Icon(Icons.person_outline),
+                    prefixIcon: const Icon(Icons.person_outline),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Nama lengkap wajib diisi';
                     }
-
                     return null;
                   },
                 ),
@@ -626,9 +665,12 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
                   value: _selectedKelasId?.isEmpty == true
                       ? null
                       : _selectedKelasId,
-                  decoration: const InputDecoration(
+                  dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  decoration: InputDecoration(
                     labelText: 'Pilih Kelas',
-                    prefixIcon: Icon(Icons.class_outlined),
+                    prefixIcon: const Icon(Icons.class_outlined),
+                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
                   ),
                   items: provider.classes.map((kelas) {
                     return DropdownMenuItem<String>(
@@ -647,7 +689,6 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
                     if (value == null || value.isEmpty) {
                       return 'Kelas wajib dipilih';
                     }
-
                     return null;
                   },
                 ),
@@ -656,11 +697,19 @@ class _StudentFormSheetState extends State<_StudentFormSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
                     icon: _isSubmitting
                         ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                         : const Icon(Icons.save_outlined),
                     label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Data'),
