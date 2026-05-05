@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/network/api_response.dart';
 import '../../core/constants/api_endpoints.dart';
@@ -58,5 +62,111 @@ class VocationalService implements VocationalRepository {
   Future<Map<String, dynamic>> submitPklProgressReport(Map<String, dynamic> data) async {
     final r = await _dioClient.post(ApiEndpoints.pklProgress, data: data);
     return r.data['data'] as Map<String, dynamic>;
+  }
+
+  // ─── PRAMUKA: RAW DATA METHODS ────────────────────────────────
+
+  Future<Map<String, dynamic>> getRawKelasVokasi() async {
+    final r = await _dioClient.get(ApiEndpoints.vocationalClasses);
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<Map<String, dynamic>> getRawSiswaVokasi({String? kelasId}) async {
+    final params = <String, dynamic>{};
+    if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
+    final r = await _dioClient.get(ApiEndpoints.vocationalStudents, queryParameters: params);
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  // ─── PRAMUKA: ABSENSI ─────────────────────────────────────────
+
+  Future<void> submitAbsensiPramuka(Map<String, dynamic> data) async {
+    await _dioClient.post(ApiEndpoints.scoutAttendance, data: data);
+  }
+
+  Future<Map<String, dynamic>> getRawAbsensiPramuka({String? kelasId, String? tanggal}) async {
+    final params = <String, dynamic>{};
+    if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
+    if (tanggal != null && tanggal.isNotEmpty) params['tanggal'] = tanggal;
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendance, queryParameters: params);
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<Map<String, dynamic>> getRawRekapAbsensiPramuka({
+    required String kelasId,
+    String? tanggalMulai,
+    String? tanggalAkhir,
+  }) async {
+    final params = <String, dynamic>{'kelas_id': kelasId};
+    if (tanggalMulai != null && tanggalMulai.isNotEmpty) params['tanggal_mulai'] = tanggalMulai;
+    if (tanggalAkhir != null && tanggalAkhir.isNotEmpty) params['tanggal_akhir'] = tanggalAkhir;
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendanceRecap, queryParameters: params);
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  // ─── PRAMUKA: SILABUS ─────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getRawSilabus() async {
+    final r = await _dioClient.get(ApiEndpoints.syllabus);
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<void> createSilabus({
+    required String kelasId,
+    required String namaKelas,
+    required String judulKegiatan,
+    required String tanggal,
+    PlatformFile? file,
+  }) async {
+    final formData = FormData.fromMap({
+      'kelas_id': kelasId,
+      'nama_kelas': namaKelas,
+      'judul_kegiatan': judulKegiatan,
+      'tanggal': tanggal,
+      if (file != null && file.bytes != null)
+        'file': MultipartFile.fromBytes(file.bytes!, filename: file.name),
+    });
+    await _dioClient.postFormData(ApiEndpoints.syllabus, formData: formData);
+  }
+
+  Future<void> deleteSilabus(dynamic id) async {
+    await _dioClient.delete('${ApiEndpoints.syllabus}/$id');
+  }
+
+  // ─── PRAMUKA: LAPORAN KEGIATAN ────────────────────────────────
+
+  Future<Map<String, dynamic>> getRawLaporanKegiatan() async {
+    final r = await _dioClient.get(ApiEndpoints.activityReport);
+    return Map<String, dynamic>.from(r.data ?? {});
+  }
+
+  Future<void> createLaporanKegiatan({
+    required String judul,
+    required String deskripsi,
+    required String tanggal,
+    PlatformFile? file,
+  }) async {
+    final formData = FormData.fromMap({
+      'judul': judul,
+      'deskripsi': deskripsi,
+      'tanggal': tanggal,
+      if (file != null && file.bytes != null)
+        'file_laporan': MultipartFile.fromBytes(file.bytes!, filename: file.name),
+    });
+    await _dioClient.postFormData(ApiEndpoints.activityReport, formData: formData);
+  }
+
+  Future<void> deleteLaporanKegiatan(dynamic id) async {
+    await _dioClient.delete('${ApiEndpoints.activityReport}/$id');
+  }
+
+  // ─── DOWNLOAD FILE ────────────────────────────────────────────
+
+  Future<void> downloadFile({required String url, required String fileName}) async {
+    final fullUrl = '${ApiEndpoints.baseUrl}$url';
+    final uri = Uri.parse(fullUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

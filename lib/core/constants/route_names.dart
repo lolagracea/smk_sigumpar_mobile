@@ -79,6 +79,11 @@ class RouteNames {
   static const String pklLocationReport = '/vocational/pkl-location';
   static const String pklProgressReport = '/vocational/pkl-progress';
 
+  // ─── Pramuka (sub-routes) ──────────────────────────────
+  static const String pramukaAbsensi = '/vocational/pramuka/absensi';
+  static const String pramukaLaporan = '/vocational/pramuka/laporan';
+  static const String pramukaSimabus = '/vocational/pramuka/silabus';
+
   // ─── Asset ─────────────────────────────────────────────
   static const String asset = '/asset';
   static const String submissionInfo = '/asset/submissions';

@@ -35,6 +35,9 @@ import '../../presentation/common/layout/main_shell.dart';
 import '../../presentation/features/vocational/screens/scout_classes_screen.dart';
 import '../../presentation/features/vocational/screens/scout_attendance_screen.dart';
 import '../../presentation/features/vocational/screens/scout_report_screen.dart';
+import '../../presentation/features/vocational/screens/pramuka/absensi_pramuka_screen.dart';
+import '../../presentation/features/vocational/screens/pramuka/silabus_pramuka_screen.dart';
+import '../../presentation/features/vocational/screens/pramuka/laporan_kegiatan_pramuka_screen.dart';
 import '../../presentation/features/vocational/screens/pkl_location_report_screen.dart';
 import '../../presentation/features/vocational/screens/pkl_progress_report_screen.dart';
 import '../../presentation/features/asset/screens/submission_info_screen.dart';
@@ -199,6 +202,18 @@ class AppRouter {
           GoRoute(
             path: RouteNames.scoutReport,
             builder: (_, __) => const ScoutReportScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.pramukaAbsensi,
+            builder: (_, __) => const AbsensiPramukaScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.pramukaLaporan,
+            builder: (_, __) => const LaporanKegiatanPramukaScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.pramukaSimabus,
+            builder: (_, __) => const SilabusPramukaScreen(),
           ),
           GoRoute(
             path: RouteNames.pklLocationReport,
