@@ -3,7 +3,7 @@ import '../models/grade_model.dart';
 import '../../core/network/api_response.dart';
 
 abstract class StudentRepository {
-  // Attendance
+  // ─── Attendance ───────────────────────────────────────────
   Future<PaginatedResponse<AttendanceModel>> getAttendanceRecap({
     required String classId,
     String? month,
@@ -12,7 +12,7 @@ abstract class StudentRepository {
   });
   Future<void> submitAttendance(List<Map<String, dynamic>> data);
 
-  // Grades
+  // ─── Grades (lama) ────────────────────────────────────────
   Future<PaginatedResponse<GradeModel>> getGradesRecap({
     required String classId,
     String? semester,
@@ -22,19 +22,73 @@ abstract class StudentRepository {
   Future<GradeModel> submitGrade(Map<String, dynamic> data);
   Future<GradeModel> updateGrade(String id, Map<String, dynamic> data);
 
-  // Cleanliness
-  Future<PaginatedResponse<Map<String, dynamic>>> getCleanlinessRecap({int page = 1});
+  // ─── Grades (input nilai guru mapel) ─────────────────────
+  Future<List<Map<String, dynamic>>> getGuruMapelAssignments();
+
+  Future<List<Map<String, dynamic>>> getSiswaUntukInputNilai({
+    required String kelasId,
+    required String mapelId,
+  });
+
+  Future<List<Map<String, dynamic>>> getNilaiSiswa({
+    required String kelasId,
+    required String mapelId,
+    required String tahunAjar,
+    required String semester,
+  });
+
+  Future<void> createOrUpdateNilai({
+    required String kelasId,
+    required String mapelId,
+    required String tahunAjar,
+    required String semester,
+    required Map<String, int> bobot,
+    required List<Map<String, dynamic>> dataNilai,
+  });
+
+  // ─── Absensi Mapel (Guru Mapel) ───────────────────────────
+  Future<List<Map<String, dynamic>>> getAbsensiMapelJadwal();
+
+  Future<List<Map<String, dynamic>>> getAbsensiMapelSiswa({
+    required String jadwalId,
+  });
+
+  Future<List<Map<String, dynamic>>> getAbsensiMapel({
+    required String jadwalId,
+    required String tanggal,
+  });
+
+  Future<void> createAbsensiMapel({
+    required dynamic jadwalId,
+    required String tanggal,
+    required List<Map<String, dynamic>> dataAbsensi,
+  });
+
+  Future<List<Map<String, dynamic>>> getAbsensiMapelRekap({
+    required String kelasId,
+    required String mapelId,
+    String? tanggalMulai,
+    String? tanggalAkhir,
+  });
+
+  // ─── Cleanliness ─────────────────────────────────────────
+  Future<PaginatedResponse<Map<String, dynamic>>> getCleanlinessRecap(
+      {int page = 1});
   Future<Map<String, dynamic>> submitCleanliness(Map<String, dynamic> data);
 
-  // Parenting Notes
-  Future<PaginatedResponse<Map<String, dynamic>>> getParentingNotes({int page = 1});
+  // ─── Parenting Notes ──────────────────────────────────────
+  Future<PaginatedResponse<Map<String, dynamic>>> getParentingNotes(
+      {int page = 1});
   Future<Map<String, dynamic>> createParentingNote(Map<String, dynamic> data);
 
-  // Homeroom Reflection
-  Future<PaginatedResponse<Map<String, dynamic>>> getHomeroomReflections({int page = 1});
-  Future<Map<String, dynamic>> createHomeroomReflection(Map<String, dynamic> data);
+  // ─── Homeroom Reflection ──────────────────────────────────
+  Future<PaginatedResponse<Map<String, dynamic>>> getHomeroomReflections(
+      {int page = 1});
+  Future<Map<String, dynamic>> createHomeroomReflection(
+      Map<String, dynamic> data);
 
-  // Summons Letter
-  Future<PaginatedResponse<Map<String, dynamic>>> getSummonsLetters({int page = 1});
+  // ─── Summons Letter ───────────────────────────────────────
+  Future<PaginatedResponse<Map<String, dynamic>>> getSummonsLetters(
+      {int page = 1});
   Future<Map<String, dynamic>> createSummonsLetter(Map<String, dynamic> data);
 }
