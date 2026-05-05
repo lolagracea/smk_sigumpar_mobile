@@ -181,7 +181,6 @@ class AppDrawer extends StatelessWidget {
           icon: Icons.park_outlined,
           items: [
             _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Absensi Pramuka', route: RouteNames.pramukaAbsensi),
-            _MenuItemData(icon: Icons.menu_book_outlined, label: 'Silabus & Perangkat', route: RouteNames.pramukaSimabus),
             _MenuItemData(icon: Icons.description_outlined, label: 'Laporan Kegiatan', route: RouteNames.pramukaLaporan),
           ],
         ),
