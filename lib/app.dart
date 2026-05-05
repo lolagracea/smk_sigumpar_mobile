@@ -1,26 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'core/di/injection_container.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'presentation/common/providers/auth_provider.dart';
+import 'presentation/common/providers/theme_provider.dart';
+import 'presentation/features/learning/providers/absensi_guru_provider.dart';
+import 'presentation/features/learning/providers/perangkat_provider.dart';
+import 'presentation/features/learning/providers/evaluasi_guru_provider.dart';
+import 'presentation/features/learning/providers/catatan_mengajar_provider.dart';
 
-import 'app_router.dart';
-import 'providers/theme_provider.dart';
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SmkSigumparApp extends StatelessWidget {
+  const SmkSigumparApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
-
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      title: 'SMK Negeri 1 Sigumpar',
-      themeMode: themeProvider.themeMode,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.blue,
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => sl<ThemeProvider>(),
+        ),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => sl<AuthProvider>(),
+        ),
+        ChangeNotifierProvider<AbsensiGuruProvider>(
+          create: (_) => sl<AbsensiGuruProvider>(),
+        ),
+        ChangeNotifierProvider<PerangkatProvider>(
+          create: (_) => sl<PerangkatProvider>(),
+        ),
+        ChangeNotifierProvider<EvaluasiGuruProvider>(
+          create: (_) => sl<EvaluasiGuruProvider>(),
+        ),
+        ChangeNotifierProvider<CatatanMengajarProvider>(
+          create: (_) => sl<CatatanMengajarProvider>(),
+        ),
+        ChangeNotifierProvider<PerangkatProvider>(
+          create: (_) => sl<PerangkatProvider>(),
+        ),
+        ChangeNotifierProvider<EvaluasiGuruProvider>(
+          create: (_) => sl<EvaluasiGuruProvider>(),
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'SMK Negeri 1 Sigumpar',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        // ⚠️ FORCE LIGHT THEME — biar UI consistent dengan mockup
+        themeMode: ThemeMode.light,
+        routerConfig: AppRouter.router,
       ),
-      darkTheme: ThemeData.dark(useMaterial3: true),
-      routerConfig: AppRouter.router,
     );
   }
 }

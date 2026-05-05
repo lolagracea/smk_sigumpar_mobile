@@ -1,6 +1,6 @@
 // This is a generated file; do not edit or check into version control.
-FLUTTER_ROOT=D:\flutter_windows_3.41.2-stable\flutter
-FLUTTER_APPLICATION_PATH=D:\Semester 6\smk_sigumpar_mobile
+FLUTTER_ROOT=D:\Flutter
+FLUTTER_APPLICATION_PATH=D:\KULIAH\PAM\smk_sigumpar_mobile
 COCOAPODS_PARALLEL_CODE_SIGN=true
 FLUTTER_BUILD_DIR=build
 FLUTTER_BUILD_NAME=1.0.0

@@ -1,6 +1,6 @@
 {
-    "name": "smk_sigumpar_mobile",
-    "short_name": "smk_sigumpar_mobile",
+    "name": "smk_sigumpar",
+    "short_name": "smk_sigumpar",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
