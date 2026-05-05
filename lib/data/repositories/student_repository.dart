@@ -11,7 +11,6 @@ abstract class StudentRepository {
     int page = 1,
   });
 
-  // ⚠️ PERUBAHAN DI SINI: Parameter diganti menjadi Map
   Future<void> submitAttendance(Map<String, dynamic> data);
 
   // Grades

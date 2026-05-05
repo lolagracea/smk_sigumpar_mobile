@@ -34,10 +34,7 @@ class StudentService implements StudentRepository {
   @override
   Future<void> submitAttendance(Map<String, dynamic> data) async {
     try {
-      // PERCOBAAN 1: Gunakan endpoint 'absensiMapel' karena namanya sangat spesifik
-      // untuk kebutuhan Guru Mapel (Sesuai dengan ApiEndpoints Anda).
       await _dioClient.post(ApiEndpoints.absensiMapel, data: data);
-
     } catch (e) {
       rethrow;
     }

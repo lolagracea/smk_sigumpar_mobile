@@ -3,7 +3,6 @@ import '../../../../data/models/attendance_model.dart';
 import '../../../../data/models/grade_model.dart';
 import '../../../../data/repositories/student_repository.dart';
 
-// Enum untuk status loading
 enum StudentLoadState { initial, loading, loaded, error }
 
 class StudentProvider extends ChangeNotifier {
@@ -71,7 +70,7 @@ class StudentProvider extends ChangeNotifier {
   bool _isSubmittingAttendance = false;
   bool get isSubmittingAttendance => _isSubmittingAttendance;
 
-  // Parameter sudah disesuaikan menjadi Map<String, dynamic>
+
   Future<bool> submitAttendance(Map<String, dynamic> data) async {
     _isSubmittingAttendance = true;
     _attendanceError = null;
