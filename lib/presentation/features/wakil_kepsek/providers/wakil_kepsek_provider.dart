@@ -122,6 +122,11 @@ class WakilKepsekProvider extends ChangeNotifier {
   bool isLoadingJadwal = false;
   String? errorJadwal;
 
+  // ── Perangkat Pembelajaran (Kurikulum) state ──
+  List<Map<String, dynamic>> perangkatList = [];
+  bool isLoadingPerangkat = false;
+  String? errorPerangkat;
+
   // ── Guru list (for supervisi form) ──
   List<Map<String, dynamic>> guruList = [];
 
@@ -263,6 +268,33 @@ class WakilKepsekProvider extends ChangeNotifier {
       errorJadwal = 'Gagal memuat data jadwal';
     } finally {
       isLoadingJadwal = false;
+      notifyListeners();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  // PERANGKAT PEMBELAJARAN (KURIKULUM)
+  // ═══════════════════════════════════════════════════
+
+  Future<void> fetchPerangkat() async {
+    isLoadingPerangkat = true;
+    errorPerangkat = null;
+    notifyListeners();
+    try {
+      final response = await _dioClient.get(ApiEndpoints.learningDevices);
+      final raw = response.data;
+      List<dynamic> rows = [];
+      if (raw is List) {
+        rows = raw;
+      } else if (raw is Map<String, dynamic>) {
+        rows = raw['data'] is List ? raw['data'] as List : [];
+      }
+      perangkatList =
+          rows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      errorPerangkat = 'Gagal memuat data perangkat pembelajaran';
+    } finally {
+      isLoadingPerangkat = false;
       notifyListeners();
     }
   }

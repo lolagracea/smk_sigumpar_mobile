@@ -146,24 +146,44 @@ class AppDrawer extends StatelessWidget {
       );
     }
 
-    // ─── Kepala Sekolah / Waka Sekolah ────────────────────
-    if (RoleHelper.hasAnyRole(
-      targetRoles: const [
-        AppRoles.principal,
-        AppRoles.vicePrincipal,
-      ],
+    // ─── Kepala Sekolah ───────────────────────────────────
+    if (RoleHelper.hasRole(
+      targetRole: AppRoles.principal,
       role: role,
       roles: roles,
     )) {
       categories.add(
         const _MenuCategoryData(
-          title: 'Menu Pimpinan',
+          title: 'Menu Kepala Sekolah',
           icon: Icons.account_balance_outlined,
           items: [
             _MenuItemData(icon: Icons.fact_check_outlined, label: 'Rekap Absensi Guru', route: RouteNames.teacherAttendance),
             _MenuItemData(icon: Icons.groups_outlined, label: 'Rekap Absensi Siswa', route: RouteNames.attendanceRecap),
             _MenuItemData(icon: Icons.folder_copy_outlined, label: 'Pemeriksaan Perangkat', route: RouteNames.principalReview),
             _MenuItemData(icon: Icons.assessment_outlined, label: 'Evaluasi Kinerja', route: RouteNames.teacherEvaluation),
+          ],
+        ),
+      );
+    }
+
+    // ─── Wakil Kepala Sekolah ─────────────────────────────
+    if (RoleHelper.hasRole(
+      targetRole: AppRoles.vicePrincipal,
+      role: role,
+      roles: roles,
+    )) {
+      categories.add(
+        const _MenuCategoryData(
+          title: 'Menu Wakil Kepala Sekolah',
+          icon: Icons.manage_accounts_outlined,
+          items: [
+            _MenuItemData(icon: Icons.work_history_outlined, label: 'Program Kerja', route: RouteNames.wakilProgramKerja),
+            _MenuItemData(icon: Icons.manage_search_outlined, label: 'Supervisi Guru', route: RouteNames.wakilSupervisi),
+            _MenuItemData(icon: Icons.menu_book_outlined, label: 'Kurikulum', route: RouteNames.wakilKurikulum),
+            _MenuItemData(icon: Icons.table_chart_outlined, label: 'Monitoring Jadwal', route: RouteNames.wakilMonitoringJadwal),
+            _MenuItemData(icon: Icons.fact_check_outlined, label: 'Absensi Guru', route: RouteNames.wakilAbsensiGuru),
+            _MenuItemData(icon: Icons.family_restroom_outlined, label: 'Monitoring Parenting', route: RouteNames.wakilParenting),
+            _MenuItemData(icon: Icons.bar_chart_outlined, label: 'Laporan Ringkas', route: RouteNames.wakilLaporan),
           ],
         ),
       );
@@ -181,7 +201,6 @@ class AppDrawer extends StatelessWidget {
           icon: Icons.park_outlined,
           items: [
             _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Absensi Pramuka', route: RouteNames.pramukaAbsensi),
-            _MenuItemData(icon: Icons.menu_book_outlined, label: 'Silabus & Perangkat', route: RouteNames.pramukaSimabus),
             _MenuItemData(icon: Icons.description_outlined, label: 'Laporan Kegiatan', route: RouteNames.pramukaLaporan),
           ],
         ),

@@ -22,6 +22,10 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
   List<Map<String, dynamic>> _jadwalRows = [];
   bool _loadingJadwal = false;
 
+  // ── Perangkat state ──
+  List<Map<String, dynamic>> _perangkatRows = [];
+  bool _loadingPerangkat = false;
+
   // ── Filter ──
   String _tanggal = _todayStr();
   String _searchAbsensi = '';
@@ -35,7 +39,7 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadAll();
   }
 
@@ -48,6 +52,7 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
   Future<void> _loadAll() async {
     _loadAbsensi();
     _loadJadwal();
+    _loadPerangkat();
   }
 
   Future<void> _loadAbsensi() async {
@@ -59,9 +64,11 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
         queryParameters: _tanggal.isNotEmpty ? {'tanggal': _tanggal} : null,
       );
       final raw = resp.data;
-      List<dynamic> list = raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
+      List<dynamic> list =
+          raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
       setState(() {
-        _absensiRows = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _absensiRows =
+            list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       });
     } catch (_) {
     } finally {
@@ -75,9 +82,11 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
       final dio = sl<DioClient>();
       final resp = await dio.get(ApiEndpoints.schedules);
       final raw = resp.data;
-      List<dynamic> list = raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
+      List<dynamic> list =
+          raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
       setState(() {
-        _jadwalRows = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _jadwalRows =
+            list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       });
     } catch (_) {
     } finally {
@@ -85,11 +94,32 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
     }
   }
 
+  Future<void> _loadPerangkat() async {
+    setState(() => _loadingPerangkat = true);
+    try {
+      final dio = sl<DioClient>();
+      final resp = await dio.get(ApiEndpoints.learningDevices);
+      final raw = resp.data;
+      List<dynamic> list =
+          raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
+      setState(() {
+        _perangkatRows =
+            list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      });
+    } catch (_) {
+    } finally {
+      setState(() => _loadingPerangkat = false);
+    }
+  }
+
+  // ── Filtered ──────────────────────────────────────────────────────────────
+
   List<Map<String, dynamic>> get _filteredAbsensi {
     if (_searchAbsensi.isEmpty) return _absensiRows;
     final q = _searchAbsensi.toLowerCase();
     return _absensiRows.where((r) {
-      final nama = (r['namaGuru'] ?? r['nama_guru'] ?? '').toString().toLowerCase();
+      final nama =
+          (r['namaGuru'] ?? r['nama_guru'] ?? '').toString().toLowerCase();
       return nama.contains(q);
     }).toList();
   }
@@ -104,10 +134,19 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
     }).toList();
   }
 
-  // ── Stats ──
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
   Map<String, int> get _absensiStats {
-    final m = <String, int>{'hadir': 0, 'terlambat': 0, 'izin': 0, 'sakit': 0, 'alpa': 0};
+    final m = <String, int>{
+      'total': 0,
+      'hadir': 0,
+      'terlambat': 0,
+      'izin': 0,
+      'sakit': 0,
+      'alpa': 0
+    };
     for (final r in _absensiRows) {
+      m['total'] = m['total']! + 1;
       final s = (r['status'] ?? '').toString().toLowerCase();
       if (m.containsKey(s)) m[s] = m[s]! + 1;
     }
@@ -116,8 +155,29 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
 
   Map<String, int> get _jadwalStats => {
         'total': _jadwalRows.length,
-        'guru': _jadwalRows.map((r) => r['guru_id']).where((id) => id != null).toSet().length,
-        'kelas': _jadwalRows.map((r) => r['kelas_id']).where((id) => id != null).toSet().length,
+        'guru': _jadwalRows
+            .map((r) => r['guru_id'])
+            .where((id) => id != null)
+            .toSet()
+            .length,
+        'kelas': _jadwalRows
+            .map((r) => r['kelas_id'])
+            .where((id) => id != null)
+            .toSet()
+            .length,
+      };
+
+  Map<String, int> get _perangkatStats => {
+        'total': _perangkatRows.length,
+        'lengkap':
+            _perangkatRows.where((d) => d['status'] == 'lengkap').length,
+        'belum':
+            _perangkatRows.where((d) => d['status'] != 'lengkap').length,
+        'guru': _perangkatRows
+            .map((d) => d['guru_id'])
+            .where((id) => id != null)
+            .toSet()
+            .length,
       };
 
   static const _statusColors = {
@@ -131,15 +191,19 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final absensiStats = _absensiStats;
+    final perangkatStats = _perangkatStats;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF3F4F6),
+      backgroundColor:
+          isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF3F4F6),
       appBar: AppBar(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Laporan Ringkas Akademik', style: TextStyle(fontSize: 15)),
-            Text('Rekap harian absensi & jadwal', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text('Rekap absensi · jadwal · perangkat',
+                style: TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
         backgroundColor: const Color(0xFFEA580C),
@@ -154,20 +218,58 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
           tabs: [
-            Tab(text: '📋 Absensi Guru (${_absensiRows.length})'),
+            Tab(text: '📋 Absensi (${_absensiRows.length})'),
             Tab(text: '📅 Jadwal (${_jadwalRows.length})'),
+            Tab(text: '📁 Perangkat (${_perangkatRows.length})'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildAbsensiTab(isDark),
-          _buildJadwalTab(isDark),
+          // ── Summary cards ─────────────────────────────────────────────
+          Container(
+            color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                _SmallStat(
+                    label: 'Hadir',
+                    value: '${absensiStats['hadir']}',
+                    color: const Color(0xFF16A34A)),
+                _SmallStat(
+                    label: 'Alpa/Izin',
+                    value:
+                        '${(absensiStats['alpa'] ?? 0) + (absensiStats['izin'] ?? 0) + (absensiStats['sakit'] ?? 0)}',
+                    color: const Color(0xFFDC2626)),
+                _SmallStat(
+                    label: 'Total Jadwal',
+                    value: '${_jadwalRows.length}',
+                    color: const Color(0xFF2563EB)),
+                _SmallStat(
+                    label: 'Perangkat OK',
+                    value: '${perangkatStats['lengkap']}',
+                    color: const Color(0xFF7C3AED)),
+              ],
+            ),
+          ),
+
+          // ── Tabs ──────────────────────────────────────────────────────
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildAbsensiTab(isDark),
+                _buildJadwalTab(isDark),
+                _buildPerangkatTab(isDark),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+
+  // ─── TAB: ABSENSI ─────────────────────────────────────────────────────────
 
   Widget _buildAbsensiTab(bool isDark) {
     final stats = _absensiStats;
@@ -175,7 +277,6 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
 
     return Column(
       children: [
-        // Stats
         Container(
           color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
           padding: const EdgeInsets.all(12),
@@ -183,11 +284,27 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
             children: [
               Row(
                 children: [
-                  _SmallStat(label: 'Total', value: '${_absensiRows.length}', color: Colors.grey),
-                  _SmallStat(label: 'Hadir', value: '${stats['hadir']}', color: const Color(0xFF16A34A)),
-                  _SmallStat(label: 'Terlambat', value: '${stats['terlambat']}', color: const Color(0xFFD97706)),
-                  _SmallStat(label: 'Izin/Sakit', value: '${(stats['izin'] ?? 0) + (stats['sakit'] ?? 0)}', color: const Color(0xFF2563EB)),
-                  _SmallStat(label: 'Alpa', value: '${stats['alpa']}', color: const Color(0xFFDC2626)),
+                  _SmallStat(
+                      label: 'Total',
+                      value: '${stats['total']}',
+                      color: Colors.grey),
+                  _SmallStat(
+                      label: 'Hadir',
+                      value: '${stats['hadir']}',
+                      color: const Color(0xFF16A34A)),
+                  _SmallStat(
+                      label: 'Terlambat',
+                      value: '${stats['terlambat']}',
+                      color: const Color(0xFFD97706)),
+                  _SmallStat(
+                      label: 'Izin/Sakit',
+                      value:
+                          '${(stats['izin'] ?? 0) + (stats['sakit'] ?? 0)}',
+                      color: const Color(0xFF2563EB)),
+                  _SmallStat(
+                      label: 'Alpa',
+                      value: '${stats['alpa']}',
+                      color: const Color(0xFFDC2626)),
                 ],
               ),
               const SizedBox(height: 10),
@@ -204,7 +321,8 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
                         );
                         if (picked != null) {
                           setState(() {
-                            _tanggal = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                            _tanggal =
+                                '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
                           });
                           _loadAbsensi();
                         }
@@ -212,12 +330,16 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: 'Tanggal',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8)),
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          suffixIcon: const Icon(Icons.calendar_today, size: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          suffixIcon:
+                              const Icon(Icons.calendar_today, size: 16),
                         ),
-                        child: Text(_tanggal, style: const TextStyle(fontSize: 13)),
+                        child: Text(_tanggal,
+                            style: const TextStyle(fontSize: 13)),
                       ),
                     ),
                   ),
@@ -226,12 +348,15 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
                     child: TextField(
                       decoration: InputDecoration(
                         labelText: 'Cari nama guru...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8)),
                         isDense: true,
                         prefixIcon: const Icon(Icons.search, size: 18),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      onChanged: (v) => setState(() => _searchAbsensi = v),
+                      onChanged: (v) =>
+                          setState(() => _searchAbsensi = v),
                     ),
                   ),
                 ],
@@ -239,47 +364,93 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
             ],
           ),
         ),
-
         Expanded(
           child: _loadingAbsensi
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFEA580C)))
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: Color(0xFFEA580C)))
               : filtered.isEmpty
-                  ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.fact_check_outlined, size: 48, color: Colors.grey), SizedBox(height: 8), Text('Belum ada data absensi', style: TextStyle(color: Colors.grey))]))
+                  ? const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.fact_check_outlined,
+                              size: 48, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text('Belum ada data absensi',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 6),
                       itemBuilder: (context, i) {
                         final row = filtered[i];
-                        final status = (row['status'] ?? '—').toString();
-                        final color = _statusColors[status.toLowerCase()] ?? Colors.grey;
-                        final nama = row['namaGuru'] ?? row['nama_guru'] ?? '—';
-                        final mapel = row['mataPelajaran'] ?? row['mata_pelajaran'] ?? '—';
-                        final jam = row['jamMasuk'] ?? row['jam_masuk'] ?? '';
+                        final status =
+                            (row['status'] ?? '—').toString();
+                        final color =
+                            _statusColors[status.toLowerCase()] ??
+                                Colors.grey;
+                        final nama =
+                            row['namaGuru'] ?? row['nama_guru'] ?? '—';
+                        final mapel = row['mataPelajaran'] ??
+                            row['mata_pelajaran'] ??
+                            '—';
+                        final jam =
+                            row['jamMasuk'] ?? row['jam_masuk'] ?? '';
                         return Container(
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF1E1E3A)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border(left: BorderSide(color: color, width: 4)),
+                            border: Border(
+                                left: BorderSide(color: color, width: 4)),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           child: Row(
                             children: [
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                    Text(nama.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                    Text(mapel.toString(), style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                    Text(nama.toString(),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13)),
+                                    Text(mapel.toString(),
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey)),
                                     if (jam.toString().isNotEmpty)
-                                      Text('⏰ ${jam.toString().length >= 5 ? jam.toString().substring(0, 5) : jam}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                      Text(
+                                        '⏰ ${jam.toString().length >= 5 ? jam.toString().substring(0, 5) : jam}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey),
+                                      ),
                                   ],
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                                child: Text(status.toUpperCase(), style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: color.withOpacity(0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(8)),
+                                child: Text(
+                                  status.toUpperCase(),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: color,
+                                      fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ],
                           ),
@@ -290,6 +461,8 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
       ],
     );
   }
+
+  // ─── TAB: JADWAL ──────────────────────────────────────────────────────────
 
   Widget _buildJadwalTab(bool isDark) {
     final stats = _jadwalStats;
@@ -304,63 +477,273 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
             children: [
               Row(
                 children: [
-                  _SmallStat(label: 'Total Jam', value: '${stats['total']}', color: const Color(0xFFEA580C)),
-                  _SmallStat(label: 'Guru', value: '${stats['guru']}', color: Colors.blue),
-                  _SmallStat(label: 'Kelas', value: '${stats['kelas']}', color: Colors.purple),
+                  _SmallStat(
+                      label: 'Total Jam',
+                      value: '${stats['total']}',
+                      color: const Color(0xFFEA580C)),
+                  _SmallStat(
+                      label: 'Guru',
+                      value: '${stats['guru']}',
+                      color: Colors.blue),
+                  _SmallStat(
+                      label: 'Kelas',
+                      value: '${stats['kelas']}',
+                      color: Colors.purple),
                 ],
               ),
               const SizedBox(height: 10),
               TextField(
                 decoration: InputDecoration(
                   labelText: 'Cari mapel, kelas, guru...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   isDense: true,
                   prefixIcon: const Icon(Icons.search, size: 18),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 8),
                 ),
-                onChanged: (v) => setState(() => _searchJadwal = v),
+                onChanged: (v) =>
+                    setState(() => _searchJadwal = v),
               ),
             ],
           ),
         ),
-
         Expanded(
           child: _loadingJadwal
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFFEA580C)))
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: Color(0xFFEA580C)))
               : filtered.isEmpty
-                  ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.event_busy, size: 48, color: Colors.grey), SizedBox(height: 8), Text('Belum ada data jadwal', style: TextStyle(color: Colors.grey))]))
+                  ? const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.event_busy,
+                              size: 48, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text('Belum ada data jadwal',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 6),
                       itemBuilder: (context, i) {
                         final r = filtered[i];
                         final hari = (r['hari'] ?? '—').toString();
-                        final mulai = (r['waktu_mulai'] ?? '').toString();
-                        final selesai = (r['waktu_berakhir'] ?? '').toString();
+                        final mulai =
+                            (r['waktu_mulai'] ?? '').toString();
+                        final selesai =
+                            (r['waktu_berakhir'] ?? '').toString();
                         return Container(
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF1E1E3A)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                           child: Row(
                             children: [
                               Container(
                                 width: 50,
-                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                decoration: BoxDecoration(color: const Color(0xFFEA580C).withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
-                                child: Text(hari.length >= 3 ? hari.substring(0, 3) : hari, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFEA580C))),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: const Color(0xFFEA580C)
+                                        .withOpacity(0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(6)),
+                                child: Text(
+                                  hari.length >= 3
+                                      ? hari.substring(0, 3)
+                                      : hari,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFEA580C)),
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
-                                    Text(r['mata_pelajaran']?.toString() ?? '—', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                    Text('${r['nama_kelas'] ?? '—'} • ${r['nama_guru'] ?? '—'}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                    Text('${mulai.length >= 5 ? mulai.substring(0, 5) : mulai} – ${selesai.length >= 5 ? selesai.substring(0, 5) : selesai}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                    Text(
+                                        r['mata_pelajaran']
+                                                ?.toString() ??
+                                            '—',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13)),
+                                    Text(
+                                        '${r['nama_kelas'] ?? '—'} • ${r['nama_guru'] ?? '—'}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey)),
+                                    Text(
+                                        '${mulai.length >= 5 ? mulai.substring(0, 5) : mulai} – ${selesai.length >= 5 ? selesai.substring(0, 5) : selesai}',
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey)),
                                   ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  // ─── TAB: PERANGKAT PEMBELAJARAN ──────────────────────────────────────────
+
+  Widget _buildPerangkatTab(bool isDark) {
+    final stats = _perangkatStats;
+
+    return Column(
+      children: [
+        Container(
+          color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              _SmallStat(
+                  label: 'Total',
+                  value: '${stats['total']}',
+                  color: Colors.grey),
+              _SmallStat(
+                  label: 'Lengkap',
+                  value: '${stats['lengkap']}',
+                  color: const Color(0xFF16A34A)),
+              _SmallStat(
+                  label: 'Belum',
+                  value: '${stats['belum']}',
+                  color: const Color(0xFFDC2626)),
+              _SmallStat(
+                  label: 'Guru',
+                  value: '${stats['guru']}',
+                  color: Colors.blue),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _loadingPerangkat
+              ? const Center(
+                  child: CircularProgressIndicator(
+                      color: Color(0xFFEA580C)))
+              : _perangkatRows.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.folder_open,
+                              size: 48, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text('Belum ada data perangkat',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _perangkatRows.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: 6),
+                      itemBuilder: (context, i) {
+                        final d = _perangkatRows[i];
+                        final isLengkap = d['status'] == 'lengkap';
+                        final namaGuru = d['nama_guru'] ??
+                            (d['guru_id'] != null
+                                ? 'Guru #${d['guru_id']}'
+                                : '—');
+                        final namaDok = d['nama_dokumen'] ??
+                            d['nama_perangkat'] ??
+                            '—';
+                        final jenis =
+                            d['jenis_dokumen'] ?? d['jenis'] ?? '—';
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1E1E3A)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border(
+                              left: BorderSide(
+                                color: isLengkap
+                                    ? const Color(0xFF16A34A)
+                                    : Colors.orange,
+                                width: 4,
+                              ),
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(namaDok.toString(),
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13)),
+                                    Text(namaGuru.toString(),
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey)),
+                                    Container(
+                                      margin:
+                                          const EdgeInsets.only(top: 4),
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                          color: const Color(0xFFEA580C)
+                                              .withOpacity(0.10),
+                                          borderRadius:
+                                              BorderRadius.circular(4)),
+                                      child: Text(
+                                        jenis.toString(),
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Color(0xFFEA580C),
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: (isLengkap
+                                            ? Colors.green
+                                            : Colors.orange)
+                                        .withOpacity(0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(8)),
+                                child: Text(
+                                  isLengkap ? '✓ Lengkap' : '⏳ Belum',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isLengkap
+                                        ? Colors.green
+                                        : Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -374,19 +757,28 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
   }
 }
 
+// ─── Reusable stat widget ─────────────────────────────────────────────────────
+
 class _SmallStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _SmallStat({required this.label, required this.value, required this.color});
+  const _SmallStat(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey), textAlign: TextAlign.center),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color)),
+          Text(label,
+              style: const TextStyle(fontSize: 9, color: Colors.grey),
+              textAlign: TextAlign.center),
         ],
       ),
     );

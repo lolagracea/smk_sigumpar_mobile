@@ -17,6 +17,7 @@ import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
 import '../../presentation/features/learning/providers/absensi_guru_provider.dart'; // ← BARU
+import '../../presentation/features/wakil_kepsek/providers/wakil_kepsek_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -73,5 +74,9 @@ Future<void> init() async {
   // ─── Providers (Factory — fresh state per screen) ──────
   sl.registerFactory<AbsensiGuruProvider>(
         () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  );
+
+  sl.registerFactory<WakilKepsekProvider>(
+        () => WakilKepsekProvider(dioClient: sl<DioClient>()),
   );
 }
