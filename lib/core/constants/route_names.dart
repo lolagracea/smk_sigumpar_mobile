@@ -92,12 +92,4 @@ class RouteNames {
   static const String loanResponse = '/asset/loan-response';
   static const String treasurerResponse = '/asset/treasurer-response';
   static const String principalResponse = '/asset/principal-response';
-
-  // ─── Wakil Kepala Sekolah ───────────────────────────────
-  static const String wakilProgramKerja = '/wakil/program-kerja';
-  static const String wakilSupervisi = '/wakil/supervisi';
-  static const String wakilMonitoringJadwal = '/wakil/monitoring-jadwal';
-  static const String wakilAbsensiGuru = '/wakil/absensi-guru';
-  static const String wakilParenting = '/wakil/parenting';
-  static const String wakilLaporan = '/wakil/laporan';
 }
