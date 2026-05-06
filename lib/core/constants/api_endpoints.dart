@@ -88,6 +88,11 @@ class ApiEndpoints {
   static const String wakilParenting =
       '/api/academic/wakil/parenting-monitoring';
 
+  // ─── WAKIL KEPSEK ENDPOINTS ──────────────────────────────
+  static const String wakilProgramKerja = '/api/academic/wakil/program-kerja';
+  static const String wakilSupervisi = '/api/academic/wakil/supervisi';
+  static const String absensiGuru = '/api/learning/absensi-guru';
+
   // ═══════════════════════════════════════════════════════════════
   // === STUDENT SERVICE (SINGULAR /student/, BUKAN /students/) ===
   // ═══════════════════════════════════════════════════════════════

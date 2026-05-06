@@ -29,6 +29,16 @@ import '../../presentation/features/learning/screens/learning_device_screen.dart
 import '../../presentation/features/learning/screens/principal_review_screen.dart';
 import '../../presentation/features/learning/screens/vice_principal_review_screen.dart';
 
+// ─── WAKIL KEPALA SEKOLAH SCREENS ─────────────────────────
+import '../../presentation/features/wakil_kepsek/screens/program_kerja_screen.dart';
+import '../../presentation/features/wakil_kepsek/screens/supervisi_screen.dart';
+import '../../presentation/features/wakil_kepsek/screens/monitoring_jadwal_screen.dart';
+import '../../presentation/features/wakil_kepsek/screens/absensi_guru_wakil_screen.dart';
+import '../../presentation/features/wakil_kepsek/screens/parenting_wakil_screen.dart';
+import '../../presentation/features/wakil_kepsek/screens/laporan_wakil_screen.dart';
+import '../../presentation/features/wakil_kepsek/providers/wakil_kepsek_provider.dart';
+import '../../core/di/injection_container.dart' show sl;
+
 import '../../presentation/common/layout/main_shell.dart';
 
 // ─── VOCATIONAL & ASSET (tidak berubah) ───────────────────
@@ -247,6 +257,41 @@ class AppRouter {
           GoRoute(
             path: RouteNames.principalResponse,
             builder: (_, __) => const PrincipalResponseScreen(),
+          ),
+
+          // ─── Wakil Kepala Sekolah ─────────────────────
+          GoRoute(
+            path: RouteNames.wakilProgramKerja,
+            builder: (_, __) => ChangeNotifierProvider<WakilKepsekProvider>(
+              create: (_) => sl<WakilKepsekProvider>(),
+              child: const ProgramKerjaScreen(),
+            ),
+          ),
+          GoRoute(
+            path: RouteNames.wakilSupervisi,
+            builder: (_, __) => ChangeNotifierProvider<WakilKepsekProvider>(
+              create: (_) => sl<WakilKepsekProvider>(),
+              child: const SupervisiScreen(),
+            ),
+          ),
+          GoRoute(
+            path: RouteNames.wakilMonitoringJadwal,
+            builder: (_, __) => ChangeNotifierProvider<WakilKepsekProvider>(
+              create: (_) => sl<WakilKepsekProvider>(),
+              child: const MonitoringJadwalScreen(),
+            ),
+          ),
+          GoRoute(
+            path: RouteNames.wakilAbsensiGuru,
+            builder: (_, __) => const AbsensiGuruWakilScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.wakilParenting,
+            builder: (_, __) => const ParentingWakilScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.wakilLaporan,
+            builder: (_, __) => const LaporanWakilScreen(),
           ),
         ],
       ),
