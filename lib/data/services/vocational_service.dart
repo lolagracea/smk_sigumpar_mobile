@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/utils/secure_storage.dart';
 import '../../core/di/injection_container.dart';
@@ -17,15 +18,22 @@ class VocationalService implements VocationalRepository {
         _secureStorage = sl<SecureStorage>();
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.scoutGroups, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+  Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses(
+      {int page = 1}) async {
+    final r = await _dioClient
+        .get(ApiEndpoints.scoutGroups, queryParameters: {'page': page});
+    return PaginatedResponse.fromJson(r.data, (j) => j);
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getScoutAttendance({int page = 1, String? classId}) async {
-    final r = await _dioClient.get(ApiEndpoints.scoutAttendance, queryParameters: {'page': page, if (classId != null) 'class_id': classId});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+  Future<PaginatedResponse<Map<String, dynamic>>> getScoutAttendance(
+      {int page = 1, String? classId}) async {
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendance,
+        queryParameters: {
+          'page': page,
+          if (classId != null) 'class_id': classId
+        });
+    return PaginatedResponse.fromJson(r.data, (j) => j);
   }
 
   @override
@@ -34,37 +42,46 @@ class VocationalService implements VocationalRepository {
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getScoutReports({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.activityReport, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+  Future<PaginatedResponse<Map<String, dynamic>>> getScoutReports(
+      {int page = 1}) async {
+    final r = await _dioClient
+        .get(ApiEndpoints.activityReport, queryParameters: {'page': page});
+    return PaginatedResponse.fromJson(r.data, (j) => j);
   }
 
   @override
-  Future<Map<String, dynamic>> createScoutReport(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createScoutReport(
+      Map<String, dynamic> data) async {
     final r = await _dioClient.post(ApiEndpoints.activityReport, data: data);
-    return r.data['data'] as Map<String, dynamic>;
+    return r.data['data'];
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.pklLocation, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+  Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports(
+      {int page = 1}) async {
+    final r = await _dioClient
+        .get(ApiEndpoints.pklLocation, queryParameters: {'page': page});
+    return PaginatedResponse.fromJson(r.data, (j) => j);
   }
 
   @override
-  Future<Map<String, dynamic>> submitPklLocationReport(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> submitPklLocationReport(
+      Map<String, dynamic> data) async {
     final r = await _dioClient.post(ApiEndpoints.pklLocation, data: data);
-    return r.data['data'] as Map<String, dynamic>;
+    return r.data['data'];
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getPklProgressReports({int page = 1}) async {
-    final r = await _dioClient.get(ApiEndpoints.pklProgress, queryParameters: {'page': page});
+  Future<PaginatedResponse<Map<String, dynamic>>> getPklProgressReports(
+      {int page = 1}) async {
+    final r = await _dioClient
+        .get(ApiEndpoints.pklProgress, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
-  Future<Map<String, dynamic>> submitPklProgressReport(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> submitPklProgressReport(
+      Map<String, dynamic> data) async {
     final r = await _dioClient.post(ApiEndpoints.pklProgress, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
@@ -79,7 +96,8 @@ class VocationalService implements VocationalRepository {
   Future<Map<String, dynamic>> getRawSiswaVokasi({String? kelasId}) async {
     final params = <String, dynamic>{};
     if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
-    final r = await _dioClient.get(ApiEndpoints.vocationalStudents, queryParameters: params);
+    final r = await _dioClient.get(ApiEndpoints.vocationalStudents,
+        queryParameters: params);
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
@@ -89,11 +107,13 @@ class VocationalService implements VocationalRepository {
     await _dioClient.post(ApiEndpoints.scoutAttendance, data: data);
   }
 
-  Future<Map<String, dynamic>> getRawAbsensiPramuka({String? kelasId, String? tanggal}) async {
+  Future<Map<String, dynamic>> getRawAbsensiPramuka(
+      {String? kelasId, String? tanggal}) async {
     final params = <String, dynamic>{};
     if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
     if (tanggal != null && tanggal.isNotEmpty) params['tanggal'] = tanggal;
-    final r = await _dioClient.get(ApiEndpoints.scoutAttendance, queryParameters: params);
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendance,
+        queryParameters: params);
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
@@ -103,9 +123,12 @@ class VocationalService implements VocationalRepository {
     String? tanggalAkhir,
   }) async {
     final params = <String, dynamic>{'kelas_id': kelasId};
-    if (tanggalMulai != null && tanggalMulai.isNotEmpty) params['tanggal_mulai'] = tanggalMulai;
-    if (tanggalAkhir != null && tanggalAkhir.isNotEmpty) params['tanggal_akhir'] = tanggalAkhir;
-    final r = await _dioClient.get(ApiEndpoints.scoutAttendanceRecap, queryParameters: params);
+    if (tanggalMulai != null && tanggalMulai.isNotEmpty)
+      params['tanggal_mulai'] = tanggalMulai;
+    if (tanggalAkhir != null && tanggalAkhir.isNotEmpty)
+      params['tanggal_akhir'] = tanggalAkhir;
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendanceRecap,
+        queryParameters: params);
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
@@ -156,9 +179,11 @@ class VocationalService implements VocationalRepository {
       'deskripsi': deskripsi,
       'tanggal': tanggal,
       if (file != null && file.bytes != null)
-        'file_laporan': MultipartFile.fromBytes(file.bytes!, filename: file.name),
+        'file_laporan':
+            MultipartFile.fromBytes(file.bytes!, filename: file.name),
     });
-    await _dioClient.postFormData(ApiEndpoints.activityReport, formData: formData);
+    await _dioClient.postFormData(ApiEndpoints.activityReport,
+        formData: formData);
   }
 
   Future<void> deleteLaporanKegiatan(dynamic id) async {
@@ -167,19 +192,40 @@ class VocationalService implements VocationalRepository {
 
   // ─── DOWNLOAD FILE ────────────────────────────────────────────
 
-  Future<void> downloadFile({required String url, required String fileName}) async {
-    final fullUrl = url.startsWith('http') ? url : '${ApiEndpoints.baseUrl}$url';
-    // Try opening with token in URL via url_launcher; browser will send auth header
-    // For web/mobile we append token as query param fallback since url_launcher can't set headers
-    final token = await _secureStorage.getAccessToken();
-    String launchUrl = fullUrl;
-    if (token != null && token.isNotEmpty) {
-      final separator = fullUrl.contains('?') ? '&' : '?';
-      launchUrl = '$fullUrl${separator}token=$token';
-    }
-    final uri = Uri.parse(launchUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  Future<void> downloadFile(
+      {required String url, required String fileName}) async {
+    final fullUrl =
+        url.startsWith('http') ? url : '${ApiEndpoints.baseUrl}$url';
+
+    try {
+      // Use Dio to download with proper Authorization header
+      final response = await _dioClient.get(
+        fullUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: false,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Get directory to save file
+        final directory = await getApplicationDocumentsDirectory();
+        final filePath = '${directory.path}/$fileName';
+
+        // Save file
+        final file = File(filePath);
+        await file.writeAsBytes(response.data);
+
+        // Optionally, open the file or show success message
+        // For now, just print success
+        print('File downloaded to: $filePath');
+      } else {
+        throw Exception('Failed to download file: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error downloading file: $e');
+      rethrow;
     }
   }
 }
