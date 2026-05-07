@@ -47,32 +47,26 @@ class LokasiPKLScreen extends StatefulWidget {
 class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
   late final DioClient _dio;
 
-  // Tab: 'input' | 'rekap'
   String _tab = 'input';
 
-  // Data lists
   List<Map<String, dynamic>> _kelasList = [];
   List<Map<String, dynamic>> _siswaList = [];
   List<Map<String, dynamic>> _lokasiList = [];
 
-  // Form
   Map<String, dynamic> _form = _emptyForm();
   File? _foto;
   int? _editingId;
 
-  // Filter rekap
   String _filterKelas = '';
   String _filterSiswa = '';
   String _filterMulai = '';
   String _filterSelesai = '';
 
-  // Loading states
   bool _loadingKelas = false;
   bool _loadingSiswa = false;
   bool _loadingLokasi = false;
   bool _saving = false;
 
-  // Controllers (untuk bidang teks)
   final _namaPerusahaanCtrl   = TextEditingController();
   final _alamatCtrl            = TextEditingController();
   final _posisiCtrl            = TextEditingController();
@@ -98,8 +92,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
     _kontakCtrl.dispose();
     super.dispose();
   }
-
-  // ─── API ─────────────────────────────────────────────────────────────────
 
   Future<void> _loadKelas() async {
     setState(() => _loadingKelas = true);
@@ -137,8 +129,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
     } catch (_) {}
     setState(() => _loadingLokasi = false);
   }
-
-  // ─── Form Handlers ───────────────────────────────────────────────────────
 
   void _handleChangeKelas(String? kelasId) {
     final kelas = _kelasList.firstWhere(
@@ -198,16 +188,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
       _snack('Nama perusahaan wajib diisi', isError: true);
       return false;
     }
-    if (_form['tanggal'].isEmpty) {
-      _snack('Tanggal mulai wajib diisi', isError: true);
-      return false;
-    }
-    final selesai = _form['tanggal_selesai'] as String;
-    if (selesai.isNotEmpty && selesai.compareTo(_form['tanggal']) < 0) {
-      _snack('Tanggal selesai tidak boleh lebih awal dari tanggal mulai',
-          isError: true);
-      return false;
-    }
     return true;
   }
 
@@ -221,16 +201,21 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
         'siswa_id': _form['siswa_id'],
         'nama_siswa': _form['nama_siswa'],
         'nisn': _form['nisn'],
-        'nama_perusahaan': _namaPerusahaanCtrl.text,
-        'alamat': _alamatCtrl.text,
-        'posisi': _posisiCtrl.text,
-        'deskripsi_pekerjaan': _deskripsiCtrl.text,
-        'pembimbing_industri': _pembimbingCtrl.text,
-        'kontak_pembimbing': _kontakCtrl.text,
+        'nama_perusahaan': _namaPerusahaanCtrl.text.trim(),
+        'alamat': _alamatCtrl.text.trim(),
+        'posisi': _posisiCtrl.text.trim(),
+        'deskripsi_pekerjaan': _deskripsiCtrl.text.trim(),
+        'pembimbing_industri': _pembimbingCtrl.text.trim(),
+        'kontak_pembimbing': _kontakCtrl.text.trim(),
         'tanggal': _form['tanggal'],
-        'tanggal_selesai': _form['tanggal_selesai'],
         'foto_url': _form['foto_url'] ?? '',
       };
+
+      // ✅ FIX: Kirim null jika tanggal selesai kosong agar tidak error di Postgres
+      if (_form['tanggal_selesai'].toString().isNotEmpty) {
+        fdMap['tanggal_selesai'] = _form['tanggal_selesai'];
+      }
+
       if (_foto != null) {
         fdMap['foto'] = await MultipartFile.fromFile(_foto!.path,
             filename: 'foto_lokasi.jpg');
@@ -263,8 +248,7 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
         'siswa_id': item['siswa_id']?.toString() ?? '',
         'nama_siswa': item['nama_siswa'] ?? '',
         'nisn': item['nisn'] ?? '',
-        'tanggal':
-            _dateOnly(item['tanggal']).isEmpty ? _todayStr() : _dateOnly(item['tanggal']),
+        'tanggal': _dateOnly(item['tanggal']).isEmpty ? _todayStr() : _dateOnly(item['tanggal']),
         'tanggal_selesai': _dateOnly(item['tanggal_selesai']),
         'foto_url': item['foto_url'] ?? '',
       };
@@ -357,8 +341,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
     ));
   }
 
-  // ─── Build ───────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -414,14 +396,11 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
     );
   }
 
-  // ─── Tab Input ───────────────────────────────────────────────────────────
-
   Widget _buildInput(bool isDark, Color card, Color bdr) {
     final kelasId = _form['kelas_id'] as String;
     final siswaId = _form['siswa_id'] as String;
 
     return Column(children: [
-      // ── Form Card ──────────────────────────────────────────────
       _Card(
         isDark: isDark, card: card, bdr: bdr,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -433,8 +412,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                 color: isDark ? Colors.white : const Color(0xFF374151)),
           ),
           const SizedBox(height: 14),
-
-          // Kelas
           _Lbl('Kelas', isDark),
           const SizedBox(height: 6),
           _Dropdown(
@@ -449,8 +426,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             isDark: isDark,
           ),
           const SizedBox(height: 12),
-
-          // Siswa
           _Lbl('Nama Siswa', isDark),
           const SizedBox(height: 6),
           _Dropdown(
@@ -467,8 +442,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             isDark: isDark,
           ),
           const SizedBox(height: 12),
-
-          // NISN (read-only)
           _Lbl('NISN', isDark),
           const SizedBox(height: 6),
           _ReadOnly(
@@ -477,32 +450,22 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                   : _form['nisn'],
               isDark: isDark),
           const SizedBox(height: 12),
-
-          // Nama Perusahaan
           _Lbl('Nama Perusahaan', isDark),
           const SizedBox(height: 6),
           _TF(_namaPerusahaanCtrl, 'Contoh: PT Maju Jaya', isDark),
           const SizedBox(height: 12),
-
-          // Posisi
           _Lbl('Posisi', isDark),
           const SizedBox(height: 6),
           _TF(_posisiCtrl, 'Contoh: Teknisi / Admin / Operator', isDark),
           const SizedBox(height: 12),
-
-          // Pembimbing Industri
           _Lbl('Pembimbing Industri', isDark),
           const SizedBox(height: 6),
           _TF(_pembimbingCtrl, 'Nama pembimbing', isDark),
           const SizedBox(height: 12),
-
-          // Kontak Pembimbing
           _Lbl('Kontak Pembimbing', isDark),
           const SizedBox(height: 6),
           _TF(_kontakCtrl, 'No. HP / Email', isDark),
           const SizedBox(height: 12),
-
-          // Tanggal row
           Row(children: [
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -533,14 +496,10 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             )),
           ]),
           const SizedBox(height: 12),
-
-          // Alamat
           _Lbl('Alamat Perusahaan', isDark),
           const SizedBox(height: 6),
           _TF(_alamatCtrl, 'Alamat lokasi PKL', isDark),
           const SizedBox(height: 12),
-
-          // Foto
           _Lbl('Foto Lokasi', isDark),
           const SizedBox(height: 6),
           GestureDetector(
@@ -548,13 +507,9 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF252836)
-                    : Colors.white,
+                color: isDark ? const Color(0xFF252836) : Colors.white,
                 border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF3D4155)
-                        : const Color(0xFFCBD5E1)),
+                    color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1)),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(children: [
@@ -585,28 +540,18 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
-          // Deskripsi
           _Lbl('Deskripsi Pekerjaan', isDark),
           const SizedBox(height: 6),
           TextField(
             controller: _deskripsiCtrl,
             maxLines: 3,
-            style: TextStyle(
-                fontSize: 13,
-                color: isDark ? Colors.white : Colors.black87),
-            decoration: _deco(
-                'Deskripsikan pekerjaan atau bidang tugas siswa selama PKL...',
-                isDark),
+            style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87),
+            decoration: _deco('Deskripsikan pekerjaan...', isDark),
           ),
           const SizedBox(height: 16),
-
-          // Buttons
           Row(children: [
             if (_editingId != null) ...[
-              Expanded(
-                  child: OutlinedButton(
-                      onPressed: _resetForm, child: const Text('Batal'))),
+              Expanded(child: OutlinedButton(onPressed: _resetForm, child: const Text('Batal'))),
               const SizedBox(width: 8),
             ],
             Expanded(
@@ -617,15 +562,10 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(
-                  _saving
-                      ? 'Menyimpan...'
-                      : _editingId != null
-                          ? 'Update Lokasi PKL'
-                          : 'Simpan Lokasi PKL',
+                  _saving ? 'Menyimpan...' : _editingId != null ? 'Update Lokasi PKL' : 'Simpan Lokasi PKL',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -634,8 +574,6 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
         ]),
       ),
       const SizedBox(height: 16),
-
-      // ── Daftar Lokasi PKL ───────────────────────────────────────
       Container(
         decoration: BoxDecoration(
             color: card,
@@ -650,23 +588,15 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF1E293B)))),
+                          color: isDark ? Colors.white : const Color(0xFF1E293B)))),
               TextButton(onPressed: _loadLokasi, child: const Text('Refresh')),
             ]),
           ),
           const Divider(height: 1),
           if (_loadingLokasi)
-            const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator()))
+            const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: Center(child: CircularProgressIndicator()))
           else if (_lokasiList.isEmpty)
-            Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                    child: Text('Belum ada data lokasi PKL.',
-                        style: TextStyle(color: Colors.grey[400]))))
+            Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text('Belum ada data lokasi PKL.', style: TextStyle(color: Colors.grey[400]))))
           else
             ListView.separated(
               shrinkWrap: true,
@@ -680,65 +610,28 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(item['nama_siswa'] ?? '-',
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark
-                                            ? Colors.white
-                                            : const Color(0xFF1E293B))),
-                                Text(item['nisn'] ?? '-',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[400])),
-                                const SizedBox(height: 2),
-                                Text(item['nama_kelas'] ?? '-',
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.blue)),
-                              ],
-                            )),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(item['nama_perusahaan'] ?? '-',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark
-                                            ? Colors.white70
-                                            : Colors.black87)),
-                                Text(item['posisi'] ?? '-',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[500])),
-                              ],
-                            ),
-                          ]),
+                            Text(item['nama_siswa'] ?? '-', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+                            Text(item['nisn'] ?? '-', style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                            const SizedBox(height: 2),
+                            Text(item['nama_kelas'] ?? '-', style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                          ],
+                        )),
+                        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                          Text(item['nama_perusahaan'] ?? '-', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : Colors.black87)),
+                          Text(item['posisi'] ?? '-', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                        ]),
+                      ]),
                       const SizedBox(height: 6),
-                      Text(
-                          '${_dateOnly(item['tanggal'])} s/d ${_dateOnly(item['tanggal_selesai'])}',
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey[500])),
+                      Text('${_dateOnly(item['tanggal'])} s/d ${_dateOnly(item['tanggal_selesai'])}', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
                       const SizedBox(height: 10),
                       Row(children: [
-                        _ActionBtn(
-                            label: 'Edit',
-                            color: const Color(0xFFD97706),
-                            bg: const Color(0xFFFEF3C7),
-                            onTap: () => _handleEdit(item)),
+                        _ActionBtn(label: 'Edit', color: const Color(0xFFD97706), bg: const Color(0xFFFEF3C7), onTap: () => _handleEdit(item)),
                         const SizedBox(width: 8),
-                        _ActionBtn(
-                            label: 'Hapus',
-                            color: const Color(0xFFDC2626),
-                            bg: const Color(0xFFFFEBEB),
-                            onTap: () => _handleDelete(item)),
+                        _ActionBtn(label: 'Hapus', color: const Color(0xFFDC2626), bg: const Color(0xFFFFEBEB), onTap: () => _handleDelete(item)),
                       ]),
                     ],
                   ),
@@ -751,30 +644,18 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
     ]);
   }
 
-  // ─── Tab Rekap ───────────────────────────────────────────────────────────
-
   Widget _buildRekap(bool isDark, Color card, Color bdr) {
     final filtered = _filteredRekap;
-    // Siswa unik dari lokasiList (filtered by kelas jika dipilih)
     final siswaOpts = _lokasiList
-        .where((item) =>
-            _filterKelas.isEmpty ||
-            item['kelas_id'].toString() == _filterKelas)
+        .where((item) => _filterKelas.isEmpty || item['kelas_id'].toString() == _filterKelas)
         .toList();
 
     return Column(children: [
-      // ── Filter ─────────────────────────────────────────────────
       _Card(
         isDark: isDark, card: card, bdr: bdr,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Rekap Lokasi PKL',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : const Color(0xFF374151))),
+          Text('Rekap Lokasi PKL', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF374151))),
           const SizedBox(height: 12),
-
-          // Filter Kelas
           _Lbl('Kelas', isDark),
           const SizedBox(height: 6),
           _Dropdown(
@@ -782,17 +663,12 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             hint: 'Semua Kelas',
             items: [
               const DropdownMenuItem(value: '', child: Text('Semua Kelas')),
-              ..._kelasList.map((k) => DropdownMenuItem(
-                  value: k['id'].toString(),
-                  child: Text(k['nama_kelas'] ?? '-'))),
+              ..._kelasList.map((k) => DropdownMenuItem(value: k['id'].toString(), child: Text(k['nama_kelas'] ?? '-'))),
             ],
-            onChanged: (v) => setState(
-                () => {_filterKelas = v ?? '', _filterSiswa = ''}),
+            onChanged: (v) => setState(() => {_filterKelas = v ?? '', _filterSiswa = ''}),
             isDark: isDark,
           ),
           const SizedBox(height: 12),
-
-          // Filter Siswa
           _Lbl('Siswa', isDark),
           const SizedBox(height: 6),
           _Dropdown(
@@ -800,17 +676,12 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
             hint: 'Semua Siswa',
             items: [
               const DropdownMenuItem(value: '', child: Text('Semua Siswa')),
-              ...siswaOpts.map((item) => DropdownMenuItem(
-                  value: item['siswa_id'].toString(),
-                  child: Text(item['nama_siswa'] ?? '-',
-                      overflow: TextOverflow.ellipsis))),
+              ...siswaOpts.map((item) => DropdownMenuItem(value: item['siswa_id'].toString(), child: Text(item['nama_siswa'] ?? '-', overflow: TextOverflow.ellipsis))),
             ],
             onChanged: (v) => setState(() => _filterSiswa = v ?? ''),
             isDark: isDark,
           ),
           const SizedBox(height: 12),
-
-          // Filter Tanggal
           Row(children: [
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -820,15 +691,8 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                 _DateBtn(
                     label: _filterMulai.isEmpty ? 'Semua' : _filterMulai,
                     onTap: () async {
-                      final p = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2030));
-                      if (p != null) {
-                        setState(() => _filterMulai =
-                            '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}');
-                      }
+                      final p = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime(2030));
+                      if (p != null) setState(() => _filterMulai = '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}');
                     },
                     isDark: isDark),
               ],
@@ -842,53 +706,24 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                 _DateBtn(
                     label: _filterSelesai.isEmpty ? 'Semua' : _filterSelesai,
                     onTap: () async {
-                      final p = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2030));
-                      if (p != null) {
-                        setState(() => _filterSelesai =
-                            '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}');
-                      }
+                      final p = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime(2030));
+                      if (p != null) setState(() => _filterSelesai = '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}');
                     },
                     isDark: isDark),
               ],
             )),
           ]),
-
-          if (_filterKelas.isNotEmpty ||
-              _filterSiswa.isNotEmpty ||
-              _filterMulai.isNotEmpty ||
-              _filterSelesai.isNotEmpty) ...[
+          if (_filterKelas.isNotEmpty || _filterSiswa.isNotEmpty || _filterMulai.isNotEmpty || _filterSelesai.isNotEmpty) ...[
             const SizedBox(height: 10),
-            TextButton.icon(
-              onPressed: () => setState(() {
-                _filterKelas = '';
-                _filterSiswa = '';
-                _filterMulai = '';
-                _filterSelesai = '';
-              }),
-              icon: const Icon(Icons.clear, size: 16),
-              label: const Text('Reset Filter'),
-            ),
+            TextButton.icon(onPressed: () => setState(() { _filterKelas = ''; _filterSiswa = ''; _filterMulai = ''; _filterSelesai = ''; }), icon: const Icon(Icons.clear, size: 16), label: const Text('Reset Filter')),
           ],
         ]),
       ),
       const SizedBox(height: 16),
-
-      // ── Tabel Rekap ────────────────────────────────────────────
       Container(
-        decoration: BoxDecoration(
-            color: card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: bdr)),
+        decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16), border: Border.all(color: bdr)),
         child: filtered.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                    child: Text('Tidak ada data rekap lokasi PKL.',
-                        style: TextStyle(color: Colors.grey[400]))))
+            ? Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Center(child: Text('Tidak ada data rekap lokasi PKL.', style: TextStyle(color: Colors.grey[400]))))
             : ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -902,45 +737,17 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(6)),
-                            child: Text(item['nama_kelas'] ?? '-',
-                                style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1D4ED8))),
-                          ),
+                          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(6)), child: Text(item['nama_kelas'] ?? '-', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)))),
                           const SizedBox(width: 8),
-                          Expanded(
-                              child: Text(
-                                  '${i + 1}. ${item['nama_siswa'] ?? '-'}',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? Colors.white
-                                          : const Color(0xFF1E293B)))),
+                          Expanded(child: Text('${i + 1}. ${item['nama_siswa'] ?? '-'}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF1E293B)))),
                         ]),
                         const SizedBox(height: 4),
-                        Text(item['nisn'] ?? '-',
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.grey[400])),
+                        Text(item['nisn'] ?? '-', style: TextStyle(fontSize: 11, color: Colors.grey[400])),
                         const SizedBox(height: 6),
-                        _InfoRow('Perusahaan',
-                            item['nama_perusahaan'] ?? '-', isDark),
+                        _InfoRow('Perusahaan', item['nama_perusahaan'] ?? '-', isDark),
                         _InfoRow('Posisi', item['posisi'] ?? '-', isDark),
-                        _InfoRow(
-                            'Pembimbing',
-                            '${item['pembimbing_industri'] ?? '-'} (${item['kontak_pembimbing'] ?? '-'})',
-                            isDark),
-                        _InfoRow(
-                            'Periode',
-                            '${_dateOnly(item['tanggal'])} s/d ${_dateOnly(item['tanggal_selesai'])}',
-                            isDark),
+                        _InfoRow('Pembimbing', '${item['pembimbing_industri'] ?? '-'} (${item['kontak_pembimbing'] ?? '-'})', isDark),
+                        _InfoRow('Periode', '${_dateOnly(item['tanggal'])} s/d ${_dateOnly(item['tanggal_selesai'])}', isDark),
                       ],
                     ),
                   );
@@ -953,55 +760,28 @@ class _LokasiPKLScreenState extends State<LokasiPKLScreen> {
 
   InputDecoration _deco(String hint, bool isDark) => InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(
-            fontSize: 13,
-            color: isDark ? Colors.white38 : Colors.grey[400]),
+        hintStyle: TextStyle(fontSize: 13, color: isDark ? Colors.white38 : Colors.grey[400]),
         filled: true,
         fillColor: isDark ? const Color(0xFF252836) : Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(
-                color: isDark
-                    ? const Color(0xFF3D4155)
-                    : const Color(0xFFCBD5E1))),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(
-                color: isDark
-                    ? const Color(0xFF3D4155)
-                    : const Color(0xFFCBD5E1))),
-        focusedBorder: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-            borderSide: BorderSide(color: Color(0xFF2563EB), width: 2)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+        focusedBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)), borderSide: BorderSide(color: Color(0xFF2563EB), width: 2)),
       );
 }
-
-// ─── Shared Widgets ───────────────────────────────────────────────────────────
 
 class _TabBtn extends StatelessWidget {
   final String label;
   final bool active;
   final VoidCallback onTap;
   const _TabBtn({required this.label, required this.active, required this.onTap});
-
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: active
-                ? const Color(0xFF2563EB)
-                : Colors.grey.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: active ? Colors.white : Colors.grey[600])),
+          decoration: BoxDecoration(color: active ? const Color(0xFF2563EB) : Colors.grey.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+          child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: active ? Colors.white : Colors.grey[600])),
         ),
       );
 }
@@ -1010,36 +790,17 @@ class _Card extends StatelessWidget {
   final bool isDark;
   final Color card, bdr;
   final Widget child;
-  const _Card(
-      {required this.isDark,
-      required this.card,
-      required this.bdr,
-      required this.child});
-
+  const _Card({required this.isDark, required this.card, required this.bdr, required this.child});
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: bdr)),
-        child: child,
-      );
+  Widget build(BuildContext context) => Container(width: double.infinity, padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(16), border: Border.all(color: bdr)), child: child);
 }
 
 class _Lbl extends StatelessWidget {
   final String text;
   final bool isDark;
   const _Lbl(this.text, this.isDark);
-
   @override
-  Widget build(BuildContext context) => Text(text.toUpperCase(),
-      style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: isDark ? Colors.white38 : Colors.grey[500]));
+  Widget build(BuildContext context) => Text(text.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: isDark ? Colors.white38 : Colors.grey[500]));
 }
 
 class _Dropdown extends StatelessWidget {
@@ -1048,36 +809,17 @@ class _Dropdown extends StatelessWidget {
   final List<DropdownMenuItem<String>> items;
   final ValueChanged<String?>? onChanged;
   final bool isDark;
-  const _Dropdown(
-      {required this.value,
-      required this.hint,
-      required this.items,
-      required this.onChanged,
-      required this.isDark});
-
+  const _Dropdown({required this.value, required this.hint, required this.items, required this.onChanged, required this.isDark});
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF252836) : Colors.white,
-          border: Border.all(
-              color: isDark
-                  ? const Color(0xFF3D4155)
-                  : const Color(0xFFCBD5E1)),
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: isDark ? const Color(0xFF252836) : Colors.white, border: Border.all(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1)), borderRadius: BorderRadius.circular(10)),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            hint: Text(hint,
-                style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.white38 : Colors.grey[400])),
+            value: value, isExpanded: true,
+            hint: Text(hint, style: TextStyle(fontSize: 13, color: isDark ? Colors.white38 : Colors.grey[400])),
             dropdownColor: isDark ? const Color(0xFF252836) : Colors.white,
-            style: TextStyle(
-                fontSize: 13,
-                color: isDark ? Colors.white : const Color(0xFF1E293B)),
+            style: TextStyle(fontSize: 13, color: isDark ? Colors.white : const Color(0xFF1E293B)),
             items: items,
             onChanged: onChanged,
           ),
@@ -1090,38 +832,19 @@ class _TF extends StatelessWidget {
   final String hint;
   final bool isDark;
   const _TF(this.ctrl, this.hint, this.isDark);
-
   @override
   Widget build(BuildContext context) => TextField(
         controller: ctrl,
-        style: TextStyle(
-            fontSize: 13,
-            color: isDark ? Colors.white : Colors.black87),
+        style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
-              fontSize: 13,
-              color: isDark ? Colors.white38 : Colors.grey[400]),
+          hintStyle: TextStyle(fontSize: 13, color: isDark ? Colors.white38 : Colors.grey[400]),
           filled: true,
           fillColor: isDark ? const Color(0xFF252836) : Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF3D4155)
-                      : const Color(0xFFCBD5E1))),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF3D4155)
-                      : const Color(0xFFCBD5E1))),
-          focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(10)),
-              borderSide:
-                  BorderSide(color: Color(0xFF2563EB), width: 2)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+          focusedBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)), borderSide: BorderSide(color: Color(0xFF2563EB), width: 2)),
         ),
       );
 }
@@ -1130,55 +853,25 @@ class _ReadOnly extends StatelessWidget {
   final String text;
   final bool isDark;
   const _ReadOnly({required this.text, required this.isDark});
-
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1E2030)
-              : const Color(0xFFF8FAFC),
-          border: Border.all(
-              color: isDark
-                  ? const Color(0xFF3D4155)
-                  : const Color(0xFFE2E8F0)),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(text,
-            style: TextStyle(fontSize: 13, color: Colors.grey[500])),
-      );
+  Widget build(BuildContext context) => Container(width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), decoration: BoxDecoration(color: isDark ? const Color(0xFF1E2030) : const Color(0xFFF8FAFC), border: Border.all(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFE2E8F0)), borderRadius: BorderRadius.circular(10)), child: Text(text, style: TextStyle(fontSize: 13, color: Colors.grey[500])));
 }
 
 class _DateBtn extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isDark;
-  const _DateBtn(
-      {required this.label, required this.onTap, required this.isDark});
-
+  const _DateBtn({required this.label, required this.onTap, required this.isDark});
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF252836) : Colors.white,
-            border: Border.all(
-                color: isDark
-                    ? const Color(0xFF3D4155)
-                    : const Color(0xFFCBD5E1)),
-            borderRadius: BorderRadius.circular(10),
-          ),
+          decoration: BoxDecoration(color: isDark ? const Color(0xFF252836) : Colors.white, border: Border.all(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1)), borderRadius: BorderRadius.circular(10)),
           child: Row(children: [
-            Icon(Icons.calendar_today_outlined,
-                size: 14, color: Colors.grey[400]),
+            Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[400]),
             const SizedBox(width: 8),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.white : Colors.black87)),
+            Text(label, style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87)),
           ]),
         ),
       );
@@ -1188,45 +881,21 @@ class _ActionBtn extends StatelessWidget {
   final String label;
   final Color color, bg;
   final VoidCallback onTap;
-  const _ActionBtn(
-      {required this.label,
-      required this.color,
-      required this.bg,
-      required this.onTap});
-
+  const _ActionBtn({required this.label, required this.color, required this.bg, required this.onTap});
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-              color: bg, borderRadius: BorderRadius.circular(8)),
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: color)),
-        ),
-      );
+  Widget build(BuildContext context) => GestureDetector(onTap: onTap, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)), child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color))));
 }
 
 class _InfoRow extends StatelessWidget {
   final String label, value;
   final bool isDark;
   const _InfoRow(this.label, this.value, this.isDark);
-
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 2),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(
-              width: 90,
-              child: Text('$label:',
-                  style:
-                      TextStyle(fontSize: 11, color: Colors.grey[500]))),
-          Expanded(
-              child: Text(value,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white70 : Colors.black87))),
+          SizedBox(width: 90, child: Text('$label:', style: TextStyle(fontSize: 11, color: Colors.grey[500]))),
+          Expanded(child: Text(value, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87))),
         ]),
       );
 }
