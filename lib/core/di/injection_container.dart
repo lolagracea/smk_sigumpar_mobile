@@ -16,11 +16,8 @@ import '../../data/services/vocational_service.dart';
 import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
-import '../../presentation/features/learning/providers/absensi_guru_provider.dart';
-import '../../presentation/features/learning/providers/perangkat_provider.dart';
-import '../../presentation/features/learning/providers/evaluasi_guru_provider.dart';
-import '../../presentation/features/learning/providers/catatan_mengajar_provider.dart';// ← BARU
-
+import '../../presentation/features/learning/providers/absensi_guru_provider.dart'; // ← BARU
+import '../../presentation/features/learning/providers/vice_principal_provider.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
@@ -72,20 +69,17 @@ Future<void> init() async {
       secureStorage: sl<SecureStorage>(),
     ),
   );
-// ─── WAKIL KEPALA SEKOLAH PROVIDERS ─────────────────────
-  sl.registerFactory<PerangkatProvider>(
-        () => PerangkatProvider(sl<LearningRepository>()),
-  );
 
-  sl.registerFactory<EvaluasiGuruProvider>(
-        () => EvaluasiGuruProvider(sl<LearningRepository>()),
-  );
-
-  sl.registerFactory<CatatanMengajarProvider>(
-        () => CatatanMengajarProvider(sl<LearningRepository>()),
-  );
   // ─── Providers (Factory — fresh state per screen) ──────
   sl.registerFactory<AbsensiGuruProvider>(
         () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  );
+
+  sl.registerFactory<VicePrincipalProvider>(
+        () => VicePrincipalProvider(
+      academicRepository: sl<AcademicRepository>(),
+      learningRepository: sl<LearningRepository>(),
+      studentRepository: sl<StudentRepository>(),
+    ),
   );
 }

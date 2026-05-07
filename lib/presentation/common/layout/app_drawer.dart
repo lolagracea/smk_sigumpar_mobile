@@ -196,12 +196,9 @@ class AppDrawer extends StatelessWidget {
       ]);
     }
 
-    // ─── Kepala Sekolah / Waka Sekolah ────────────────────
-    if (RoleHelper.hasAnyRole(
-      targetRoles: const [
-        AppRoles.principal,
-        AppRoles.vicePrincipal,
-      ],
+    // ─── Kepala Sekolah ───────────────────────────────────
+    if (RoleHelper.hasRole(
+      targetRole: AppRoles.principal,
       role: role,
       roles: roles,
     )) {
@@ -225,6 +222,46 @@ class AppDrawer extends StatelessWidget {
           icon: Icons.assessment_outlined,
           label: 'Evaluasi Kinerja',
           route: RouteNames.teacherEvaluation,
+        ),
+      ]);
+    }
+
+    // ─── Wakil Kepala Sekolah ─────────────────────────────
+    if (RoleHelper.hasRole(
+      targetRole: AppRoles.vicePrincipal,
+      role: role,
+      roles: roles,
+    )) {
+      items.addAll(const [
+        _MenuItemData(
+          icon: Icons.dashboard_outlined,
+          label: 'Dashboard Wakil',
+          route: RouteNames.wakilDashboard,
+        ),
+        _MenuItemData(
+          icon: Icons.schedule_outlined,
+          label: 'Monitoring Jadwal',
+          route: RouteNames.wakilJadwal,
+        ),
+        _MenuItemData(
+          icon: Icons.fact_check_outlined,
+          label: 'Absensi Guru',
+          route: RouteNames.wakilAbsensiGuru,
+        ),
+        _MenuItemData(
+          icon: Icons.folder_copy_outlined,
+          label: 'Perangkat',
+          route: RouteNames.wakilPerangkat,
+        ),
+        _MenuItemData(
+          icon: Icons.family_restroom_outlined,
+          label: 'Parenting',
+          route: RouteNames.wakilParenting,
+        ),
+        _MenuItemData(
+          icon: Icons.assessment_outlined,
+          label: 'Laporan Ringkas',
+          route: RouteNames.wakilLaporan,
         ),
       ]);
     }
@@ -435,6 +472,9 @@ class _LogoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () async {
+        final router = GoRouter.of(context);
+        final authProvider = context.read<AuthProvider>();
+
         final confirm = await showDialog<bool>(
           context: context,
           builder: (dialogContext) {
@@ -465,12 +505,9 @@ class _LogoutButton extends StatelessWidget {
 
         if (confirm != true) return;
 
-        final authProvider = context.read<AuthProvider>();
         await authProvider.logout();
 
-        if (context.mounted) {
-          context.go(RouteNames.login);
-        }
+        router.go(RouteNames.login);
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(

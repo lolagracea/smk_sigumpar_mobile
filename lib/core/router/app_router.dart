@@ -28,10 +28,12 @@ import '../../presentation/features/learning/screens/teacher_evaluation_screen.d
 import '../../presentation/features/learning/screens/learning_device_screen.dart';
 import '../../presentation/features/learning/screens/principal_review_screen.dart';
 import '../../presentation/features/learning/screens/vice_principal_review_screen.dart';
-import '../../presentation/features/learning/screens/perangkat_screen.dart';
-import '../../presentation/features/learning/screens/evaluasi_guru_screen.dart';
-import '../../presentation/features/learning/screens/catatan_mengajar_screen.dart';
-
+import '../../presentation/features/learning/screens/vice_principal/wakil_dashboard_screen.dart';
+import '../../presentation/features/learning/screens/vice_principal/wakil_jadwal_screen.dart';
+import '../../presentation/features/learning/screens/vice_principal/wakil_absensi_guru_screen.dart';
+import '../../presentation/features/learning/screens/vice_principal/wakil_perangkat_screen.dart';
+import '../../presentation/features/learning/screens/vice_principal/wakil_parenting_screen.dart';
+import '../../presentation/features/learning/screens/vice_principal/wakil_laporan_screen.dart';
 import '../../presentation/common/layout/main_shell.dart';
 
 // ─── VOCATIONAL & ASSET (tidak berubah) ───────────────────
@@ -189,18 +191,29 @@ class AppRouter {
             path: RouteNames.vicePrincipalReview,
             builder: (_, __) => const VicePrincipalReviewScreen(),
           ),
-          // ─── WAKIL KEPALA SEKOLAH ────────────────────────
           GoRoute(
-            path: '/waka/perangkat',
-            builder: (_, __) => const PerangkatScreen(),
+            path: RouteNames.wakilDashboard,
+            builder: (_, __) => const WakilDashboardScreen(),
           ),
           GoRoute(
-            path: '/waka/evaluasi-guru',
-            builder: (_, __) => const EvaluasiGuruScreen(),
+            path: RouteNames.wakilJadwal,
+            builder: (_, __) => const WakilJadwalScreen(),
           ),
           GoRoute(
-            path: '/waka/catatan-mengajar',
-            builder: (_, __) => const CatatanMengajarScreen(),
+            path: RouteNames.wakilAbsensiGuru,
+            builder: (_, __) => const WakilAbsensiGuruScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.wakilPerangkat,
+            builder: (_, __) => const WakilPerangkatScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.wakilParenting,
+            builder: (_, __) => const WakilParentingScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.wakilLaporan,
+            builder: (_, __) => const WakilLaporanScreen(),
           ),
 
           // ─── Vocational ──────────────────────────────────

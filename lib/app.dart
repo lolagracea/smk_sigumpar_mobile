@@ -6,9 +6,6 @@ import 'core/theme/app_theme.dart';
 import 'presentation/common/providers/auth_provider.dart';
 import 'presentation/common/providers/theme_provider.dart';
 import 'presentation/features/learning/providers/absensi_guru_provider.dart';
-import 'presentation/features/learning/providers/perangkat_provider.dart';
-import 'presentation/features/learning/providers/evaluasi_guru_provider.dart';
-import 'presentation/features/learning/providers/catatan_mengajar_provider.dart';
 
 class SmkSigumparApp extends StatelessWidget {
   const SmkSigumparApp({super.key});
@@ -25,21 +22,6 @@ class SmkSigumparApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<AbsensiGuruProvider>(
           create: (_) => sl<AbsensiGuruProvider>(),
-        ),
-        ChangeNotifierProvider<PerangkatProvider>(
-          create: (_) => sl<PerangkatProvider>(),
-        ),
-        ChangeNotifierProvider<EvaluasiGuruProvider>(
-          create: (_) => sl<EvaluasiGuruProvider>(),
-        ),
-        ChangeNotifierProvider<CatatanMengajarProvider>(
-          create: (_) => sl<CatatanMengajarProvider>(),
-        ),
-        ChangeNotifierProvider<PerangkatProvider>(
-          create: (_) => sl<PerangkatProvider>(),
-        ),
-        ChangeNotifierProvider<EvaluasiGuruProvider>(
-          create: (_) => sl<EvaluasiGuruProvider>(),
         ),
       ],
       child: MaterialApp.router(

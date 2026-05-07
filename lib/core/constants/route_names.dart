@@ -71,6 +71,14 @@ class RouteNames {
   static const String principalReview = '/learning/principal-review';
   static const String vicePrincipalReview = '/learning/vice-principal-review';
 
+  // ─── Wakil Kepala Sekolah / Learning Monitoring ─────────
+  static const String wakilDashboard = '/learning/wakil/dashboard';
+  static const String wakilJadwal = '/learning/wakil/jadwal';
+  static const String wakilAbsensiGuru = '/learning/wakil/absensi-guru';
+  static const String wakilPerangkat = '/learning/wakil/perangkat';
+  static const String wakilParenting = '/learning/wakil/parenting';
+  static const String wakilLaporan = '/learning/wakil/laporan';
+
   // ─── Vocational ────────────────────────────────────────
   static const String vocational = '/vocational';
   static const String scoutClasses = '/vocational/scout-classes';
