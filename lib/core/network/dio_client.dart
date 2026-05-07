@@ -129,6 +129,24 @@ class DioClient {
       throw NetworkExceptions.fromDioError(e);
     }
   }
+
+  // ─── PUT MULTIPART ─────────────────────────────────────
+  Future<Response> putFormData(
+    String path, {
+    required FormData formData,
+  }) async {
+    try {
+      return await _dio.put(
+        path,
+        data: formData,
+        options: Options(
+          headers: {'Content-Type': 'multipart/form-data'},
+        ),
+      );
+    } on DioException catch (e) {
+      throw NetworkExceptions.fromDioError(e);
+    }
+  }
 }
 
 // ─── Auth Interceptor ──────────────────────────────────

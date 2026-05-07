@@ -200,8 +200,8 @@ class AppDrawer extends StatelessWidget {
           title: 'Menu Pramuka',
           icon: Icons.park_outlined,
           items: [
-            _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Absensi Pramuka', route: RouteNames.pramukaAbsensi),
-            _MenuItemData(icon: Icons.description_outlined, label: 'Laporan Kegiatan', route: RouteNames.pramukaLaporan),
+            _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Absensi Pramuka', route: RouteNames.scoutAttendance),
+            _MenuItemData(icon: Icons.description_outlined, label: 'Laporan Kegiatan', route: RouteNames.scoutReport),
           ],
         ),
       );
@@ -220,6 +220,7 @@ class AppDrawer extends StatelessWidget {
           items: [
             _MenuItemData(icon: Icons.location_on_outlined, label: 'Lokasi PKL', route: RouteNames.pklLocationReport),
             _MenuItemData(icon: Icons.timeline_outlined, label: 'Progres PKL', route: RouteNames.pklProgressReport),
+            _MenuItemData(icon: Icons.grade_outlined, label: 'Nilai PKL', route: RouteNames.pklGrades),
           ],
         ),
       );

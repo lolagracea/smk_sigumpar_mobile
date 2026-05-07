@@ -3,13 +3,18 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/network/dio_client.dart';
+import '../../core/utils/secure_storage.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/network/api_response.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../repositories/vocational_repository.dart';
 
 class VocationalService implements VocationalRepository {
   final DioClient _dioClient;
-  VocationalService({required DioClient dioClient}) : _dioClient = dioClient;
+  final SecureStorage _secureStorage;
+  VocationalService({required DioClient dioClient})
+      : _dioClient = dioClient,
+        _secureStorage = sl<SecureStorage>();
 
   @override
   Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses({int page = 1}) async {
@@ -163,8 +168,16 @@ class VocationalService implements VocationalRepository {
   // ─── DOWNLOAD FILE ────────────────────────────────────────────
 
   Future<void> downloadFile({required String url, required String fileName}) async {
-    final fullUrl = '${ApiEndpoints.baseUrl}$url';
-    final uri = Uri.parse(fullUrl);
+    final fullUrl = url.startsWith('http') ? url : '${ApiEndpoints.baseUrl}$url';
+    // Try opening with token in URL via url_launcher; browser will send auth header
+    // For web/mobile we append token as query param fallback since url_launcher can't set headers
+    final token = await _secureStorage.getAccessToken();
+    String launchUrl = fullUrl;
+    if (token != null && token.isNotEmpty) {
+      final separator = fullUrl.contains('?') ? '&' : '?';
+      launchUrl = '$fullUrl${separator}token=$token';
+    }
+    final uri = Uri.parse(launchUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
