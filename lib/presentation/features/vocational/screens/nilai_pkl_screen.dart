@@ -83,8 +83,7 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
     double totalNilai = 0;
 
     for (final siswa in _siswaList) {
-      final sid = siswa['id'].toString();
-      final row = _nilaiMap[sid] ?? {};
+      final row = _nilaiMap[siswa['id'].toString()] ?? {};
       final praktik = row['nilai_praktik']?.toString() ?? '';
       final sikap   = row['nilai_sikap']?.toString() ?? '';
       final laporan = row['nilai_laporan']?.toString() ?? '';
@@ -124,6 +123,7 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
     _bobotPraktikCtrl.dispose();
     _bobotSikapCtrl.dispose();
     _bobotLaporanCtrl.dispose();
+    // Dispose semua controller nilai
     for (final entry in _nilaiControllers.entries) {
       for (final ctrl in entry.value.values) {
         ctrl.dispose();
@@ -132,6 +132,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
     super.dispose();
   }
 
+  // ─── Controllers nilai per-siswa ─────────────────────────────────────────
+  // Map<siswaId, Map<field, TextEditingController>>
   final Map<String, Map<String, TextEditingController>> _nilaiControllers = {};
 
   TextEditingController _getNilaiCtrl(String siswaId, String field) {
@@ -150,6 +152,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
   TextEditingController _getCatatanCtrl(String siswaId) {
     return _getNilaiCtrl(siswaId, 'catatan');
   }
+
+  // ─── API ─────────────────────────────────────────────────────────────────
 
   Future<void> _loadKelas() async {
     setState(() => _loadingKelas = true);
@@ -180,18 +184,21 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
       final nilai =
           List<Map<String, dynamic>>.from(results[1].data['data'] ?? []);
 
+      // Build nilai by siswa_id
       final Map<String, Map<String, dynamic>> nilaiBySiswa = {};
       for (final n in nilai) {
         nilaiBySiswa[n['siswa_id'].toString()] = n;
       }
 
+      // Build nilaiMap
       final Map<String, Map<String, dynamic>> nextMap = {};
       for (final s in siswa) {
         final sid = s['id'].toString();
         final existing = nilaiBySiswa[sid];
         nextMap[sid] = {
           'siswa_id': s['id'],
-          'nama_siswa': s['nama_lengkap'] ?? s['nama_siswa'] ?? '-',
+          'nama_siswa':
+              s['nama_lengkap'] ?? s['nama_siswa'] ?? '-',
           'nisn': s['nisn'] ?? '',
           'nilai_praktik': existing?['nilai_praktik']?.toString() ?? '',
           'nilai_sikap':   existing?['nilai_sikap']?.toString() ?? '',
@@ -200,6 +207,7 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
         };
       }
 
+      // Dispose dan rebuild controllers
       for (final entry in _nilaiControllers.entries) {
         for (final ctrl in entry.value.values) {
           ctrl.dispose();
@@ -212,6 +220,7 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
         _nilaiMap  = nextMap;
       });
 
+      // Init controllers dengan nilai awal
       for (final s in siswa) {
         final sid = s['id'].toString();
         for (final field in ['nilai_praktik', 'nilai_sikap', 'nilai_laporan', 'catatan']) {
@@ -250,6 +259,23 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
       _snack('Total bobot harus 100%', isError: true);
       return false;
     }
+    for (final siswa in _siswaList) {
+      final sid = siswa['id'].toString();
+      final row = _nilaiMap[sid] ?? {};
+      final nama = row['nama_siswa'] ?? siswa['nama_lengkap'] ?? 'siswa';
+      for (final field in ['nilai_praktik', 'nilai_sikap', 'nilai_laporan']) {
+        final val = row[field]?.toString() ?? '';
+        if (val.isEmpty) {
+          _snack('Nilai $nama belum lengkap', isError: true);
+          return false;
+        }
+        final n = double.tryParse(val);
+        if (n == null || n < 0 || n > 100) {
+          _snack('Semua nilai harus angka antara 0 sampai 100', isError: true);
+          return false;
+        }
+      }
+    }
     return true;
   }
 
@@ -280,7 +306,6 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
 
     setState(() => _saving = true);
     try {
-      // ✅ FIX: Gunakan endpoint dasar tanpa suffix /bulk sesuai rute backend
       await _dio.post(ApiEndpoints.pklGrades, data: payload);
       _snack('Nilai PKL berhasil disimpan');
       await _loadSiswaDanNilai(_selectedKelas);
@@ -310,6 +335,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
     ));
   }
 
+  // ─── Build ───────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -338,6 +365,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
+
+          // ── Header Card: Kelas + Bobot + Summary ────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -347,7 +376,9 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Baris: Kelas | Bobot Praktik | Bobot Sikap | Bobot Laporan
                 Row(children: [
+                  // Kelas
                   Expanded(flex: 2, child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -355,7 +386,9 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                       const SizedBox(height: 6),
                       _Dropdown(
                         value: _selectedKelas.isEmpty ? null : _selectedKelas,
-                        hint: _loadingKelas ? 'Memuat kelas...' : '-- Pilih Kelas --',
+                        hint: _loadingKelas
+                            ? 'Memuat kelas...'
+                            : '-- Pilih Kelas --',
                         items: _kelasList
                             .map((k) => DropdownMenuItem(
                                   value: k['id'].toString(),
@@ -372,6 +405,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                     ],
                   )),
                   const SizedBox(width: 10),
+
+                  // Bobot Praktik
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -380,11 +415,14 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                       _BobotField(
                         ctrl: _bobotPraktikCtrl,
                         isDark: isDark,
-                        onChanged: (v) => setState(() => _bobotPraktik = int.tryParse(v) ?? 0),
+                        onChanged: (v) =>
+                            setState(() => _bobotPraktik = int.tryParse(v) ?? 0),
                       ),
                     ],
                   )),
                   const SizedBox(width: 10),
+
+                  // Bobot Sikap
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -393,11 +431,14 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                       _BobotField(
                         ctrl: _bobotSikapCtrl,
                         isDark: isDark,
-                        onChanged: (v) => setState(() => _bobotSikap = int.tryParse(v) ?? 0),
+                        onChanged: (v) =>
+                            setState(() => _bobotSikap = int.tryParse(v) ?? 0),
                       ),
                     ],
                   )),
                   const SizedBox(width: 10),
+
+                  // Bobot Laporan
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -406,12 +447,15 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                       _BobotField(
                         ctrl: _bobotLaporanCtrl,
                         isDark: isDark,
-                        onChanged: (v) => setState(() => _bobotLaporan = int.tryParse(v) ?? 0),
+                        onChanged: (v) =>
+                            setState(() => _bobotLaporan = int.tryParse(v) ?? 0),
                       ),
                     ],
                   )),
                 ]),
                 const SizedBox(height: 14),
+
+                // Summary Row
                 Wrap(
                   spacing: 16,
                   runSpacing: 8,
@@ -442,6 +486,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
+
+                // Tombol Reset
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   OutlinedButton(
                     onPressed: _handleReset,
@@ -452,6 +498,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // ── Tabel Nilai ─────────────────────────────────────────
           if (_selectedKelas.isNotEmpty)
             Container(
               decoration: BoxDecoration(
@@ -480,23 +528,48 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                   ),
                 ),
                 const Divider(height: 1),
+
                 if (_loadingSiswa)
                   const Padding(
                       padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Center(child: CircularProgressIndicator()))
+                      child:
+                          Center(child: CircularProgressIndicator()))
                 else if (_siswaList.isEmpty)
                   Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Center(
-                          child: Text('Tidak ada siswa di kelas ini.',
-                              style: TextStyle(color: Colors.grey[400]))))
+                          child: Text(
+                              'Tidak ada siswa di kelas ini.',
+                              style:
+                                  TextStyle(color: Colors.grey[400]))))
                 else
                   Column(children: [
+                    // Header tabel
+                    Container(
+                      color: isDark
+                          ? const Color(0xFF252836)
+                          : const Color(0xFFF8FAFC),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      child: Row(children: [
+                        _TblHead('No', flex: 1, isDark: isDark),
+                        _TblHead('Nama Siswa', flex: 3, isDark: isDark),
+                        _TblHead('NISN', flex: 2, isDark: isDark),
+                        _TblHead('Praktik', flex: 2, isDark: isDark, center: true),
+                        _TblHead('Sikap', flex: 2, isDark: isDark, center: true),
+                        _TblHead('Laporan', flex: 2, isDark: isDark, center: true),
+                        _TblHead('Akhir', flex: 2, isDark: isDark, center: true),
+                        _TblHead('Predikat', flex: 3, isDark: isDark, center: true),
+                      ]),
+                    ),
+                    const Divider(height: 1),
+
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _siswaList.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1),
                       itemBuilder: (_, i) {
                         final siswa = _siswaList[i];
                         final sid = siswa['id'].toString();
@@ -509,6 +582,7 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Nama + NISN
                               Row(children: [
                                 SizedBox(
                                     width: 24,
@@ -517,86 +591,127 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                                             fontSize: 12,
                                             color: Colors.grey[500]))),
                                 Expanded(child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      row['nama_siswa'] ?? siswa['nama_lengkap'] ?? '-',
+                                      row['nama_siswa'] ??
+                                          siswa['nama_lengkap'] ??
+                                          siswa['nama_siswa'] ??
+                                          '-',
                                       style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
-                                          color: isDark ? Colors.white : const Color(0xFF1E293B)),
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1E293B)),
                                     ),
                                     Text(
                                       row['nisn'] ?? siswa['nisn'] ?? '-',
-                                      style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey[400]),
                                     ),
                                   ],
                                 )),
+                                // Nilai Akhir + Predikat
                                 Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.end,
                                     children: [
                                       Text(
                                         akhir.toStringAsFixed(2),
                                         style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w800,
-                                            color: _getPredikatColor(akhir)),
+                                            color:
+                                                _getPredikatColor(akhir)),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: _getPredikatBg(akhir),
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           _getPredikat(akhir),
                                           style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w700,
-                                              color: _getPredikatColor(akhir)),
+                                              color:
+                                                  _getPredikatColor(akhir)),
                                         ),
                                       ),
                                     ]),
                               ]),
                               const SizedBox(height: 10),
+
+                              // Input nilai 3 kolom
                               Row(children: [
                                 _NilaiInput(
-                                  label: 'Praktik',
+                                  label: 'Praktik (0-100)',
                                   ctrl: _getNilaiCtrl(sid, 'nilai_praktik'),
                                   isDark: isDark,
                                 ),
                                 const SizedBox(width: 8),
                                 _NilaiInput(
-                                  label: 'Sikap',
+                                  label: 'Sikap (0-100)',
                                   ctrl: _getNilaiCtrl(sid, 'nilai_sikap'),
                                   isDark: isDark,
                                 ),
                                 const SizedBox(width: 8),
                                 _NilaiInput(
-                                  label: 'Laporan',
+                                  label: 'Laporan (0-100)',
                                   ctrl: _getNilaiCtrl(sid, 'nilai_laporan'),
                                   isDark: isDark,
                                 ),
                               ]),
                               const SizedBox(height: 8),
+
+                              // Catatan
                               TextField(
                                 controller: _getCatatanCtrl(sid),
-                                style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black87),
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black87),
                                 decoration: InputDecoration(
                                   hintText: 'Catatan (opsional)',
-                                  hintStyle: TextStyle(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey[400]),
+                                  hintStyle: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.grey[400]),
                                   filled: true,
-                                  fillColor: isDark ? const Color(0xFF252836) : Colors.white,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  fillColor: isDark
+                                      ? const Color(0xFF252836)
+                                      : Colors.white,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                      borderSide: BorderSide(
+                                          color: isDark
+                                              ? const Color(0xFF3D4155)
+                                              : const Color(0xFFCBD5E1))),
                                   enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                      borderSide: BorderSide(
+                                          color: isDark
+                                              ? const Color(0xFF3D4155)
+                                              : const Color(0xFFCBD5E1))),
                                   focusedBorder: const OutlineInputBorder(
-                                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                                      borderSide: BorderSide(color: Color(0xFF2563EB), width: 2)),
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(8)),
+                                      borderSide: BorderSide(
+                                          color: Color(0xFF2563EB),
+                                          width: 2)),
                                 ),
                               ),
                             ],
@@ -604,6 +719,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                         );
                       },
                     ),
+
+                    // Tombol Simpan
                     if (_siswaList.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -614,12 +731,18 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF2563EB),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                             child: Text(
-                              _saving ? 'Menyimpan...' : '💾  Simpan Nilai PKL',
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              _saving
+                                  ? 'Menyimpan...'
+                                  : '💾  Simpan Nilai PKL',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14),
                             ),
                           ),
                         ),
@@ -633,6 +756,8 @@ class _NilaiPKLScreenState extends State<NilaiPKLScreen> {
     );
   }
 }
+
+// ─── Shared Widgets ───────────────────────────────────────────────────────────
 
 class _Lbl extends StatelessWidget {
   final String text;
@@ -653,21 +778,35 @@ class _Dropdown extends StatelessWidget {
   final List<DropdownMenuItem<String>> items;
   final ValueChanged<String?>? onChanged;
   final bool isDark;
-  const _Dropdown({required this.value, required this.hint, required this.items, required this.onChanged, required this.isDark});
+  const _Dropdown(
+      {required this.value,
+      required this.hint,
+      required this.items,
+      required this.onChanged,
+      required this.isDark});
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF252836) : Colors.white,
-          border: Border.all(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1)),
+          border: Border.all(
+              color: isDark
+                  ? const Color(0xFF3D4155)
+                  : const Color(0xFFCBD5E1)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: value, isExpanded: true,
-            hint: Text(hint, style: TextStyle(fontSize: 13, color: isDark ? Colors.white38 : Colors.grey[400])),
-            dropdownColor: isDark ? const Color(0xFF252836) : Colors.white,
-            style: TextStyle(fontSize: 13, color: isDark ? Colors.white : const Color(0xFF1E293B)),
+            hint: Text(hint,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white38 : Colors.grey[400])),
+            dropdownColor:
+                isDark ? const Color(0xFF252836) : Colors.white,
+            style: TextStyle(
+                fontSize: 13,
+                color: isDark ? Colors.white : const Color(0xFF1E293B)),
             items: items,
             onChanged: onChanged,
           ),
@@ -679,26 +818,39 @@ class _BobotField extends StatelessWidget {
   final TextEditingController ctrl;
   final bool isDark;
   final ValueChanged<String> onChanged;
-  const _BobotField({required this.ctrl, required this.isDark, required this.onChanged});
+  const _BobotField(
+      {required this.ctrl,
+      required this.isDark,
+      required this.onChanged});
   @override
   Widget build(BuildContext context) => TextField(
         controller: ctrl,
         keyboardType: TextInputType.number,
-        style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87),
+        style: TextStyle(
+            fontSize: 13,
+            color: isDark ? Colors.white : Colors.black87),
         onChanged: onChanged,
         decoration: InputDecoration(
           filled: true,
           fillColor: isDark ? const Color(0xFF252836) : Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+              borderSide: BorderSide(
+                  color: isDark
+                      ? const Color(0xFF3D4155)
+                      : const Color(0xFFCBD5E1))),
           enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+              borderSide: BorderSide(
+                  color: isDark
+                      ? const Color(0xFF3D4155)
+                      : const Color(0xFFCBD5E1))),
           focusedBorder: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(10)),
-              borderSide: BorderSide(color: Color(0xFF2563EB), width: 2)),
+              borderSide:
+                  BorderSide(color: Color(0xFF2563EB), width: 2)),
         ),
       );
 }
@@ -706,41 +858,84 @@ class _BobotField extends StatelessWidget {
 class _SummaryChip extends StatelessWidget {
   final String label, value;
   final Color color;
-  const _SummaryChip({required this.label, required this.value, required this.color});
+  const _SummaryChip(
+      {required this.label, required this.value, required this.color});
   @override
   Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Text('$label: ', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+        Text('$label: ',
+            style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500])),
+        Text(value,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color)),
       ]);
+}
+
+class _TblHead extends StatelessWidget {
+  final String text;
+  final int flex;
+  final bool isDark;
+  final bool center;
+  const _TblHead(this.text,
+      {required this.flex, required this.isDark, this.center = false});
+  @override
+  Widget build(BuildContext context) => Expanded(
+        flex: flex,
+        child: Text(text.toUpperCase(),
+            textAlign: center ? TextAlign.center : TextAlign.left,
+            style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: isDark ? Colors.white38 : Colors.grey[500])),
+      );
 }
 
 class _NilaiInput extends StatelessWidget {
   final String label;
   final TextEditingController ctrl;
   final bool isDark;
-  const _NilaiInput({required this.label, required this.ctrl, required this.isDark});
+  const _NilaiInput(
+      {required this.label, required this.ctrl, required this.isDark});
   @override
   Widget build(BuildContext context) => Expanded(
         child: TextField(
           controller: ctrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             hintText: label,
-            hintStyle: TextStyle(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey[400], fontWeight: FontWeight.normal),
+            hintStyle: TextStyle(
+                fontSize: 10,
+                color: isDark ? Colors.white38 : Colors.grey[400],
+                fontWeight: FontWeight.normal),
             filled: true,
             fillColor: isDark ? const Color(0xFF252836) : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+                borderSide: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF3D4155)
+                        : const Color(0xFFCBD5E1))),
             enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+                borderSide: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF3D4155)
+                        : const Color(0xFFCBD5E1))),
             focusedBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(8)),
-                borderSide: BorderSide(color: Color(0xFF2563EB), width: 2)),
+                borderSide:
+                    BorderSide(color: Color(0xFF2563EB), width: 2)),
           ),
         ),
       );
