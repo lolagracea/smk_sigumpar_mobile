@@ -69,8 +69,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     setState(() => _loading = true);
     try {
       final res = await _service.getRawLaporanKegiatan();
-      setState(() =>
-          _laporan = List<Map<String, dynamic>>.from(res['data'] ?? []));
+      setState(
+          () => _laporan = List<Map<String, dynamic>>.from(res['data'] ?? []));
     } catch (_) {}
     setState(() => _loading = false);
   }
@@ -145,11 +145,11 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   Future<void> _download(Map<String, dynamic> item) async {
     _showSnack('Sedang mengunduh file...', Colors.blue);
     try {
-      final path = await _service.downloadFile(
+      await _service.downloadFile(
         url: '${ApiEndpoints.activityReport}/${item['id']}/download',
         fileName: item['file_nama'] ?? 'laporan-pramuka-${item['id']}',
       );
-      _showSnack('Berhasil diunduh ke: $path', Colors.green);
+      _showSnack('Berhasil diunduh!', Colors.green);
     } catch (e) {
       _showSnack('Gagal mengunduh file', Colors.red);
     }
@@ -157,9 +157,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
 
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color),
+    );
   }
 
   String _imageDownloadPath(Map<String, dynamic> item) =>
@@ -171,8 +171,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     final cardColor = isDark ? const Color(0xFF1A1D27) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF2D3142) : const Color(0xFFE2E8F0);
-    final bgColor =
-        isDark ? const Color(0xFF0F1117) : const Color(0xFFF8F9FC);
+    final bgColor = isDark ? const Color(0xFF0F1117) : const Color(0xFFF8F9FC);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -236,7 +235,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         border: Border.all(color: borderColor),
         boxShadow: isDark
             ? null
-            : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+            : [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +289,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(6)),
@@ -304,7 +307,9 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                       style: TextStyle(
                           fontSize: 12,
                           color: _file != null
-                              ? (isDark ? Colors.white70 : const Color(0xFF374151))
+                              ? (isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF374151))
                               : (isDark ? Colors.white38 : Colors.grey[400])),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -344,7 +349,10 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         border: Border.all(color: borderColor),
         boxShadow: isDark
             ? null
-            : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+            : [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)
+              ],
       ),
       child: Column(
         children: [
@@ -357,12 +365,16 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                       style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF374151))),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF374151))),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF252836) : const Color(0xFFF1F5F9),
+                      color: isDark
+                          ? const Color(0xFF252836)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(20)),
                   child: Text('${_laporan.length} FILE',
                       style: TextStyle(
@@ -409,8 +421,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _laporan.length,
-              separatorBuilder: (_, __) =>
-                  Divider(color: isDark ? Colors.white12 : borderColor, height: 1),
+              separatorBuilder: (_, __) => Divider(
+                  color: isDark ? Colors.white12 : borderColor, height: 1),
               itemBuilder: (_, i) => _buildRow(_laporan[i], isDark),
             ),
         ],
@@ -436,7 +448,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF1E293B))),
+                        color:
+                            isDark ? Colors.white : const Color(0xFF1E293B))),
                 if ((item['deskripsi'] ?? '').toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
@@ -523,7 +536,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     );
   }
 
-  Widget _th(String label, {required int flex, required bool isDark, bool center = false}) {
+  Widget _th(String label,
+      {required int flex, required bool isDark, bool center = false}) {
     return Expanded(
       flex: flex,
       child: Padding(
@@ -558,19 +572,28 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
     return TextFormField(
       initialValue: value,
       maxLines: maxLines,
-      style: TextStyle(fontSize: 13, color: isDark ? Colors.white : Colors.black87),
+      style: TextStyle(
+          fontSize: 13, color: isDark ? Colors.white : Colors.black87),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 13, color: isDark ? Colors.white38 : Colors.grey[400]),
+        hintStyle: TextStyle(
+            fontSize: 13, color: isDark ? Colors.white38 : Colors.grey[400]),
         filled: true,
         fillColor: isDark ? const Color(0xFF252836) : Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+            borderSide: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3D4155)
+                    : const Color(0xFFCBD5E1))),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1))),
+            borderSide: BorderSide(
+                color: isDark
+                    ? const Color(0xFF3D4155)
+                    : const Color(0xFFCBD5E1))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2)),
@@ -597,15 +620,20 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF252836) : Colors.white,
-          border: Border.all(color: isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1)),
+          border: Border.all(
+              color:
+                  isDark ? const Color(0xFF3D4155) : const Color(0xFFCBD5E1)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today_outlined, size: 14, color: isDark ? Colors.white38 : Colors.grey[400]),
+            Icon(Icons.calendar_today_outlined,
+                size: 14, color: isDark ? Colors.white38 : Colors.grey[400]),
             const SizedBox(width: 8),
             Text(_tanggal,
-                style: TextStyle(fontSize: 13, color: isDark ? Colors.white : const Color(0xFF1E293B))),
+                style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white : const Color(0xFF1E293B))),
           ],
         ),
       ),
@@ -617,7 +645,8 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
 
 class _PreviewModal extends StatelessWidget {
   final Map<String, dynamic> item;
-  final String? imagePath;   // relative path e.g. /api/vocational/laporan-kegiatan/1/download
+  final String?
+      imagePath; // relative path e.g. /api/vocational/laporan-kegiatan/1/download
   final DioClient dioClient;
   final VoidCallback onDownload;
   final VoidCallback onClose;
@@ -635,7 +664,7 @@ class _PreviewModal extends StatelessWidget {
     return GestureDetector(
       onTap: onClose,
       child: Container(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withValues(alpha: 0.65),
         child: Center(
           child: GestureDetector(
             onTap: () {},
@@ -644,7 +673,11 @@ class _PreviewModal extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 24)],
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 24)
+                ],
               ),
               constraints: BoxConstraints(
                 maxWidth: 500,
@@ -662,23 +695,35 @@ class _PreviewModal extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(item['judul'] ?? '-',
-                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                              if ((item['file_nama'] ?? '').toString().isNotEmpty)
+                                  style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1E293B))),
+                              if ((item['file_nama'] ?? '')
+                                  .toString()
+                                  .isNotEmpty)
                                 Text(item['file_nama'].toString(),
-                                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey)),
                             ],
                           ),
                         ),
                         const SizedBox(width: 8),
                         TextButton.icon(
-                          onPressed: () { onDownload(); onClose(); },
+                          onPressed: () {
+                            onDownload();
+                            onClose();
+                          },
                           icon: const Icon(Icons.download_outlined, size: 16),
-                          label: const Text('Unduh', style: TextStyle(fontSize: 12)),
+                          label: const Text('Unduh',
+                              style: TextStyle(fontSize: 12)),
                           style: TextButton.styleFrom(
                             foregroundColor: const Color(0xFF16A34A),
                             backgroundColor: const Color(0xFFDCFCE7),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -687,10 +732,13 @@ class _PreviewModal extends StatelessWidget {
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.grey[700],
                             backgroundColor: const Color(0xFFF1F5F9),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
-                          child: const Text('✕ Tutup', style: TextStyle(fontSize: 12)),
+                          child: const Text('✕ Tutup',
+                              style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -698,7 +746,8 @@ class _PreviewModal extends StatelessWidget {
                   const Divider(height: 1),
                   Flexible(
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                      borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(20)),
                       child: Container(
                         color: const Color(0xFFF8FAFC),
                         constraints: const BoxConstraints(minHeight: 300),
@@ -706,23 +755,32 @@ class _PreviewModal extends StatelessWidget {
                             ? FutureBuilder<Uint8List>(
                                 future: _fetchImageBytes(imagePath!, dioClient),
                                 builder: (_, snap) {
-                                  if (snap.connectionState == ConnectionState.waiting) {
-                                    return const Center(child: CircularProgressIndicator());
+                                  if (snap.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
                                   }
                                   if (snap.hasError || snap.data == null) {
                                     return const Center(
-                                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                        Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
-                                        SizedBox(height: 8),
-                                        Text('Gagal memuat gambar', style: TextStyle(color: Colors.grey)),
-                                      ]),
+                                      child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.broken_image_outlined,
+                                                size: 48, color: Colors.grey),
+                                            SizedBox(height: 8),
+                                            Text('Gagal memuat gambar',
+                                                style: TextStyle(
+                                                    color: Colors.grey)),
+                                          ]),
                                     );
                                   }
                                   return InteractiveViewer(
                                     panEnabled: true,
                                     minScale: 0.5,
                                     maxScale: 5,
-                                    child: Image.memory(snap.data!, fit: BoxFit.contain),
+                                    child: Image.memory(snap.data!,
+                                        fit: BoxFit.contain),
                                   );
                                 },
                               )
@@ -732,24 +790,41 @@ class _PreviewModal extends StatelessWidget {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Text('📄', style: TextStyle(fontSize: 56)),
+                                      const Text('📄',
+                                          style: TextStyle(fontSize: 56)),
                                       const SizedBox(height: 12),
                                       Text(item['file_nama']?.toString() ?? '-',
-                                          style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF374151))),
                                       const SizedBox(height: 6),
-                                      const Text('Format ini tidak dapat\nditampilkan langsung',
+                                      const Text(
+                                          'Format ini tidak dapat\nditampilkan langsung',
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey)),
                                       const SizedBox(height: 20),
                                       ElevatedButton.icon(
-                                        onPressed: () { onDownload(); onClose(); },
-                                        icon: const Icon(Icons.download_outlined, size: 16),
-                                        label: const Text('⬇ Download untuk Membuka', style: TextStyle(fontSize: 13)),
+                                        onPressed: () {
+                                          onDownload();
+                                          onClose();
+                                        },
+                                        icon: const Icon(
+                                            Icons.download_outlined,
+                                            size: 16),
+                                        label: const Text(
+                                            '⬇ Download untuk Membuka',
+                                            style: TextStyle(fontSize: 13)),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF2563EB),
+                                          backgroundColor:
+                                              const Color(0xFF2563EB),
                                           foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 18, vertical: 10),
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
                                         ),
                                       ),
                                     ],
@@ -777,7 +852,11 @@ class _AksiBtn extends StatelessWidget {
   final Color bg;
   final VoidCallback onTap;
 
-  const _AksiBtn({required this.label, required this.color, required this.bg, required this.onTap});
+  const _AksiBtn(
+      {required this.label,
+      required this.color,
+      required this.bg,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -785,8 +864,11 @@ class _AksiBtn extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-        child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700, color: color)),
       ),
     );
   }

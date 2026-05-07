@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/utils/secure_storage.dart';
 import '../../core/di/injection_container.dart';
@@ -17,22 +19,15 @@ class VocationalService implements VocationalRepository {
         _secureStorage = sl<SecureStorage>();
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.scoutGroups, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j);
+  Future<PaginatedResponse<Map<String, dynamic>>> getScoutClasses({int page = 1}) async {
+    final r = await _dioClient.get(ApiEndpoints.scoutGroups, queryParameters: {'page': page});
+    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getScoutAttendance(
-      {int page = 1, String? classId}) async {
-    final r = await _dioClient.get(ApiEndpoints.scoutAttendance,
-        queryParameters: {
-          'page': page,
-          if (classId != null) 'class_id': classId
-        });
-    return PaginatedResponse.fromJson(r.data, (j) => j);
+  Future<PaginatedResponse<Map<String, dynamic>>> getScoutAttendance({int page = 1, String? classId}) async {
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendance, queryParameters: {'page': page, if (classId != null) 'class_id': classId});
+    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
@@ -41,46 +36,37 @@ class VocationalService implements VocationalRepository {
   }
 
   @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getScoutReports(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.activityReport, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j);
-  }
-
-  @override
-  Future<Map<String, dynamic>> createScoutReport(
-      Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.activityReport, data: data);
-    return r.data['data'];
-  }
-
-  @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.pklLocation, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j);
-  }
-
-  @override
-  Future<Map<String, dynamic>> submitPklLocationReport(
-      Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.pklLocation, data: data);
-    return r.data['data'];
-  }
-
-  @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getPklProgressReports(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.pklProgress, queryParameters: {'page': page});
+  Future<PaginatedResponse<Map<String, dynamic>>> getScoutReports({int page = 1}) async {
+    final r = await _dioClient.get(ApiEndpoints.activityReport, queryParameters: {'page': page});
     return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
   }
 
   @override
-  Future<Map<String, dynamic>> submitPklProgressReport(
-      Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createScoutReport(Map<String, dynamic> data) async {
+    final r = await _dioClient.post(ApiEndpoints.activityReport, data: data);
+    return r.data['data'] as Map<String, dynamic>;
+  }
+
+  @override
+  Future<PaginatedResponse<Map<String, dynamic>>> getPklLocationReports({int page = 1}) async {
+    final r = await _dioClient.get(ApiEndpoints.pklLocation, queryParameters: {'page': page});
+    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Map<String, dynamic>> submitPklLocationReport(Map<String, dynamic> data) async {
+    final r = await _dioClient.post(ApiEndpoints.pklLocation, data: data);
+    return r.data['data'] as Map<String, dynamic>;
+  }
+
+  @override
+  Future<PaginatedResponse<Map<String, dynamic>>> getPklProgressReports({int page = 1}) async {
+    final r = await _dioClient.get(ApiEndpoints.pklProgress, queryParameters: {'page': page});
+    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Map<String, dynamic>> submitPklProgressReport(Map<String, dynamic> data) async {
     final r = await _dioClient.post(ApiEndpoints.pklProgress, data: data);
     return r.data['data'] as Map<String, dynamic>;
   }
@@ -95,8 +81,7 @@ class VocationalService implements VocationalRepository {
   Future<Map<String, dynamic>> getRawSiswaVokasi({String? kelasId}) async {
     final params = <String, dynamic>{};
     if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
-    final r = await _dioClient.get(ApiEndpoints.vocationalStudents,
-        queryParameters: params);
+    final r = await _dioClient.get(ApiEndpoints.vocationalStudents, queryParameters: params);
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
@@ -106,13 +91,11 @@ class VocationalService implements VocationalRepository {
     await _dioClient.post(ApiEndpoints.scoutAttendance, data: data);
   }
 
-  Future<Map<String, dynamic>> getRawAbsensiPramuka(
-      {String? kelasId, String? tanggal}) async {
+  Future<Map<String, dynamic>> getRawAbsensiPramuka({String? kelasId, String? tanggal}) async {
     final params = <String, dynamic>{};
     if (kelasId != null && kelasId.isNotEmpty) params['kelas_id'] = kelasId;
     if (tanggal != null && tanggal.isNotEmpty) params['tanggal'] = tanggal;
-    final r = await _dioClient.get(ApiEndpoints.scoutAttendance,
-        queryParameters: params);
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendance, queryParameters: params);
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
@@ -122,12 +105,9 @@ class VocationalService implements VocationalRepository {
     String? tanggalAkhir,
   }) async {
     final params = <String, dynamic>{'kelas_id': kelasId};
-    if (tanggalMulai != null && tanggalMulai.isNotEmpty)
-      params['tanggal_mulai'] = tanggalMulai;
-    if (tanggalAkhir != null && tanggalAkhir.isNotEmpty)
-      params['tanggal_akhir'] = tanggalAkhir;
-    final r = await _dioClient.get(ApiEndpoints.scoutAttendanceRecap,
-        queryParameters: params);
+    if (tanggalMulai != null && tanggalMulai.isNotEmpty) params['tanggal_mulai'] = tanggalMulai;
+    if (tanggalAkhir != null && tanggalAkhir.isNotEmpty) params['tanggal_akhir'] = tanggalAkhir;
+    final r = await _dioClient.get(ApiEndpoints.scoutAttendanceRecap, queryParameters: params);
     return Map<String, dynamic>.from(r.data ?? {});
   }
 
@@ -178,58 +158,117 @@ class VocationalService implements VocationalRepository {
       'deskripsi': deskripsi,
       'tanggal': tanggal,
       if (file != null && file.bytes != null)
-        'file_laporan':
-            MultipartFile.fromBytes(file.bytes!, filename: file.name),
+        'file_laporan': MultipartFile.fromBytes(file.bytes!, filename: file.name),
     });
-    await _dioClient.postFormData(ApiEndpoints.activityReport,
-        formData: formData);
+    await _dioClient.postFormData(ApiEndpoints.activityReport, formData: formData);
   }
 
   Future<void> deleteLaporanKegiatan(dynamic id) async {
     await _dioClient.delete('${ApiEndpoints.activityReport}/$id');
   }
 
-  // ─── DOWNLOAD FILE ────────────────────────────────────────────
+  // ─── DOWNLOAD FILE ─────────────────────────────────────────────
+  // Mengunduh file dari microservice menggunakan Dio + Authorization header.
+  // Microservice membaca token dari header "Authorization: Bearer <token>",
+  // bukan dari query param, sehingga url_launcher tidak bisa digunakan.
+  //
+  // Alur:
+  //   1. Ambil token dari SecureStorage
+  //   2. Request GET ke endpoint download dengan Authorization header
+  //   3. Simpan bytes ke file sementara di cache directory
+  //   4. Buka file menggunakan url_launcher (file:// URI)
 
-  Future<String> downloadFile(
-      {required String url, required String fileName}) async {
-    final fullUrl =
-        url.startsWith('http') ? url : '${ApiEndpoints.baseUrl}$url';
+  Future<void> downloadFile({
+    required String url,
+    required String fileName,
+  }) async {
+    final fullUrl = url.startsWith('http')
+        ? url
+        : '${ApiEndpoints.baseUrl}$url';
 
-    try {
-      final token = await _secureStorage.getAccessToken();
+    final token = await _secureStorage.getAccessToken();
 
-      // Menggunakan Dio langsung untuk menangani binary response dengan token
-      final dio = Dio();
-      final response = await dio.get<List<int>>(
-        fullUrl,
-        options: Options(
-          responseType: ResponseType.bytes,
-          headers: {
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
-        ),
-      );
+    // Ambil bytes file dari server dengan Authorization header
+    final dio = Dio();
+    final response = await dio.get<List<int>>(
+      fullUrl,
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        },
+      ),
+    );
 
-      if (response.statusCode == 200 && response.data != null) {
-        Directory? directory;
-        if (Platform.isAndroid) {
-          directory = await getExternalStorageDirectory();
-        } else {
-          directory = await getApplicationDocumentsDirectory();
-        }
+    final bytes = Uint8List.fromList(response.data!);
 
-        final filePath = '${directory!.path}/$fileName';
-        final file = File(filePath);
-        await file.writeAsBytes(response.data!);
-
-        return filePath;
-      } else {
-        throw Exception('Gagal mengunduh file: Status ${response.statusCode}');
+    if (kIsWeb) {
+      // ── Web: buat Blob URL dan klik programatically ──
+      // Tidak bisa akses dart:io di web, gunakan url_launcher dengan data URL
+      // sebagai fallback terbaik yang tersedia tanpa package tambahan.
+      final base64 = _base64Encode(bytes);
+      final mimeType = _mimeFromFileName(fileName);
+      final dataUrl = 'data:$mimeType;base64,$base64';
+      final uri = Uri.parse(dataUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
       }
-    } catch (e) {
-      print('Error downloading file: $e');
-      rethrow;
+      return;
+    }
+
+    // ── Mobile/Desktop: simpan ke cache dir lalu buka ──
+    final tempDir = Directory.systemTemp;
+    final safeFileName = fileName.replaceAll(RegExp(r'[^\w.\-]'), '_');
+    final filePath = p.join(tempDir.path, safeFileName);
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
+
+    final fileUri = Uri.file(filePath);
+    if (await canLaunchUrl(fileUri)) {
+      await launchUrl(fileUri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // ─── helpers ──────────────────────────────────────────────────
+
+  String _base64Encode(Uint8List bytes) {
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    final result = StringBuffer();
+    int i = 0;
+    while (i < bytes.length) {
+      final b0 = bytes[i++];
+      final b1 = i < bytes.length ? bytes[i++] : 0;
+      final b2 = i < bytes.length ? bytes[i++] : 0;
+      result.write(chars[(b0 >> 2) & 0x3f]);
+      result.write(chars[((b0 << 4) | (b1 >> 4)) & 0x3f]);
+      result.write(chars[((b1 << 2) | (b2 >> 6)) & 0x3f]);
+      result.write(chars[b2 & 0x3f]);
+    }
+    final s = result.toString();
+    final pad = (3 - bytes.length % 3) % 3;
+    return pad == 0 ? s : s.substring(0, s.length - pad) + ('=' * pad);
+  }
+
+  String _mimeFromFileName(String fileName) {
+    final ext = p.extension(fileName).toLowerCase();
+    switch (ext) {
+      case '.pdf':
+        return 'application/pdf';
+      case '.docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case '.doc':
+        return 'application/msword';
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.webp':
+        return 'image/webp';
+      default:
+        return 'application/octet-stream';
     }
   }
 }
