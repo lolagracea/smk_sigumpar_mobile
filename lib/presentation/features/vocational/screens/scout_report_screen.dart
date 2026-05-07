@@ -39,6 +39,7 @@ class ScoutReportScreen extends StatefulWidget {
 
 class _ScoutReportScreenState extends State<ScoutReportScreen> {
   late final VocationalService _service;
+  late final DioClient _dioClient;
 
   List<Map<String, dynamic>> _laporan = [];
   bool _loading = false;
@@ -60,8 +61,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   void initState() {
     super.initState();
     _dioClient = DioClient(secureStorage: sl<SecureStorage>());
-    _service = VocationalService(
-        dioClient: DioClient(secureStorage: sl<SecureStorage>()));
+    _service = VocationalService(dioClient: _dioClient);
     _loadLaporan();
   }
 
@@ -107,7 +107,7 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
         _file = null;
       });
       _loadLaporan();
-    } catch (_) {
+    } catch (e) {
       _showSnack('Gagal menyimpan laporan', Colors.red);
     }
     setState(() => _saving = false);
@@ -143,26 +143,27 @@ class _ScoutReportScreenState extends State<ScoutReportScreen> {
   }
 
   Future<void> _download(Map<String, dynamic> item) async {
+    _showSnack('Sedang mengunduh file...', Colors.blue);
     try {
-      await _service.downloadFile(
-        url: '/api/vocational/laporan-kegiatan/${item['id']}/download',
-        fileName: item['file_nama'] ?? 'laporan',
+      final path = await _service.downloadFile(
+        url: '${ApiEndpoints.activityReport}/${item['id']}/download',
+        fileName: item['file_nama'] ?? 'laporan-pramuka-${item['id']}',
       );
-    } catch (_) {
+      _showSnack('Berhasil diunduh ke: $path', Colors.green);
+    } catch (e) {
       _showSnack('Gagal mengunduh file', Colors.red);
     }
   }
 
   void _showSnack(String msg, Color color) {
     if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
   }
 
   String _imageDownloadPath(Map<String, dynamic> item) =>
-      '/api/vocational/laporan-kegiatan/${item['id']}/download';
-
-  late final DioClient _dioClient;
+      '${ApiEndpoints.activityReport}/${item['id']}/download';
 
   @override
   Widget build(BuildContext context) {

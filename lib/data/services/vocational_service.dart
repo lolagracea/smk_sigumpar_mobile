@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/utils/secure_storage.dart';
@@ -192,36 +191,41 @@ class VocationalService implements VocationalRepository {
 
   // ─── DOWNLOAD FILE ────────────────────────────────────────────
 
-  Future<void> downloadFile(
+  Future<String> downloadFile(
       {required String url, required String fileName}) async {
     final fullUrl =
         url.startsWith('http') ? url : '${ApiEndpoints.baseUrl}$url';
 
     try {
-      // Use Dio to download with proper Authorization header
-      final response = await _dioClient.get(
+      final token = await _secureStorage.getAccessToken();
+
+      // Menggunakan Dio langsung untuk menangani binary response dengan token
+      final dio = Dio();
+      final response = await dio.get<List<int>>(
         fullUrl,
         options: Options(
           responseType: ResponseType.bytes,
-          followRedirects: false,
-          validateStatus: (status) => status! < 500,
+          headers: {
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
         ),
       );
 
-      if (response.statusCode == 200) {
-        // Get directory to save file
-        final directory = await getApplicationDocumentsDirectory();
-        final filePath = '${directory.path}/$fileName';
+      if (response.statusCode == 200 && response.data != null) {
+        Directory? directory;
+        if (Platform.isAndroid) {
+          directory = await getExternalStorageDirectory();
+        } else {
+          directory = await getApplicationDocumentsDirectory();
+        }
 
-        // Save file
+        final filePath = '${directory!.path}/$fileName';
         final file = File(filePath);
-        await file.writeAsBytes(response.data);
+        await file.writeAsBytes(response.data!);
 
-        // Optionally, open the file or show success message
-        // For now, just print success
-        print('File downloaded to: $filePath');
+        return filePath;
       } else {
-        throw Exception('Failed to download file: ${response.statusCode}');
+        throw Exception('Gagal mengunduh file: Status ${response.statusCode}');
       }
     } catch (e) {
       print('Error downloading file: $e');
