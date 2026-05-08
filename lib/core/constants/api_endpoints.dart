@@ -82,11 +82,13 @@ class ApiEndpoints {
   static const String kepsekStatistik = '/api/academic/kepsek/statistik';
   static const String kepsekRekapNilaiFinal =
       '/api/academic/kepsek/rekap-nilai-final';
-  static const String wakilJadwal = '/api/academic/wakil/jadwal';
-  static const String wakilJadwalRekap =
-      '/api/academic/wakil/jadwal/rekap-hari';
-  static const String wakilParenting =
-      '/api/academic/wakil/parenting-monitoring';
+  // ─── WAKIL KEPSEK ENDPOINTS ──────────────────────────────
+  // Kurikulum (Perangkat Pembelajaran) → learning-service (sama dgn /api/learning/perangkat)
+  static const String wakilKurikulum = '/api/learning/perangkat';
+  // Monitoring Jadwal → academic-service jadwal (sama dgn /api/academic/jadwal)
+  // Monitoring Absensi Guru → learning-service (sama dgn /api/learning/absensi-guru)
+  // Monitoring Parenting → student-service (sama dgn /api/student/parenting)
+  static const String absensiGuru = '/api/learning/absensi-guru';
 
   // ═══════════════════════════════════════════════════════════════
   // === STUDENT SERVICE (SINGULAR /student/, BUKAN /students/) ===

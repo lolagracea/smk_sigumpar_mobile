@@ -82,5 +82,9 @@ Future<void> init() async {
     ),
   );
 
+  // ─── Providers (Factory — fresh state per screen) ──────
+  sl.registerFactory<AbsensiGuruProvider>(
+        () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  );
 
 }

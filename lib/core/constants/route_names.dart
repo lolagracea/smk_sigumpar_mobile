@@ -111,11 +111,9 @@ class RouteNames {
 
   /// Route detail pengumuman.
   static const String announcementDetail = '/academic/announcements/:id';
+  static const String announcements = '/academic/announcements';
+  static const String announcementDetail = '/academic/pengumuman/:id';
 
-  /// Helper untuk membuka detail pengumuman berdasarkan id.
-  ///
-  /// Contoh:
-  /// context.go(RouteNames.announcementDetailPath('12'));
   static String announcementDetailPath(String id) {
     return '/academic/announcements/$id';
   }
@@ -133,7 +131,6 @@ class RouteNames {
 
   /// Alias untuk absensi siswa.
   static const String studentAttendance = attendanceRecap;
-
   static const String gradesRecap = '/student/grades';
 
   // ─── Learning ──────────────────────────────────────────
@@ -142,20 +139,22 @@ class RouteNames {
 
   /// Alias untuk absensi guru.
   static const String absensiGuru = teacherAttendance;
-
   static const String teachingNotes = '/learning/teaching-notes';
   static const String teacherEvaluation = '/learning/teacher-evaluation';
   static const String learningDevice = '/learning/devices';
   static const String principalReview = '/learning/principal-review';
   static const String vicePrincipalReview = '/learning/vice-principal-review';
 
-  // ─── Vocational ────────────────────────────────────────
+  // ─── Vocational / Pramuka ──────────────────────────────
   static const String vocational = '/vocational';
-  static const String scoutClasses = '/vocational/scout-classes';
+  static const String scoutClasses    = '/vocational/scout-classes';
   static const String scoutAttendance = '/vocational/scout-attendance';
-  static const String scoutReport = '/vocational/scout-report';
+  static const String scoutReport     = '/vocational/scout-report';
+
+  // ─── Vocational / PKL ─────────────────────────────────
   static const String pklLocationReport = '/vocational/pkl-location';
   static const String pklProgressReport = '/vocational/pkl-progress';
+  static const String pklGrades         = '/vocational/pkl-nilai';
 
   // ─── Asset ─────────────────────────────────────────────
   static const String asset = '/asset';
@@ -165,4 +164,11 @@ class RouteNames {
   static const String loanResponse = '/asset/loan-response';
   static const String treasurerResponse = '/asset/treasurer-response';
   static const String principalResponse = '/asset/principal-response';
+
+  // ─── Wakil Kepala Sekolah ───────────────────────────────
+  static const String wakilMonitoringJadwal = '/wakil/monitoring-jadwal';
+  static const String wakilAbsensiGuru      = '/wakil/absensi-guru';
+  static const String wakilParenting        = '/wakil/parenting';
+  static const String wakilLaporan          = '/wakil/laporan';
+  static const String wakilKurikulum        = '/wakil/kurikulum';
 }
