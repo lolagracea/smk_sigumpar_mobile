@@ -4,17 +4,42 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // ═══════════════════════════════════════════════════════════════
-  // === BASE URLs ===
+  // === ENVIRONMENT CONFIG ===
   // ═══════════════════════════════════════════════════════════════
-  // Auto-switch antara platform:
-  // - Web (Flutter Web di browser): pakai localhost
-  // - Mobile (Android emulator): pakai 10.0.2.2 (alias localhost dari emulator)
-  // - iOS Simulator: pakai localhost (sama seperti web)
+  //
+  // Ganti _useProduction = true kalau sudah deploy ke server publik.
+  //
+  // DEVELOPMENT (lokal):
+  //   - Web / iOS Simulator : localhost
+  //   - Android Emulator    : 10.0.2.2  (alias localhost dari emulator)
+  //   - Android Device fisik: IP WiFi laptop (contoh: 10.172.198.20)
+  //
+  // PRODUCTION:
+  //   - Semua platform pakai URL publik (_productionBase)
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Set ke [true] kalau sudah deploy ke server publik.
+  static const bool _useProduction = false;
+
+  /// IP WiFi laptop kamu (untuk Android device fisik saat development).
+  /// Cek dengan: ipconfig (Windows) → lihat IPv4 WiFi
+  static const String _localDeviceIp = '10.172.198.20';
+
+  /// URL server publik setelah deploy (Railway / VPS / dll).
+  /// Contoh Railway : 'https://smk-backend.up.railway.app'
+  /// Contoh VPS     : 'https://api.smkn1sigumpar.sch.id'
+  static const String _productionBase = 'https://YOUR_PRODUCTION_URL_HERE';
+
+  // ═══════════════════════════════════════════════════════════════
+  // === BASE URLs (otomatis, jangan diubah) ===
   // ═══════════════════════════════════════════════════════════════
 
   /// Base URL untuk Backend Microservices (via Nginx Gateway port 8001)
-  static String get baseUrl =>
-      kIsWeb ? 'http://localhost:8001' : 'http://10.0.2.2:8001';
+  static String get baseUrl {
+    if (_useProduction) return '$_productionBase:8001';
+    if (kIsWeb) return 'http://localhost:8001';
+    return 'http://$_localDeviceIp:8001';
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // === KEYCLOAK CONFIG ===
@@ -26,9 +51,12 @@ class ApiEndpoints {
   /// Realm Keycloak
   static const String keycloakRealm = 'smk-sigumpar';
 
-  /// Base URL Keycloak (auto-switch web vs mobile)
-  static String get keycloakBaseUrl =>
-      kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080';
+  /// Base URL Keycloak (auto-switch berdasarkan environment & platform)
+  static String get keycloakBaseUrl {
+    if (_useProduction) return '$_productionBase:8080';
+    if (kIsWeb) return 'http://localhost:8080';
+    return 'http://$_localDeviceIp:8080';
+  }
 
   /// Endpoint untuk login & refresh token
   static String get keycloakTokenUrl =>
@@ -82,16 +110,20 @@ class ApiEndpoints {
   static const String kepsekStatistik = '/api/academic/kepsek/statistik';
   static const String kepsekRekapNilaiFinal =
       '/api/academic/kepsek/rekap-nilai-final';
+  static const String wakilJadwal = '/api/academic/wakil/jadwal';
+  static const String wakilJadwalRekap =
+      '/api/academic/wakil/jadwal/rekap-hari';
+  static const String wakilParenting =
+      '/api/academic/wakil/parenting-monitoring';
+
   // ─── WAKIL KEPSEK ENDPOINTS ──────────────────────────────
-  // Kurikulum (Perangkat Pembelajaran) → learning-service (sama dgn /api/learning/perangkat)
   static const String wakilKurikulum = '/api/learning/perangkat';
-  // Monitoring Jadwal → academic-service jadwal (sama dgn /api/academic/jadwal)
-  // Monitoring Absensi Guru → learning-service (sama dgn /api/learning/absensi-guru)
-  // Monitoring Parenting → student-service (sama dgn /api/student/parenting)
+  static const String wakilProgramKerja = '/api/academic/wakil/program-kerja';
+  static const String wakilSupervisi = '/api/academic/wakil/supervisi';
   static const String absensiGuru = '/api/learning/absensi-guru';
 
   // ═══════════════════════════════════════════════════════════════
-  // === STUDENT SERVICE (SINGULAR /student/, BUKAN /students/) ===
+  // === STUDENT SERVICE ===
   // ═══════════════════════════════════════════════════════════════
   static const String cleanliness = '/api/student/kebersihan';
   static const String studentGrades = '/api/student/nilai';
@@ -116,7 +148,7 @@ class ApiEndpoints {
   static const String teachingNotes = '/api/learning/catatan-mengajar';
   static const String teacherEvaluation = '/api/learning/evaluasi-guru';
   static const String learningDevices = '/api/learning/perangkat';
-  // Helper untuk endpoint dinamis dengan ID
+
   static String learningDeviceDownload(int id) =>
       '$learningDevices/$id/download';
   static String learningDeviceView(int id) => '$learningDevices/$id/view';
@@ -145,46 +177,22 @@ class ApiEndpoints {
   // ═══════════════════════════════════════════════════════════════
   // === HELPERS untuk Dynamic Endpoints ===
   // ═══════════════════════════════════════════════════════════════
-
-  /// Get class assignment for a wali (homeroom teacher)
-  /// Example: getKelasByWaliId('uuid-123') → '/api/academic/kelas/wali/uuid-123'
   static String getKelasByWaliId(String waliId) => '$classesByWali/$waliId';
-
-  /// Get students by class ID
-  /// Example: getClassStudents(5) → '/api/academic/classes/5/students'
   static String getClassStudents(int classId) =>
       '$classStudents/$classId/students';
-
-  /// Get attendance by class ID
-  /// Example: getAttendanceByClass(5) → '/api/academic/attendance/class/5'
   static String getAttendanceByClass(int classId) =>
       '$attendanceClass/$classId';
-
-  /// Get subjects by guru ID
   static String getSubjectsByGuruId(String guruId) =>
       '$subjectsByGuru/$guruId';
 
-
-
   // ═══════════════════════════════════════════════════════════════
-  // === ENDPOINT TAMBAHAN (untuk auth_service.dart) ===
+  // === ENDPOINT TAMBAHAN ===
   // ═══════════════════════════════════════════════════════════════
-
-  /// Endpoint untuk profile update di backend (kalau ada custom endpoint)
-  /// CATATAN: Saat ini backend tidak punya endpoint profile khusus.
-  /// Mobile pakai Keycloak userinfo untuk read, dan Keycloak account untuk update.
-  /// Placeholder untuk backward compatibility.
   static const String profile = '/api/auth/profile';
-
-  /// Endpoint untuk logout (placeholder — actual logout via Keycloak)
-  /// CATATAN: Auth service backend TIDAK PUNYA endpoint logout.
-  /// Logout sebenarnya pakai keycloakLogoutUrl.
   static const String logout = '/api/auth/logout';
 
   // ═══════════════════════════════════════════════════════════════
   // === ASSET SERVICE ===
-  // ⚠️ Backend belum ready, tapi konstanta tetap ditambahkan
-  // agar mobile bisa compile.
   // ═══════════════════════════════════════════════════════════════
   static const String submissionInfo = '/api/asset/informasi-pengajuan';
   static const String itemLoan = '/api/asset/peminjaman-barang';
