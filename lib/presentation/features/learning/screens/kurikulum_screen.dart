@@ -1,90 +1,7 @@
-// lib/presentation/features/wakil_kepsek/screens/kurikulum_screen.dart
-//
-// Monitoring Perangkat Pembelajaran (Kurikulum) untuk Wakil Kepala Sekolah.
-// Endpoint: GET /api/learning/perangkat  (learning-service — sama dengan yang
-// digunakan web di WakakurPerangkatPage.jsx via learningApi.getAllPerangkat())
-//
-// Fitur identik dengan web:
-//   • Stats: Total Dokumen, Lengkap, Belum Lengkap, Guru Terdaftar
-//   • Filter: nama dokumen, guru, jenis dokumen, status
-//   • List card dengan badge jenis berwarna + indikator lengkap/belum
-//   • Pull-to-refresh
-
 import 'package:flutter/material.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
-
-// ─── Model ───────────────────────────────────────────────────────────────────
-
-class _PerangkatRow {
-  final int id;
-  final int? guruId;
-  final String namaGuru;
-  final String namaDokumen;
-  final String jenisDokumen;
-  final String status;
-  final String? catatan;
-  final String? namaFile;
-  final String? tanggalUpload;
-
-  const _PerangkatRow({
-    required this.id,
-    this.guruId,
-    required this.namaGuru,
-    required this.namaDokumen,
-    required this.jenisDokumen,
-    required this.status,
-    this.catatan,
-    this.namaFile,
-    this.tanggalUpload,
-  });
-
-  factory _PerangkatRow.fromJson(Map<String, dynamic> j) {
-    return _PerangkatRow(
-      id: j['id'] ?? 0,
-      guruId: j['guru_id'] as int?,
-      // learning-service bisa kembalikan nama_guru atau hanya guru_id
-      namaGuru: j['nama_guru'] ??
-          (j['guru_id'] != null ? 'Guru #${j['guru_id']}' : '—'),
-      namaDokumen: j['nama_dokumen'] ?? j['nama_perangkat'] ?? '—',
-      jenisDokumen: j['jenis_dokumen'] ?? j['jenis'] ?? '—',
-      status: j['status'] ?? 'belum_lengkap',
-      catatan: j['catatan'],
-      namaFile: j['nama_file'],
-      tanggalUpload: _fmtDate(j['created_at'] ?? j['tanggal_upload']),
-    );
-  }
-
-  static String? _fmtDate(dynamic v) {
-    if (v == null) return null;
-    try {
-      final d = DateTime.parse(v.toString());
-      const bulan = [
-        'Jan','Feb','Mar','Apr','Mei','Jun',
-        'Jul','Agu','Sep','Okt','Nov','Des'
-      ];
-      return '${d.day.toString().padLeft(2,'0')} ${bulan[d.month-1]} ${d.year}';
-    } catch (_) {
-      return v.toString().split('T').first;
-    }
-  }
-}
-
-// ─── Helpers warna badge jenis ────────────────────────────────────────────────
-
-const _jenisColors = <String, Color>{
-  'RPP'    : Color(0xFF2563EB),
-  'Silabus': Color(0xFF16A34A),
-  'Modul'  : Color(0xFF7C3AED),
-  'Prota'  : Color(0xFFD97706),
-  'Promes' : Color(0xFFEA580C),
-};
-
-Color _jenisColor(String jenis) =>
-    _jenisColors[jenis] ?? const Color(0xFF6B7280);
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 class KurikulumScreen extends StatefulWidget {
   const KurikulumScreen({super.key});
@@ -94,15 +11,12 @@ class KurikulumScreen extends StatefulWidget {
 }
 
 class _KurikulumScreenState extends State<KurikulumScreen> {
-  List<_PerangkatRow> _rows = [];
-  bool _loading = false;
-  String? _error;
+  List<Map<String, dynamic>> _kelas  = [];
+  List<Map<String, dynamic>> _mapel  = [];
+  List<Map<String, dynamic>> _jadwal = [];
 
-  // ── Filter state (sama seperti web) ───────────────────────────────────────
-  String _search       = '';   // nama dokumen
-  String _filterGuru   = '';
-  String _filterJenis  = '';
-  String _filterStatus = '';
+  bool    _loading = false;
+  String? _error;
 
   @override
   void initState() {
@@ -110,450 +24,346 @@ class _KurikulumScreenState extends State<KurikulumScreen> {
     _loadData();
   }
 
-  // ── Load dari /api/learning/perangkat ─────────────────────────────────────
-
+  // ── API: sama persis web — getAllKelas + getAllMapel + getAllJadwal ──────────
   Future<void> _loadData() async {
     setState(() { _loading = true; _error = null; });
     try {
       final dio = sl<DioClient>();
-      // Endpoint sama dengan web: learningApi.getAllPerangkat()
-      // → GET /api/learning/perangkat
-      final resp = await dio.get(ApiEndpoints.learningDevices);
-      final raw = resp.data;
-      List<dynamic> list = [];
-      if (raw is List)        list = raw;
-      else if (raw is Map)    list = (raw['data'] as List?) ?? [];
+      final results = await Future.wait([
+        dio.get(ApiEndpoints.classes),
+        dio.get(ApiEndpoints.subjects),
+        dio.get(ApiEndpoints.schedules),
+      ]);
+
+      List<Map<String, dynamic>> parse(dynamic raw) {
+        final list = raw is List
+            ? raw
+            : (raw is Map ? (raw['data'] ?? []) : []);
+        return List<Map<String, dynamic>>.from(list as List);
+      }
+
       setState(() {
-        _rows = list
-            .map((e) => _PerangkatRow.fromJson(e as Map<String, dynamic>))
-            .toList();
+        _kelas  = parse(results[0].data);
+        _mapel  = parse(results[1].data);
+        _jadwal = parse(results[2].data);
       });
     } catch (_) {
-      setState(() => _error = 'Gagal memuat data perangkat pembelajaran');
+      setState(() => _error = 'Gagal memuat data kurikulum');
     } finally {
       setState(() => _loading = false);
     }
   }
 
-  // ── Filtered (sama logika web) ────────────────────────────────────────────
-
-  List<_PerangkatRow> get _filtered => _rows.where((d) {
-    if (_filterJenis.isNotEmpty && d.jenisDokumen != _filterJenis) return false;
-    if (_filterStatus.isNotEmpty && d.status != _filterStatus) return false;
-    if (_filterGuru.isNotEmpty &&
-        !d.namaGuru.toLowerCase().contains(_filterGuru.toLowerCase())) {
-      return false;
-    }
-    if (_search.isNotEmpty &&
-        !d.namaDokumen.toLowerCase().contains(_search.toLowerCase())) {
-      return false;
-    }
-    return true;
-  }).toList();
-
-  // ── Stats (sama seperti web) ──────────────────────────────────────────────
-
-  int get _totalLengkap => _rows.where((d) => d.status == 'lengkap').length;
-  int get _totalBelum   => _rows.where((d) => d.status != 'lengkap').length;
-  int get _totalGuru    =>
-      _rows.map((d) => d.guruId).whereType<int>().toSet().length;
-
-  List<String> get _jenisList =>
-      (_rows.map((d) => d.jenisDokumen).where((j) => j != '—').toSet()
-          .toList()..sort());
-
-  // ─────────────────────────────────────────────────────────────────────────
+  String _namaKelas(dynamic kelasId) {
+    if (kelasId == null) return '—';
+    final found = _kelas.where((k) => k['id'] == kelasId);
+    return found.isNotEmpty ? (found.first['nama_kelas'] ?? '—') : '—';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final filtered = _filtered;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final bg      = isDark ? const Color(0xFF0F1117) : const Color(0xFFF3F4F6);
+    final card    = isDark ? const Color(0xFF1A1D27) : Colors.white;
+    final border  = isDark ? const Color(0xFF2D3142) : const Color(0xFFE5E7EB);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF3F4F6),
+      backgroundColor: bg,
       appBar: AppBar(
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Monitoring Perangkat Pembelajaran',
-                style: TextStyle(fontSize: 15)),
-            Text('Pantau kelengkapan perangkat guru',
-                style: TextStyle(fontSize: 11, color: Colors.white70)),
-          ],
-        ),
-        backgroundColor: const Color(0xFFEA580C),
-        foregroundColor: Colors.white,
+        backgroundColor: card,
         elevation: 0,
+        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('KURIKULUM',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: isDark ? Colors.white : const Color(0xFF1F2937),
+              )),
+          Text('Rekap data kurikulum — kelas, mata pelajaran, dan jadwal mengajar',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white54 : const Color(0xFF6B7280),
+              )),
+        ]),
         actions: [
           IconButton(
-              icon: const Icon(Icons.refresh), onPressed: _loadData),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ── Stats bar (4 kartu sama seperti web) ──────────────────────
-          Container(
-            color: const Color(0xFFEA580C),
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: [
-                _Stat('Total Dokumen', '${_rows.length}', Colors.white),
-                const SizedBox(width: 6),
-                _Stat('Lengkap', '$_totalLengkap', Colors.greenAccent),
-                const SizedBox(width: 6),
-                _Stat('Belum Lengkap', '$_totalBelum', Colors.redAccent),
-                const SizedBox(width: 6),
-                _Stat('Guru Terdaftar', '$_totalGuru',
-                    Colors.lightBlueAccent),
-              ],
-            ),
-          ),
-
-          // ── Filter panel (sama seperti web) ───────────────────────────
-          Container(
-            color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                // Row 1: nama dokumen + guru
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: _inputDec('Nama Dokumen',
-                            prefix: Icons.search),
-                        onChanged: (v) => setState(() => _search = v),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        decoration: _inputDec('Cari Guru'),
-                        onChanged: (v) => setState(() => _filterGuru = v),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Row 2: jenis + status + reset
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _filterJenis.isEmpty ? null : _filterJenis,
-                        decoration: _inputDec('Jenis Dokumen'),
-                        items: [
-                          const DropdownMenuItem(
-                              value: '', child: Text('Semua Jenis')),
-                          ..._jenisList.map((j) =>
-                              DropdownMenuItem(value: j, child: Text(j))),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _filterJenis = v ?? ''),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _filterStatus.isEmpty
-                            ? null
-                            : _filterStatus,
-                        decoration: _inputDec('Status'),
-                        items: const [
-                          DropdownMenuItem(
-                              value: '', child: Text('Semua Status')),
-                          DropdownMenuItem(
-                              value: 'lengkap',
-                              child: Text('Lengkap')),
-                          DropdownMenuItem(
-                              value: 'belum_lengkap',
-                              child: Text('Belum Lengkap')),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _filterStatus = v ?? ''),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: () => setState(() {
-                        _search = '';
-                        _filterGuru = '';
-                        _filterJenis = '';
-                        _filterStatus = '';
-                      }),
-                      style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 10)),
-                      child: const Text('Reset',
-                          style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // ── Content ───────────────────────────────────────────────────
-          Expanded(
-            child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFFEA580C)))
-                : _error != null
-                    ? _buildError()
-                    : filtered.isEmpty
-                        ? _buildEmpty()
-                        : RefreshIndicator(
-                            onRefresh: _loadData,
-                            color: const Color(0xFFEA580C),
-                            child: ListView.separated(
-                              padding: const EdgeInsets.all(12),
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (_, i) =>
-                                  _buildCard(filtered[i], isDark),
-                            ),
-                          ),
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+            color: isDark ? Colors.white70 : const Color(0xFF6B7280),
           ),
         ],
       ),
-    );
-  }
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 12),
+                  Text(_error!, style: const TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  ElevatedButton(onPressed: _loadData, child: const Text('Coba Lagi')),
+                ]))
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(children: [
 
-  // ── Card item ─────────────────────────────────────────────────────────────
+                      // ── 3 Stat Card ──────────────────────────────────────
+                      Row(children: [
+                        _StatCard(
+                          label: 'Total Kelas',
+                          value: _kelas.length,
+                          icon: '🏫',
+                          bgColor:     isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                          borderColor: isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE),
+                          valueColor:  const Color(0xFF2563EB),
+                          labelColor:  const Color(0xFF3B82F6),
+                        ),
+                        const SizedBox(width: 10),
+                        _StatCard(
+                          label: 'Mata Pelajaran',
+                          value: _mapel.length,
+                          icon: '📚',
+                          bgColor:     isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4),
+                          borderColor: isDark ? const Color(0xFF166534) : const Color(0xFFBBF7D0),
+                          valueColor:  const Color(0xFF16A34A),
+                          labelColor:  const Color(0xFF22C55E),
+                        ),
+                        const SizedBox(width: 10),
+                        _StatCard(
+                          label: 'Jadwal Mengajar',
+                          value: _jadwal.length,
+                          icon: '📅',
+                          bgColor:     isDark ? const Color(0xFF2E1065) : const Color(0xFFFAF5FF),
+                          borderColor: isDark ? const Color(0xFF6B21A8) : const Color(0xFFE9D5FF),
+                          valueColor:  const Color(0xFF7C3AED),
+                          labelColor:  const Color(0xFFA855F7),
+                        ),
+                      ]),
+                      const SizedBox(height: 16),
 
-  Widget _buildCard(_PerangkatRow doc, bool isDark) {
-    final isLengkap = doc.status == 'lengkap';
-    final jColor    = _jenisColor(doc.jenisDokumen);
+                      // ── Tabel Daftar Kelas ────────────────────────────────
+                      _TableCard(
+                        title: 'Daftar Kelas',
+                        isDark: isDark,
+                        card: card,
+                        border: border,
+                        headers: const ['NO', 'NAMA KELAS', 'TINGKAT'],
+                        flexes:  const [1, 3, 2],
+                        emptyMsg: 'Belum ada data kelas',
+                        boldCol: 1,
+                        rows: List.generate(_kelas.length, (i) {
+                          final k = _kelas[i];
+                          return [
+                            '${i + 1}',
+                            k['nama_kelas'] ?? '—',
+                            'Kelas ${k['tingkat'] ?? '—'}',
+                          ];
+                        }),
+                      ),
+                      const SizedBox(height: 16),
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(
-            color: isLengkap ? const Color(0xFF16A34A) : Colors.orange,
-            width: 4,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2)),
-        ],
-      ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: badge jenis + badge status
-          Row(
-            children: [
-              _Badge(doc.jenisDokumen, jColor),
-              const Spacer(),
-              _Badge(
-                isLengkap ? '✓ Lengkap' : '⏳ Belum Lengkap',
-                isLengkap ? Colors.green : Colors.orange,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Nama dokumen
-          Text(doc.namaDokumen,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 4),
-
-          // Guru + tanggal
-          Row(
-            children: [
-              const Icon(Icons.person_outline, size: 13, color: Colors.grey),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(doc.namaGuru,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.grey),
-                    overflow: TextOverflow.ellipsis),
-              ),
-              if (doc.tanggalUpload != null) ...[
-                const Icon(Icons.calendar_today,
-                    size: 11, color: Colors.grey),
-                const SizedBox(width: 3),
-                Text(doc.tanggalUpload!,
-                    style: const TextStyle(
-                        fontSize: 10, color: Colors.grey)),
-              ],
-            ],
-          ),
-
-          // Catatan
-          if (doc.catatan != null && doc.catatan!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.black12
-                      : Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(6)),
-              child: Row(
-                children: [
-                  const Icon(Icons.notes,
-                      size: 12, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(doc.catatan!,
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.grey),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                      // ── Tabel Daftar Mata Pelajaran ───────────────────────
+                      _TableCard(
+                        title: 'Daftar Mata Pelajaran',
+                        isDark: isDark,
+                        card: card,
+                        border: border,
+                        headers: const ['NO', 'NAMA MAPEL', 'KELAS'],
+                        flexes:  const [1, 3, 2],
+                        emptyMsg: 'Belum ada data mata pelajaran',
+                        boldCol: 1,
+                        rows: List.generate(_mapel.length, (i) {
+                          final m = _mapel[i];
+                          return [
+                            '${i + 1}',
+                            m['nama_mapel'] ?? '—',
+                            _namaKelas(m['kelas_id']),
+                          ];
+                        }),
+                      ),
+                      const SizedBox(height: 24),
+                    ]),
                   ),
-                ],
-              ),
-            ),
-          ],
-
-          // Nama file
-          if (doc.namaFile != null && doc.namaFile!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(_fileIcon(doc.namaFile!),
-                    size: 13, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(doc.namaFile!,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                          fontStyle: FontStyle.italic),
-                      overflow: TextOverflow.ellipsis),
                 ),
-              ],
-            ),
-          ],
-        ],
-      ),
     );
-  }
-
-  // ── Error / empty states ──────────────────────────────────────────────────
-
-  Widget _buildError() => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-            const SizedBox(height: 8),
-            Text(_error!),
-            const SizedBox(height: 12),
-            ElevatedButton(
-                onPressed: _loadData, child: const Text('Coba Lagi')),
-          ],
-        ),
-      );
-
-  Widget _buildEmpty() => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.folder_open, size: 60, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(
-              _rows.isEmpty
-                  ? 'Belum ada data perangkat pembelajaran'
-                  : 'Tidak ada yang sesuai filter',
-              style: const TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  InputDecoration _inputDec(String label, {IconData? prefix}) =>
-      InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8)),
-        isDense: true,
-        prefixIcon: prefix != null ? Icon(prefix, size: 18) : null,
-        contentPadding: prefix != null
-            ? const EdgeInsets.symmetric(vertical: 8)
-            : const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      );
-
-  IconData _fileIcon(String name) {
-    final n = name.toLowerCase();
-    if (n.endsWith('.pdf'))  return Icons.picture_as_pdf_outlined;
-    if (n.endsWith('.docx') || n.endsWith('.doc')) {
-      return Icons.description_outlined;
-    }
-    if (n.endsWith('.xlsx') || n.endsWith('.xls')) {
-      return Icons.table_chart_outlined;
-    }
-    if (RegExp(r'\.(jpg|jpeg|png|gif|webp)$').hasMatch(n)) {
-      return Icons.image_outlined;
-    }
-    return Icons.attach_file;
   }
 }
 
-// ─── Widgets kecil ────────────────────────────────────────────────────────────
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 
-class _Stat extends StatelessWidget {
-  final String label, value;
-  final Color color;
-  const _Stat(this.label, this.value, this.color);
+class _StatCard extends StatelessWidget {
+  final String label;
+  final int    value;
+  final String icon;
+  final Color  bgColor;
+  final Color  borderColor;
+  final Color  valueColor;
+  final Color  labelColor;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.bgColor,
+    required this.borderColor,
+    required this.valueColor,
+    required this.labelColor,
+  });
 
   @override
   Widget build(BuildContext context) => Expanded(
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
+            color: bgColor,
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
-            children: [
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 9, color: color.withOpacity(0.9)),
-                  textAlign: TextAlign.center),
-            ],
-          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(icon, style: const TextStyle(fontSize: 32)),
+            const SizedBox(height: 8),
+            Text('$value',
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: valueColor)),
+            const SizedBox(height: 4),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor)),
+          ]),
         ),
       );
 }
 
-class _Badge extends StatelessWidget {
-  final String text;
-  final Color color;
-  const _Badge(this.text, this.color);
+// ─── Table Card ───────────────────────────────────────────────────────────────
+
+class _TableCard extends StatelessWidget {
+  final String         title;
+  final bool           isDark;
+  final Color          card;
+  final Color          border;
+  final List<String>   headers;
+  final List<int>      flexes;
+  final String         emptyMsg;
+  final List<List<String>> rows;
+  final int            boldCol;
+
+  const _TableCard({
+    required this.title,
+    required this.isDark,
+    required this.card,
+    required this.border,
+    required this.headers,
+    required this.flexes,
+    required this.emptyMsg,
+    required this.rows,
+    this.boldCol = -1,
+  });
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.4)),
+  Widget build(BuildContext context) {
+    final textPrimary   = isDark ? Colors.white   : const Color(0xFF1F2937);
+    final textSecondary = isDark ? Colors.white60 : const Color(0xFF6B7280);
+    final headerBg      = isDark ? const Color(0xFF252836) : const Color(0xFFF9FAFB);
+    final dividerColor  = isDark ? const Color(0xFF2D3142) : const Color(0xFFF3F4F6);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // Judul tabel
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Text(title,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary)),
         ),
-        child: Text(text,
-            style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: FontWeight.bold)),
-      );
+        Divider(height: 1, color: border),
+
+        // Header kolom
+        Container(
+          color: headerBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: List.generate(
+              headers.length,
+              (i) => Expanded(
+                flex: flexes[i],
+                child: Text(headers[i],
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: textSecondary)),
+              ),
+            ),
+          ),
+        ),
+        Divider(height: 1, color: border),
+
+        // Data rows / empty state
+        rows.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                    child: Text(emptyMsg,
+                        style: TextStyle(color: textSecondary, fontSize: 13))),
+              )
+            : ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: rows.length,
+                separatorBuilder: (_, __) =>
+                    Divider(height: 1, color: dividerColor),
+                itemBuilder: (_, i) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: List.generate(
+                      rows[i].length,
+                      (j) => Expanded(
+                        flex: flexes[j],
+                        child: Text(
+                          rows[i][j],
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: j == boldCol
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: j == 0
+                                ? textSecondary
+                                : j == boldCol
+                                    ? textPrimary
+                                    : textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+      ]),
+    );
+  }
 }
