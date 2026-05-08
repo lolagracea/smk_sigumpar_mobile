@@ -5,9 +5,10 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <application
-        android:label="smk_sigumpar"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+            android:label="smk_sigumpar"
+            android:name="${applicationName}"
+            android:icon="@mipmap/ic_launcher"
+            android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

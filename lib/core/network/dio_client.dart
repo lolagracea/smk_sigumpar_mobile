@@ -173,9 +173,9 @@ class _AuthInterceptor extends Interceptor {
         if (refreshToken != null) {
           final dio = Dio();
           final response = await dio.post(
-            'http://10.0.2.2:8080/realms/smk-sigumpar/protocol/openid-connect/token',
+            ApiEndpoints.keycloakTokenUrl,
             data: {
-              'client_id': 'smk-sigumpar',
+              'client_id': ApiEndpoints.keycloakClientId,
               'grant_type': 'refresh_token',
               'refresh_token': refreshToken,
             },
