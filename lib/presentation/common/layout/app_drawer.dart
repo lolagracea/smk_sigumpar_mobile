@@ -117,7 +117,7 @@ class AppDrawer extends StatelessWidget {
           items: [
             _MenuItemData(icon: Icons.access_time, label: 'Absensi Guru', route: RouteNames.teacherAttendance),
             _MenuItemData(icon: Icons.group, label: 'Absensi Siswa', route: RouteNames.attendanceRecap),
-            _MenuItemData(icon: Icons.description_outlined, label: 'Perangkat Ajar', route: RouteNames.learningDevice),
+            // _MenuItemData(icon: Icons.description_outlined, label: 'Perangkat Ajar', route: RouteNames.learningDevice),
             _MenuItemData(icon: Icons.bar_chart, label: 'Input & Kelola Nilai', route: RouteNames.gradesRecap),
           ],
         ),
