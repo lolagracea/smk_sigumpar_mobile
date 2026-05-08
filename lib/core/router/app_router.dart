@@ -17,7 +17,6 @@ import '../../presentation/features/academic/screens/announcement_detail_screen.
 import '../../presentation/features/academic/screens/schedules_screen.dart';
 import '../../presentation/features/academic/screens/letters_screen.dart';
 import '../../presentation/features/academic/screens/subjects_screen.dart';
-import '../../presentation/features/academic/screens/program_kerja_screen.dart';
 import '../../presentation/features/academic/screens/monitoring_jadwal_screen.dart';
 
 // ─── Student ──────────────────────────────────────────────────
@@ -36,7 +35,6 @@ import '../../presentation/features/learning/screens/teacher_evaluation_screen.d
 import '../../presentation/features/learning/screens/learning_device_screen.dart';
 import '../../presentation/features/learning/screens/principal_review_screen.dart';
 import '../../presentation/features/learning/screens/vice_principal_review_screen.dart';
-import '../../presentation/features/learning/screens/supervisi_screen.dart';
 import '../../presentation/features/learning/screens/absensi_guru_wakil_screen.dart';
 import '../../presentation/features/learning/screens/kurikulum_screen.dart';
 import '../../presentation/features/learning/screens/laporan_wakil_screen.dart';
@@ -98,7 +96,6 @@ class AppRouter {
           GoRoute(path: RouteNames.letters, builder: (_, __) => const LettersScreen()),
           GoRoute(path: RouteNames.subjects, builder: (_, __) => const SubjectsScreen()),
           // Wakil Kepsek → Academic Service
-          GoRoute(path: RouteNames.wakilProgramKerja, builder: (_, __) => const ProgramKerjaScreen()),
           GoRoute(path: RouteNames.wakilMonitoringJadwal, builder: (_, __) => const MonitoringJadwalScreen()),
 
           // ─── Student ───────────────────────────────────────
@@ -119,7 +116,6 @@ class AppRouter {
           GoRoute(path: RouteNames.principalReview, builder: (_, __) => const PrincipalReviewScreen()),
           GoRoute(path: RouteNames.vicePrincipalReview, builder: (_, __) => const VicePrincipalReviewScreen()),
           // Wakil Kepsek → Learning Service
-          GoRoute(path: RouteNames.wakilSupervisi, builder: (_, __) => const SupervisiScreen()),
           GoRoute(path: RouteNames.wakilAbsensiGuru, builder: (_, __) => const AbsensiGuruWakilScreen()),
           GoRoute(path: RouteNames.wakilKurikulum, builder: (_, __) => const KurikulumScreen()),
           GoRoute(path: RouteNames.wakilLaporan, builder: (_, __) => const LaporanWakilScreen()),

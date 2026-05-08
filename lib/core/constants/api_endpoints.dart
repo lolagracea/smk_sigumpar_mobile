@@ -83,9 +83,6 @@ class ApiEndpoints {
   static const String kepsekRekapNilaiFinal =
       '/api/academic/kepsek/rekap-nilai-final';
   // ─── WAKIL KEPSEK ENDPOINTS ──────────────────────────────
-  // Program Kerja & Supervisi → academic-service
-  static const String wakilProgramKerja = '/api/academic/wakil/program-kerja';
-  static const String wakilSupervisi = '/api/academic/wakil/supervisi';
   // Kurikulum (Perangkat Pembelajaran) → learning-service (sama dgn /api/learning/perangkat)
   static const String wakilKurikulum = '/api/learning/perangkat';
   // Monitoring Jadwal → academic-service jadwal (sama dgn /api/academic/jadwal)

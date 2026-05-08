@@ -66,8 +66,6 @@ class RouteNames {
   static const String principalResponse = '/asset/principal-response';
 
   // ─── Wakil Kepala Sekolah ───────────────────────────────
-  static const String wakilProgramKerja     = '/wakil/program-kerja';
-  static const String wakilSupervisi        = '/wakil/supervisi';
   static const String wakilMonitoringJadwal = '/wakil/monitoring-jadwal';
   static const String wakilAbsensiGuru      = '/wakil/absensi-guru';
   static const String wakilParenting        = '/wakil/parenting';
