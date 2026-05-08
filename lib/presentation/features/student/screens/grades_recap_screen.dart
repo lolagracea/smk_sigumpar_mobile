@@ -46,30 +46,38 @@ class _GradesViewState extends State<_GradesView>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildTabBar(),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: const [
-              _InputNilaiTab(),
-              _RekapNilaiTab(),
-            ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      color: isDark
+          ? Theme.of(context).scaffoldBackgroundColor
+          : const Color(0xFFF5F7FA),
+      child: Column(
+        children: [
+          _buildTabBar(isDark),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                _InputNilaiTab(),
+                _RekapNilaiTab(),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(bool isDark) {
     return Container(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       child: TabBar(
         controller: _tabController,
-        labelColor: const Color(0xFF2563EB),
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: const Color(0xFF2563EB),
+        labelColor:
+        isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+        unselectedLabelColor: isDark ? Colors.white54 : Colors.grey,
+        indicatorColor:
+        isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
         indicatorWeight: 3,
         tabs: const [
           Tab(icon: Icon(Icons.edit_note_outlined), text: 'Input Nilai'),
@@ -105,25 +113,41 @@ class _InputNilaiTab extends StatelessWidget {
 class _FilterSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<StudentProvider>();
 
     return Container(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           // Dropdown mapel & kelas
           DropdownButtonFormField<Map<String, dynamic>>(
             value: provider.selectedAssignment,
+            dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontSize: 14,
+            ),
             decoration: InputDecoration(
               labelText: 'Mapel & Kelas',
-              prefixIcon: const Icon(Icons.menu_book_outlined),
+              labelStyle: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey.shade600),
+              prefixIcon: Icon(Icons.menu_book_outlined,
+                  color: isDark ? Colors.white54 : Colors.grey),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300),
+              ),
               contentPadding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
-            hint: const Text('Pilih Mapel & Kelas'),
+            hint: Text('Pilih Mapel & Kelas',
+                style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.grey.shade600)),
             isExpanded: true,
             items: provider.assignments.map((a) {
               return DropdownMenuItem<Map<String, dynamic>>(
@@ -146,10 +170,26 @@ class _FilterSection extends StatelessWidget {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: provider.nilaiSemester,
+                  dropdownColor:
+                  isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Semester',
+                    labelStyle: TextStyle(
+                        color:
+                        isDark ? Colors.white54 : Colors.grey.shade600),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white24
+                              : Colors.grey.shade300),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 12),
                   ),
@@ -166,10 +206,26 @@ class _FilterSection extends StatelessWidget {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: provider.tahunAjar,
+                  dropdownColor:
+                  isDark ? const Color(0xFF1E293B) : Colors.white,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 14,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Tahun Ajar',
+                    labelStyle: TextStyle(
+                        color:
+                        isDark ? Colors.white54 : Colors.grey.shade600),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white24
+                              : Colors.grey.shade300),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 12),
                   ),
@@ -194,46 +250,54 @@ class _FilterSection extends StatelessWidget {
 class _BobotSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<StudentProvider>();
     final total = provider.totalBobot;
     final isValid = total == 100;
+
+    final bgColor = isValid
+        ? (isDark
+        ? Colors.amber.withOpacity(0.15)
+        : Colors.amber.shade50)
+        : (isDark ? Colors.red.withOpacity(0.15) : Colors.red.shade50);
+    final borderColor = isValid
+        ? (isDark ? Colors.amber.shade800 : Colors.amber.shade300)
+        : (isDark ? Colors.red.shade800 : Colors.red.shade300);
+    final headColor = isValid
+        ? (isDark ? Colors.amber.shade300 : Colors.amber.shade800)
+        : (isDark ? Colors.red.shade300 : Colors.red.shade700);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isValid ? Colors.amber.shade50 : Colors.red.shade50,
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isValid ? Colors.amber.shade300 : Colors.red.shade300,
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.tune_outlined,
-                  size: 16,
-                  color: isValid
-                      ? Colors.amber.shade800
-                      : Colors.red.shade700),
+              Icon(Icons.tune_outlined, size: 16, color: headColor),
               const SizedBox(width: 6),
               Text(
                 'Bobot Nilai  (Total: $total%)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isValid
-                      ? Colors.amber.shade800
-                      : Colors.red.shade700,
+                  color: headColor,
                 ),
               ),
               if (!isValid) ...[
                 const SizedBox(width: 8),
                 Text('Harus 100%',
                     style: TextStyle(
-                        fontSize: 11, color: Colors.red.shade700)),
+                        fontSize: 11,
+                        color: isDark
+                            ? Colors.red.shade300
+                            : Colors.red.shade700)),
               ],
             ],
           ),
@@ -285,12 +349,14 @@ class _BobotFieldState extends State<_BobotField> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Column(
         children: [
           Text(widget.label,
-              style:
-              const TextStyle(fontSize: 10, color: Colors.black54)),
+              style: TextStyle(
+                  fontSize: 10,
+                  color: isDark ? Colors.white70 : Colors.black54)),
           const SizedBox(height: 4),
           TextField(
             controller: _ctrl,
@@ -300,13 +366,24 @@ class _BobotFieldState extends State<_BobotField> {
               FilteringTextInputFormatter.digitsOnly,
               _MaxValueFormatter(100),
             ],
-            style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black87),
             decoration: InputDecoration(
+              filled: true,
+              fillColor: isDark ? const Color(0xFF1E293B) : Colors.white,
               suffixText: '%',
-              suffixStyle: const TextStyle(fontSize: 11),
+              suffixStyle: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white70 : Colors.black87),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(6),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300),
+              ),
               contentPadding: const EdgeInsets.symmetric(
                   horizontal: 4, vertical: 8),
               isDense: true,
@@ -328,6 +405,7 @@ class _StudentGradesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<StudentProvider>();
 
     if (provider.selectedAssignment == null) {
@@ -336,11 +414,13 @@ class _StudentGradesList extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.school_outlined,
-                size: 64, color: Colors.grey.shade300),
+                size: 64,
+                color: isDark ? Colors.white24 : Colors.grey.shade300),
             const SizedBox(height: 16),
             Text('Pilih mapel & kelas untuk mulai input nilai',
                 style: TextStyle(
-                    color: Colors.grey.shade500, fontSize: 14)),
+                    color: isDark ? Colors.white54 : Colors.grey.shade500,
+                    fontSize: 14)),
           ],
         ),
       );
@@ -356,13 +436,25 @@ class _StudentGradesList extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline,
-                color: Colors.red.shade400, size: 48),
+                color: isDark
+                    ? Colors.red.shade300
+                    : Colors.red.shade400,
+                size: 48),
             const SizedBox(height: 12),
             Text(provider.nilaiError!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red.shade600)),
+                style: TextStyle(
+                    color: isDark
+                        ? Colors.red.shade300
+                        : Colors.red.shade600)),
             const SizedBox(height: 12),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark
+                    ? const Color(0xFF3B82F6)
+                    : const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () => provider.reloadNilai(),
               child: const Text('Coba Lagi'),
             ),
@@ -377,10 +469,14 @@ class _StudentGradesList extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.people_outline,
-                size: 64, color: Colors.grey.shade300),
+                size: 64,
+                color: isDark ? Colors.white24 : Colors.grey.shade300),
             const SizedBox(height: 16),
             Text('Tidak ada siswa di kelas ini',
-                style: TextStyle(color: Colors.grey.shade500)),
+                style: TextStyle(
+                    color: isDark
+                        ? Colors.white54
+                        : Colors.grey.shade500)),
           ],
         ),
       );
@@ -392,24 +488,27 @@ class _StudentGradesList extends StatelessWidget {
         Container(
           padding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: Colors.grey.shade50,
+          color: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
           child: Row(
             children: [
-              const Icon(Icons.people_outline,
-                  size: 16, color: Colors.grey),
+              Icon(Icons.people_outline,
+                  size: 16,
+                  color: isDark ? Colors.white54 : Colors.grey),
               const SizedBox(width: 6),
               Text('${provider.nilaiStudents.length} siswa',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey,
+                      color: isDark ? Colors.white54 : Colors.grey,
                       fontWeight: FontWeight.w500)),
               const Spacer(),
               Text(
                 provider.selectedAssignment?['nama_mapel'] ?? '',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF2563EB)),
+                    color: isDark
+                        ? const Color(0xFF60A5FA)
+                        : const Color(0xFF2563EB)),
               ),
             ],
           ),
@@ -418,7 +517,9 @@ class _StudentGradesList extends StatelessWidget {
         Container(
           padding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: const Color(0xFF2563EB),
+          color: isDark
+              ? const Color(0xFF3B82F6)
+              : const Color(0xFF2563EB),
           child: Row(
             children: const [
               SizedBox(
@@ -518,21 +619,27 @@ class _StudentGradeRowState extends State<_StudentGradeRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<StudentProvider>();
     final id = widget.siswa['id'].toString();
     final akhir = provider.hitungNilaiAkhir(id);
     final isEven = widget.index % 2 == 0;
 
+    final rowColor = isDark
+        ? (isEven ? const Color(0xFF1E293B) : const Color(0xFF0F172A))
+        : (isEven ? Colors.white : Colors.grey.shade50);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: isEven ? Colors.white : Colors.grey.shade50,
+      color: rowColor,
       child: Row(
         children: [
           SizedBox(
             width: 28,
             child: Text('${widget.index + 1}',
-                style:
-                const TextStyle(fontSize: 12, color: Colors.grey)),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.white54 : Colors.grey)),
           ),
           Expanded(
             child: Column(
@@ -540,14 +647,18 @@ class _StudentGradeRowState extends State<_StudentGradeRow> {
               children: [
                 Text(
                   widget.siswa['nama_lengkap']?.toString() ?? '-',
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.black87),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (widget.siswa['nisn'] != null)
                   Text('NIS: ${widget.siswa['nisn']}',
-                      style: const TextStyle(
-                          fontSize: 10, color: Colors.grey)),
+                      style: TextStyle(
+                          fontSize: 10,
+                          color:
+                          isDark ? Colors.white54 : Colors.grey)),
               ],
             ),
           ),
@@ -564,12 +675,27 @@ class _StudentGradeRowState extends State<_StudentGradeRow> {
                     FilteringTextInputFormatter.digitsOnly,
                     _MaxValueFormatter(100),
                   ],
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF334155)
+                        : Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(4),
-                      borderSide:
-                      BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white24
+                              : Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(
+                          color: isDark
+                              ? Colors.white24
+                              : Colors.grey.shade300),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 4, vertical: 6),
@@ -594,8 +720,12 @@ class _StudentGradeRowState extends State<_StudentGradeRow> {
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: akhir >= 75
-                    ? Colors.green.shade700
-                    : Colors.red.shade600,
+                    ? (isDark
+                    ? Colors.green.shade300
+                    : Colors.green.shade700)
+                    : (isDark
+                    ? Colors.red.shade300
+                    : Colors.red.shade600),
               ),
             ),
           ),
@@ -611,35 +741,39 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<StudentProvider>();
     final canSave = provider.totalBobot == 100 && !provider.isSaving;
 
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
+            backgroundColor: isDark
+                ? const Color(0xFF3B82F6)
+                : const Color(0xFF2563EB),
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8)),
-            disabledBackgroundColor: Colors.grey.shade300,
+            disabledBackgroundColor:
+            isDark ? Colors.white12 : Colors.grey.shade300,
+            disabledForegroundColor:
+            isDark ? Colors.white38 : Colors.grey.shade600,
           ),
           onPressed: canSave
               ? () async {
-            final ok =
-            await provider.saveNilai();
+            final ok = await provider.saveNilai();
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text(ok
                   ? 'Nilai berhasil disimpan!'
                   : provider.nilaiError ??
                   'Gagal menyimpan nilai'),
-              backgroundColor:
-              ok ? Colors.green : Colors.red,
+              backgroundColor: ok ? Colors.green : Colors.red,
               behavior: SnackBarBehavior.floating,
             ));
           }
@@ -672,16 +806,18 @@ class _RekapNilaiTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final provider = context.watch<StudentProvider>();
 
     if (provider.selectedAssignment == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
             'Pilih mapel & kelas di tab Input Nilai terlebih dahulu',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.grey),
           ),
         ),
       );
@@ -692,9 +828,10 @@ class _RekapNilaiTab extends StatelessWidget {
     }
 
     if (provider.nilaiStudents.isEmpty) {
-      return const Center(
+      return Center(
           child: Text('Belum ada data nilai',
-              style: TextStyle(color: Colors.grey)));
+              style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey)));
     }
 
     final nilaiList = provider.nilaiStudents
@@ -717,30 +854,38 @@ class _RekapNilaiTab extends StatelessWidget {
                   label: 'Rata-rata',
                   value: avg.toStringAsFixed(1),
                   icon: Icons.assessment_outlined,
-                  color: Colors.blue),
+                  color: Colors.blue,
+                  isDark: isDark),
               const SizedBox(width: 12),
               _StatCard(
                   label: 'Lulus ≥75',
                   value: '$lulus/$total',
                   icon: Icons.check_circle_outline,
-                  color: Colors.green),
+                  color: Colors.green,
+                  isDark: isDark),
               const SizedBox(width: 12),
               _StatCard(
                   label: 'Tidak Lulus',
                   value: '${total - lulus}/$total',
                   icon: Icons.cancel_outlined,
-                  color: Colors.red),
+                  color: Colors.red,
+                  isDark: isDark),
             ],
           ),
           const SizedBox(height: 16),
           // Tabel rekap
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
+              border: Border.all(
+                  color:
+                  isDark ? Colors.white12 : Colors.transparent),
+              boxShadow: isDark
+                  ? null
+                  : [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2))
               ],
@@ -750,10 +895,12 @@ class _RekapNilaiTab extends StatelessWidget {
                 // Header
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF2563EB),
-                    borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF3B82F6)
+                        : const Color(0xFF2563EB),
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12)),
                   ),
                   child: Row(
                     children: const [
@@ -777,25 +924,37 @@ class _RekapNilaiTab extends StatelessWidget {
                   final akhir = provider.hitungNilaiAkhir(id);
                   final lulus = akhir >= 75;
 
+                  final rowColor = isDark
+                      ? (i % 2 == 0
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF0F172A))
+                      : (i % 2 == 0
+                      ? Colors.white
+                      : Colors.grey.shade50);
+
                   return Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 10),
-                    color:
-                    i % 2 == 0 ? Colors.white : Colors.grey.shade50,
+                    color: rowColor,
                     child: Row(
                       children: [
                         SizedBox(
                             width: 32,
                             child: Text('${i + 1}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey))),
+                                    color: isDark
+                                        ? Colors.white54
+                                        : Colors.grey))),
                         Expanded(
                             child: Text(
                                 s['nama_lengkap']?.toString() ?? '-',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w500),
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black87),
                                 overflow: TextOverflow.ellipsis)),
                         for (final k in [
                           'tugas',
@@ -807,11 +966,13 @@ class _RekapNilaiTab extends StatelessWidget {
                           SizedBox(
                               width: 40,
                               child: Text(
-                                  (g?[k] ?? 0)
-                                      .toStringAsFixed(0),
+                                  (g?[k] ?? 0).toStringAsFixed(0),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 12))),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87))),
                         SizedBox(
                           width: 52,
                           child: Container(
@@ -821,10 +982,13 @@ class _RekapNilaiTab extends StatelessWidget {
                                 horizontal: 4, vertical: 2),
                             decoration: BoxDecoration(
                               color: lulus
-                                  ? Colors.green.shade100
-                                  : Colors.red.shade100,
-                              borderRadius:
-                              BorderRadius.circular(4),
+                                  ? (isDark
+                                  ? Colors.green.withOpacity(0.25)
+                                  : Colors.green.shade100)
+                                  : (isDark
+                                  ? Colors.red.withOpacity(0.25)
+                                  : Colors.red.shade100),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               akhir.toStringAsFixed(1),
@@ -833,8 +997,12 @@ class _RekapNilaiTab extends StatelessWidget {
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: lulus
-                                    ? Colors.green.shade700
-                                    : Colors.red.shade700,
+                                    ? (isDark
+                                    ? Colors.green.shade300
+                                    : Colors.green.shade700)
+                                    : (isDark
+                                    ? Colors.red.shade300
+                                    : Colors.red.shade700),
                               ),
                             ),
                           ),
@@ -857,35 +1025,45 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final MaterialColor color;
+  final bool isDark;
 
   const _StatCard({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bgColor =
+    isDark ? color.shade900.withOpacity(0.3) : color.shade50;
+    final borderColor =
+    isDark ? color.shade700 : color.shade200;
+    final iconColor = isDark ? color.shade300 : color.shade600;
+    final valueColor = isDark ? color.shade200 : color.shade700;
+    final labelColor = isDark ? color.shade300 : color.shade600;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.shade50,
+          color: bgColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.shade200),
+          border: Border.all(color: borderColor),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color.shade600, size: 24),
+            Icon(icon, color: iconColor, size: 24),
             const SizedBox(height: 6),
             Text(value,
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: color.shade700)),
+                    color: valueColor)),
             Text(label,
-                style: TextStyle(fontSize: 11, color: color.shade600),
+                style: TextStyle(fontSize: 11, color: labelColor),
                 textAlign: TextAlign.center),
           ],
         ),

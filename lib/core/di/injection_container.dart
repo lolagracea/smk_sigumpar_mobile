@@ -17,9 +17,7 @@ import '../../data/services/asset_service.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
 import '../../presentation/features/learning/providers/learning_provider.dart';
-// Hapus double slash
 import '../../presentation/features/academic/providers/academic_provider.dart';
-
 
 final sl = GetIt.instance;
 
@@ -41,8 +39,6 @@ Future<void> init() async {
     ),
   );
 
-
-
   sl.registerLazySingleton<AcademicRepository>(
         () => AcademicService(dioClient: sl<DioClient>()),
   );
@@ -63,16 +59,9 @@ Future<void> init() async {
         () => AssetService(dioClient: sl<DioClient>()),
   );
 
-  // ─── Providers (Singleton) ─────────────────────────────
+  // ─── Providers ─────────────────────────────────────────
   sl.registerLazySingleton<ThemeProvider>(
         () => ThemeProvider(notifier: sl<ThemeNotifier>()),
-  );
-  sl.registerFactory<LearningProvider>(
-        () => LearningProvider(repository: sl<LearningRepository>()),
-  );
-
-  sl.registerFactory<AcademicProvider>(
-        () => AcademicProvider(repository: sl<AcademicRepository>()),
   );
 
   sl.registerLazySingleton<AuthProvider>(
@@ -82,9 +71,12 @@ Future<void> init() async {
     ),
   );
 
-  // ─── Providers (Factory — fresh state per screen) ──────
-  sl.registerFactory<AbsensiGuruProvider>(
-        () => AbsensiGuruProvider(repository: sl<LearningRepository>()),
+  // Factory — fresh state per screen
+  sl.registerFactory<LearningProvider>(
+        () => LearningProvider(repository: sl<LearningRepository>()),
   );
 
+  sl.registerFactory<AcademicProvider>(
+        () => AcademicProvider(repository: sl<AcademicRepository>()),
+  );
 }
