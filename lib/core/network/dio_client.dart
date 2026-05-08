@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../constants/api_endpoints.dart';
 import '../utils/secure_storage.dart';
-import '../utils/token_helper.dart';
 import 'network_exceptions.dart';
 
 class DioClient {
@@ -24,7 +25,7 @@ class DioClient {
     );
 
     _dio.interceptors.addAll([
-      _AuthInterceptor(_secureStorage),
+      _AuthInterceptor(_secureStorage, _dio),
       PrettyDioLogger(
         requestHeader: true,
         requestBody: true,
@@ -40,10 +41,10 @@ class DioClient {
 
   // ─── GET ───────────────────────────────────────────────
   Future<Response> get(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
+      String path, {
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+      }) async {
     try {
       return await _dio.get(
         path,
@@ -57,11 +58,11 @@ class DioClient {
 
   // ─── POST ──────────────────────────────────────────────
   Future<Response> post(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
+      String path, {
+        dynamic data,
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+      }) async {
     try {
       return await _dio.post(
         path,
@@ -76,11 +77,11 @@ class DioClient {
 
   // ─── PUT ───────────────────────────────────────────────
   Future<Response> put(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
+      String path, {
+        dynamic data,
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+      }) async {
     try {
       return await _dio.put(
         path,
@@ -95,11 +96,11 @@ class DioClient {
 
   // ─── DELETE ────────────────────────────────────────────
   Future<Response> delete(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
+      String path, {
+        dynamic data,
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+      }) async {
     try {
       return await _dio.delete(
         path,
@@ -114,14 +115,13 @@ class DioClient {
 
   // ─── POST MULTIPART ────────────────────────────────────
   Future<Response> postFormData(
-    String path, {
-    required FormData formData,
-  }) async {
+      String path, {
+        required FormData formData,
+      }) async {
     try {
       return await _dio.post(
         path,
         data: formData,
-        // Gunakan null agar Dio otomatis mengatur multipart/form-data + boundary
         options: Options(contentType: null),
       );
     } on DioException catch (e) {
@@ -131,11 +131,10 @@ class DioClient {
 
   // ─── PUT MULTIPART ─────────────────────────────────────
   Future<Response> putFormData(
-    String path, {
-    required FormData formData,
-  }) async {
+      String path, {
+        required FormData formData,
+      }) async {
     try {
-      // ✅ FIX: Gunakan .put (bukan .post) agar sesuai dengan rute backend
       return await _dio.put(
         path,
         data: formData,
@@ -147,52 +146,161 @@ class DioClient {
   }
 }
 
-// ─── Auth Interceptor ──────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// AUTH INTERCEPTOR
+// ─────────────────────────────────────────────────────────
 class _AuthInterceptor extends Interceptor {
   final SecureStorage _secureStorage;
+  final Dio _mainDio;
 
-  _AuthInterceptor(this._secureStorage);
+  // Lock untuk mencegah multiple refresh berbarengan
+  Future<String?>? _refreshFuture;
 
+  _AuthInterceptor(this._secureStorage, this._mainDio);
+
+  // ─── ON REQUEST ──────────────────────────────────────
   @override
   void onRequest(
       RequestOptions options,
       RequestInterceptorHandler handler,
       ) async {
+    // ✅ HANYA bypass token & logout endpoint Keycloak.
+    // Endpoint userinfo TETAP butuh Bearer token!
+    if (_isKeycloakAuthRequest(options.uri.toString())) {
+      return handler.next(options);
+    }
+
     final token = await _secureStorage.getAccessToken();
-    if (token != null) {
+
+    if (kDebugMode) {
+      debugPrint('🔑 Token saat request: '
+          '${token == null ? "NULL" : "ada (${token.substring(0, 20)}...)"}');
+      debugPrint('🔑 URL: ${options.uri}');
+    }
+
+    if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
     return handler.next(options);
   }
 
+  // ─── ON ERROR ────────────────────────────────────────
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401 || err.response?.statusCode == 403) {
-      try {
-        final refreshToken = await _secureStorage.getRefreshToken();
-        if (refreshToken != null) {
-          final dio = Dio();
-          final response = await dio.post(
-            ApiEndpoints.keycloakTokenUrl,
-            data: {
-              'client_id': ApiEndpoints.keycloakClientId,
-              'grant_type': 'refresh_token',
-              'refresh_token': refreshToken,
-            },
-            options: Options(contentType: Headers.formUrlEncodedContentType),
-          );
+    final statusCode = err.response?.statusCode;
 
-          final newToken = response.data['access_token'];
-          await _secureStorage.saveAccessToken(newToken);
-
-          err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-          final clonedRequest = await dio.fetch(err.requestOptions);
-          return handler.resolve(clonedRequest);
-        }
-      } catch (_) {
-        await _secureStorage.clearAll();
-      }
+    // ⚠️ HANYA 401 yang trigger refresh token.
+    // 403 = role tidak punya izin → refresh tidak akan menyelesaikan masalah.
+    if (statusCode != 401) {
+      return handler.next(err);
     }
-    handler.next(err);
+
+    // Jangan refresh kalau yang error adalah token/logout endpoint sendiri
+    // (mencegah infinite loop saat refresh token expired)
+    if (_isKeycloakAuthRequest(err.requestOptions.uri.toString())) {
+      return handler.next(err);
+    }
+
+    try {
+      final newToken = await _refreshAccessToken();
+
+      if (newToken == null) {
+        return handler.next(err);
+      }
+
+      err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+      final response = await _mainDio.fetch(err.requestOptions);
+      return handler.resolve(response);
+    } catch (e) {
+      return handler.next(err);
+    }
+  }
+
+  // ─── REFRESH TOKEN dengan LOCK ───────────────────────
+  Future<String?> _refreshAccessToken() {
+    if (_refreshFuture != null) {
+      return _refreshFuture!;
+    }
+
+    final completer = Completer<String?>();
+    _refreshFuture = completer.future;
+
+    _doRefresh().then((token) {
+      completer.complete(token);
+    }).catchError((e) {
+      completer.complete(null);
+    }).whenComplete(() {
+      _refreshFuture = null;
+    });
+
+    return completer.future;
+  }
+
+  Future<String?> _doRefresh() async {
+    final refreshToken = await _secureStorage.getRefreshToken();
+
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _secureStorage.clearAll();
+      return null;
+    }
+
+    try {
+      final refreshDio = Dio();
+      final response = await refreshDio.post(
+        ApiEndpoints.keycloakTokenUrl,
+        data: {
+          'client_id': ApiEndpoints.keycloakClientId,
+          'grant_type': 'refresh_token',
+          'refresh_token': refreshToken,
+        },
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+      );
+
+      final data = response.data as Map<String, dynamic>;
+      final newAccessToken = data['access_token'] as String?;
+      final newRefreshToken = data['refresh_token'] as String?;
+
+      if (newAccessToken == null || newAccessToken.isEmpty) {
+        await _secureStorage.clearAll();
+        return null;
+      }
+
+      await _secureStorage.saveAccessToken(newAccessToken);
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        await _secureStorage.saveRefreshToken(newRefreshToken);
+      }
+
+      if (kDebugMode) {
+        debugPrint('🔄 Token berhasil di-refresh');
+      }
+
+      return newAccessToken;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 400 || code == 401) {
+        await _secureStorage.clearAll();
+        if (kDebugMode) {
+          debugPrint('❌ Refresh token expired/invalid → cleared storage');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Refresh gagal (network/timeout): $code');
+        }
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Refresh gagal (unknown): $e');
+      }
+      return null;
+    }
+  }
+
+  // ─── HELPER ──────────────────────────────────────────
+  /// Endpoint Keycloak yang TIDAK butuh Bearer token.
+  /// userinfo TETAP butuh Bearer, jadi TIDAK masuk sini.
+  bool _isKeycloakAuthRequest(String url) {
+    return url.contains('/protocol/openid-connect/token') ||
+        url.contains('/protocol/openid-connect/logout');
   }
 }

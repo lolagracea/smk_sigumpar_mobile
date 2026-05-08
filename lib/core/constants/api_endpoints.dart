@@ -15,9 +15,9 @@ class ApiEndpoints {
   /// Base URL untuk Backend Microservices (via Nginx Gateway port 8001)
   // static String get baseUrl =>
   //     kIsWeb ? 'http://localhost:8001' : 'http://10.0.2.2:8001';
-  static String get baseUrl =>
-      kIsWeb ? 'http://localhost:8001' : 'http://172.27.65.176:8001';
-
+  // static String get baseUrl =>
+  //     kIsWeb ? 'http://localhost:8001' : 'http://172.27.65.176:8001';
+  static const String baseUrl = 'http://localhost:8001';
 
   // ═══════════════════════════════════════════════════════════════
   // === KEYCLOAK CONFIG ===
@@ -32,9 +32,9 @@ class ApiEndpoints {
   /// Base URL Keycloak (auto-switch web vs mobile)
   // static String get keycloakBaseUrl =>
   //     kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080';
-  static String get keycloakBaseUrl =>
-      kIsWeb ? 'http://localhost:8080' : 'http://172.27.65.176:8080';
-
+  // static String get keycloakBaseUrl =>
+  //     kIsWeb ? 'http://localhost:8080' : 'http://172.27.65.176:8080';
+  static const String keycloakBaseUrl = 'http://localhost:8080';
 
   /// Endpoint untuk login & refresh token
   static String get keycloakTokenUrl =>
