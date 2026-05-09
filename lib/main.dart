@@ -1,40 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
+import 'package:flutter/services.dart';
+import 'package:intl/date_symbol_data_local.dart'; // ← Import baru
+import 'core/di/injection_container.dart' as di;
 import 'app.dart';
-import 'data/repositories/academic_repository.dart';
-import 'data/repositories/auth_repository.dart';
-import 'data/services/academic_service.dart';
-import 'data/services/auth_service.dart';
-import 'providers/academic/arsip_surat_provider.dart';
-import 'providers/academic/kelas_provider.dart';
-import 'providers/academic/pengumuman_provider.dart';
-import 'providers/academic/siswa_provider.dart';
-import 'providers/auth_provider.dart';
-import 'providers/theme_provider.dart';
 
-void main() {
-  final authService = AuthService();
-  final academicService = AcademicService();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  final authRepository = AuthRepository(service: authService);
-  final academicRepository = AcademicRepository(service: academicService);
+  // Initialize locale Indonesia untuk DateFormat
+  // Wajib supaya format tanggal "Senin, 15 Januari 2025" bekerja
+  await initializeDateFormatting('id_ID', null);
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider(authRepository)),
-        ChangeNotifierProvider(create: (_) => KelasProvider(academicRepository)),
-        ChangeNotifierProvider(create: (_) => SiswaProvider(academicRepository)),
-        ChangeNotifierProvider(
-          create: (_) => PengumumanProvider(academicRepository),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ArsipSuratProvider(academicRepository),
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  // Set preferred orientations
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  // Setup dependency injection
+  await di.init();
+
+  runApp(const SmkSigumparApp());
 }
