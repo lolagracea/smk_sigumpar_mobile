@@ -82,9 +82,36 @@ class AppDrawer extends StatelessWidget {
   }) {
     final items = <_MenuItemData>[];
 
+    // =============================================================
+    // MENU UMUM REKAP (Paling atas - ditampilkan ke banyak role)
+    // =============================================================
+    if (RoleHelper.hasAnyRole(
+      targetRoles: [
+        AppRoles.admin,
+        AppRoles.principal,
+        AppRoles.vicePrincipal,
+        AppRoles.homeroom,
+        AppRoles.teacher,
+        AppRoles.staff,
+      ],
+      role: role,
+      roles: roles,
+    )) {
+      items.addAll(const [
+        _MenuItemData(
+          icon: Icons.event_note_outlined,
+          label: 'Rekap Absensi Siswa',
+          route: RouteNames.attendanceRecap,
+        ),
+        _MenuItemData(
+          icon: Icons.assessment_outlined,
+          label: 'Rekap Nilai Siswa',
+          route: RouteNames.gradesRecap,
+        ),
+      ]);
+    }
+
     // ─── Tata Usaha / Staff ───────────────────────────────
-    // User dengan role utama apa pun tetap mendapat menu ini
-    // selama salah satu role-nya adalah tata-usaha.
     if (RoleHelper.hasRole(
       targetRole: AppRoles.staff,
       role: role,
@@ -142,21 +169,10 @@ class AppDrawer extends StatelessWidget {
           route: RouteNames.teacherAttendance,
         ),
         _MenuItemData(
-          icon: Icons.group,
-          label: 'Absensi Siswa',
-          route: RouteNames.attendanceRecap,
-        ),
-        _MenuItemData(
           icon: Icons.description_outlined,
           label: 'Perangkat Ajar',
           route: RouteNames.learningDevice,
         ),
-        _MenuItemData(
-          icon: Icons.bar_chart,
-          label: 'Input & Kelola Nilai',
-          route: RouteNames.gradesRecap,
-        ),
-
       ]);
     }
 
@@ -167,16 +183,6 @@ class AppDrawer extends StatelessWidget {
       roles: roles,
     )) {
       items.addAll(const [
-        _MenuItemData(
-          icon: Icons.how_to_reg_outlined,
-          label: 'Rekap Absensi',
-          route: RouteNames.attendanceRecap,
-        ),
-        _MenuItemData(
-          icon: Icons.bar_chart_outlined,
-          label: 'Rekap Nilai',
-          route: RouteNames.gradesRecap,
-        ),
         _MenuItemData(
           icon: Icons.family_restroom_outlined,
           label: 'Parenting',
@@ -202,10 +208,7 @@ class AppDrawer extends StatelessWidget {
 
     // ─── Kepala Sekolah / Waka Sekolah ────────────────────
     if (RoleHelper.hasAnyRole(
-      targetRoles: const [
-        AppRoles.principal,
-        AppRoles.vicePrincipal,
-      ],
+      targetRoles: const [AppRoles.principal, AppRoles.vicePrincipal],
       role: role,
       roles: roles,
     )) {
@@ -214,11 +217,6 @@ class AppDrawer extends StatelessWidget {
           icon: Icons.fact_check_outlined,
           label: 'Rekap Absensi Guru',
           route: RouteNames.teacherAttendance,
-        ),
-        _MenuItemData(
-          icon: Icons.groups_outlined,
-          label: 'Rekap Absensi Siswa',
-          route: RouteNames.attendanceRecap,
         ),
         _MenuItemData(
           icon: Icons.folder_copy_outlined,
@@ -315,10 +313,11 @@ class AppDrawer extends StatelessWidget {
         result.add(item);
       }
     }
-
     return result;
   }
 }
+
+// ==================== WIDGET LAIN (tidak diubah) ====================
 
 class _UserHeader extends StatelessWidget {
   final String name;
@@ -400,31 +399,20 @@ class _DrawerMenuItem extends StatelessWidget {
     final isActive = currentRoute == route;
 
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 2,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: isActive ? const Color(0xFF3B82F6) : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
         dense: true,
-        leading: Icon(
-          icon,
-          color: Colors.white,
-          size: 22,
-        ),
+        leading: Icon(icon, color: Colors.white, size: 22),
         title: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-          ),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
         ),
         onTap: () {
           Navigator.of(context).pop();
-
           if (!isActive) {
             context.go(route);
           }
@@ -447,9 +435,7 @@ class _LogoutButton extends StatelessWidget {
               content: const Text('Apakah Anda yakin ingin keluar?'),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(dialogContext, false);
-                  },
+                  onPressed: () => Navigator.pop(dialogContext, false),
                   child: const Text('Batal'),
                 ),
                 ElevatedButton(
@@ -457,9 +443,7 @@ class _LogoutButton extends StatelessWidget {
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: () {
-                    Navigator.pop(dialogContext, true);
-                  },
+                  onPressed: () => Navigator.pop(dialogContext, true),
                   child: const Text('Keluar'),
                 ),
               ],
@@ -477,17 +461,10 @@ class _LogoutButton extends StatelessWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 18,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         child: Row(
           children: [
-            const Icon(
-              Icons.logout,
-              color: Colors.white,
-              size: 20,
-            ),
+            const Icon(Icons.logout, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Text(
               'KELUAR',
