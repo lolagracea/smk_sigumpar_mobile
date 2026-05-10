@@ -46,6 +46,7 @@ import '../../presentation/features/learning/screens/laporan_wakil_screen.dart';
 import '../../presentation/features/vocational/screens/scout_classes_screen.dart';
 import '../../presentation/features/vocational/screens/scout_attendance_screen.dart';
 import '../../presentation/features/vocational/screens/scout_report_screen.dart';
+import '../../presentation/features/vocational/screens/pkl_kepsek_screen.dart';
 
 // ─── Vocational / PKL ─────────────────────────────────────────
 import '../../presentation/features/vocational/screens/pkl_location_report_screen.dart';
@@ -278,6 +279,10 @@ class AppRouter {
             GoRoute(
               path: RouteNames.pklGrades,
               builder: (_, __) => const NilaiPKLScreen(),
+            ),
+            GoRoute(
+              path: RouteNames.pklKepsek,
+              builder: (_, __) => const PklKepsekScreen(),
             ),
 
             // ─── Asset ───────────────────────────────────────

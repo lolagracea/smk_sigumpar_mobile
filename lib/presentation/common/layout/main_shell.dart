@@ -76,6 +76,8 @@ class MainShell extends StatelessWidget {
         return 'Progres PKL';
       case RouteNames.submissionInfo:
         return 'Informasi Pengajuan';
+      case RouteNames.pklKepsek:
+        return 'Monitoring PKL';
       case RouteNames.itemLoan:
         return 'Peminjaman Barang';
       case RouteNames.equipmentSubmission:

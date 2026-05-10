@@ -85,6 +85,7 @@ class RouteNames {
   static const String pklLocationReport = '/vocational/pkl-location';
   static const String pklProgressReport = '/vocational/pkl-progress';
   static const String pklGrades = '/vocational/pkl-nilai';
+  static const String pklKepsek = '/vocational/pkl-kepsek';
 
   // ─── Asset ─────────────────────────────────────────────
   static const String asset = '/asset';

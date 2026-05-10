@@ -166,6 +166,11 @@ class AppDrawer extends StatelessWidget {
               route: RouteNames.kepsekFinalGradesRecap,
             ),
             _MenuItemData(icon: Icons.assessment_outlined, label: 'Evaluasi Kinerja', route: RouteNames.teacherEvaluation),
+            _MenuItemData(
+              icon: Icons.work_history_outlined,
+              label: 'Monitoring PKL',
+              route: RouteNames.pklKepsek,
+            ),
           ],
         ),
       );
