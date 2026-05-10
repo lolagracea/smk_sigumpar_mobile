@@ -46,6 +46,8 @@ class RouteNames {
   static const String homeroomReflection = '/student/homeroom-reflection';
   static const String summonsLetter = '/student/summons';
   static const String attendanceRecap = '/student/attendance';
+  static const String kepsekStudentAttendanceRecap =
+      '/student/kepsek-attendance-recap';
 
   /// Alias untuk absensi siswa.
   ///
@@ -57,6 +59,8 @@ class RouteNames {
   // ─── Learning ──────────────────────────────────────────
   static const String learning = '/learning';
   static const String teacherAttendance = '/learning/teacher-attendance';
+  static const String teacherAttendanceRecap =
+      '/learning/teacher-attendance-recap';
 
   /// Alias untuk absensi guru.
   ///

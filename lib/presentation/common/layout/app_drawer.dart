@@ -157,8 +157,8 @@ class AppDrawer extends StatelessWidget {
           title: 'Menu Kepala Sekolah',
           icon: Icons.account_balance_outlined,
           items: [
-            _MenuItemData(icon: Icons.fact_check_outlined, label: 'Rekap Absensi Guru', route: RouteNames.teacherAttendance),
-            _MenuItemData(icon: Icons.groups_outlined, label: 'Rekap Absensi Siswa', route: RouteNames.attendanceRecap),
+            _MenuItemData(icon: Icons.fact_check_outlined, label: 'Rekap Absensi Guru', route: RouteNames.teacherAttendanceRecap),
+            _MenuItemData(icon: Icons.groups_outlined, label: 'Rekap Absensi Siswa', route: RouteNames.kepsekStudentAttendanceRecap),
             _MenuItemData(icon: Icons.folder_copy_outlined, label: 'Pemeriksaan Perangkat', route: RouteNames.principalReview),
             _MenuItemData(icon: Icons.assessment_outlined, label: 'Evaluasi Kinerja', route: RouteNames.teacherEvaluation),
           ],

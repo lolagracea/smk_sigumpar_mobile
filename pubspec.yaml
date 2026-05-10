@@ -33,6 +33,8 @@ dependencies:
   # File
   file_picker: ^8.0.3
   path_provider: ^2.1.3
+  excel: ^4.0.6
+  open_filex: ^4.5.0
 
   # DI
   get_it: ^7.7.0
