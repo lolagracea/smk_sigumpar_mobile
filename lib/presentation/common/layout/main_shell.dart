@@ -46,6 +46,8 @@ class MainShell extends StatelessWidget {
         return 'Rekap Absensi Siswa';
       case RouteNames.gradesRecap:
         return 'Rekap Nilai';
+      case RouteNames.kepsekFinalGradesRecap:
+        return 'Rekap Nilai Final';
       case RouteNames.cleanlinessRecap:
         return 'Kebersihan Kelas';
       case RouteNames.parentingNotes:

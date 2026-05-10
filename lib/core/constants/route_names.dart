@@ -55,6 +55,8 @@ class RouteNames {
   static const String studentAttendance = attendanceRecap;
 
   static const String gradesRecap = '/student/grades';
+  static const String kepsekFinalGradesRecap =
+      '/student/kepsek-final-grades-recap';
 
   // ─── Learning ──────────────────────────────────────────
   static const String learning = '/learning';

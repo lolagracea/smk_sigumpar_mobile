@@ -160,6 +160,11 @@ class AppDrawer extends StatelessWidget {
             _MenuItemData(icon: Icons.fact_check_outlined, label: 'Rekap Absensi Guru', route: RouteNames.teacherAttendanceRecap),
             _MenuItemData(icon: Icons.groups_outlined, label: 'Rekap Absensi Siswa', route: RouteNames.kepsekStudentAttendanceRecap),
             _MenuItemData(icon: Icons.folder_copy_outlined, label: 'Pemeriksaan Perangkat', route: RouteNames.principalReview),
+            _MenuItemData(
+              icon: Icons.grade_outlined,
+              label: 'Rekap Nilai Final',
+              route: RouteNames.kepsekFinalGradesRecap,
+            ),
             _MenuItemData(icon: Icons.assessment_outlined, label: 'Evaluasi Kinerja', route: RouteNames.teacherEvaluation),
           ],
         ),

@@ -28,6 +28,7 @@ import '../../presentation/features/student/screens/homeroom_reflection_screen.d
 import '../../presentation/features/student/screens/summons_letter_screen.dart';
 import '../../presentation/features/student/screens/parenting_wakil_screen.dart';
 import '../../presentation/features/student/screens/rekap_absensi_siswa_kepsek_screen.dart';
+import '../../presentation/features/student/screens/rekap_nilai_final_kepsek_screen.dart';
 
 // ─── Learning ─────────────────────────────────────────────────
 import '../../presentation/features/learning/screens/Teacher_Attendance_Screen.dart';
@@ -192,6 +193,10 @@ class AppRouter {
             GoRoute(
               path: RouteNames.gradesRecap,
               builder: (_, __) => const GradesRecapScreen(),
+            ),
+            GoRoute(
+              path: RouteNames.kepsekFinalGradesRecap,
+              builder: (_, __) => const RekapNilaiFinalKepsekScreen(),
             ),
             GoRoute(
               path: RouteNames.wakilParenting,
