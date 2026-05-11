@@ -38,10 +38,16 @@ class MainShell extends StatelessWidget {
         return 'Arsip Surat';
       case RouteNames.teacherAttendance:
         return 'Absensi Guru';
+      case RouteNames.teacherAttendanceRecap:
+        return 'Rekap Absensi Guru';
       case RouteNames.attendanceRecap:
         return 'Rekap Kehadiran';
+      case RouteNames.kepsekStudentAttendanceRecap:
+        return 'Rekap Absensi Siswa';
       case RouteNames.gradesRecap:
         return 'Rekap Nilai';
+      case RouteNames.kepsekFinalGradesRecap:
+        return 'Rekap Nilai Final';
       case RouteNames.cleanlinessRecap:
         return 'Kebersihan Kelas';
       case RouteNames.parentingNotes:
@@ -70,6 +76,8 @@ class MainShell extends StatelessWidget {
         return 'Progres PKL';
       case RouteNames.submissionInfo:
         return 'Informasi Pengajuan';
+      case RouteNames.pklKepsek:
+        return 'Monitoring PKL';
       case RouteNames.itemLoan:
         return 'Peminjaman Barang';
       case RouteNames.equipmentSubmission:

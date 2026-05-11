@@ -130,6 +130,12 @@ class ApiEndpoints {
       '$learningDevices/$id/review-kepsek';
   static String learningDeviceReviewWakasek(int id) =>
       '$learningDevices/$id/review-wakasek';
+  static const String teacherEvaluationGuruMapel =
+      '/api/learning/evaluasi-guru/guru-mapel';
+  static String learningDeviceReviewHistory(int id) =>
+      '$learningDevices/$id/riwayat-review';
+  static String learningDeviceVersions(int id) =>
+      '$learningDevices/$id/versi';
 
   // ═══════════════════════════════════════════════════════════════
   // === VOCATIONAL SERVICE ===

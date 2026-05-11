@@ -46,6 +46,8 @@ class RouteNames {
   static const String homeroomReflection = '/student/homeroom-reflection';
   static const String summonsLetter = '/student/summons';
   static const String attendanceRecap = '/student/attendance';
+  static const String kepsekStudentAttendanceRecap =
+      '/student/kepsek-attendance-recap';
 
   /// Alias untuk absensi siswa.
   ///
@@ -53,10 +55,14 @@ class RouteNames {
   static const String studentAttendance = attendanceRecap;
 
   static const String gradesRecap = '/student/grades';
+  static const String kepsekFinalGradesRecap =
+      '/student/kepsek-final-grades-recap';
 
   // ─── Learning ──────────────────────────────────────────
   static const String learning = '/learning';
   static const String teacherAttendance = '/learning/teacher-attendance';
+  static const String teacherAttendanceRecap =
+      '/learning/teacher-attendance-recap';
 
   /// Alias untuk absensi guru.
   ///
@@ -79,6 +85,7 @@ class RouteNames {
   static const String pklLocationReport = '/vocational/pkl-location';
   static const String pklProgressReport = '/vocational/pkl-progress';
   static const String pklGrades = '/vocational/pkl-nilai';
+  static const String pklKepsek = '/vocational/pkl-kepsek';
 
   // ─── Asset ─────────────────────────────────────────────
   static const String asset = '/asset';

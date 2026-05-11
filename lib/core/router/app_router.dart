@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../constants/route_names.dart';
 import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/features/auth/login_screen.dart';
@@ -26,11 +27,12 @@ import '../../presentation/features/student/screens/parenting_notes_screen.dart'
 import '../../presentation/features/student/screens/homeroom_reflection_screen.dart';
 import '../../presentation/features/student/screens/summons_letter_screen.dart';
 import '../../presentation/features/student/screens/parenting_wakil_screen.dart';
+import '../../presentation/features/student/screens/rekap_absensi_siswa_kepsek_screen.dart';
+import '../../presentation/features/student/screens/rekap_nilai_final_kepsek_screen.dart';
 
 // ─── Learning ─────────────────────────────────────────────────
-// PENTING: pakai TeacherAttendanceScreen (versi HEAD/punya saya),
-// BUKAN AbsensiGuruScreen dari branch teman.
 import '../../presentation/features/learning/screens/Teacher_Attendance_Screen.dart';
+import '../../presentation/features/learning/screens/rekap_absensi_guru_screen.dart';
 import '../../presentation/features/learning/screens/teaching_notes_screen.dart';
 import '../../presentation/features/learning/screens/teacher_evaluation_screen.dart';
 import '../../presentation/features/learning/screens/learning_device_screen.dart';
@@ -44,6 +46,7 @@ import '../../presentation/features/learning/screens/laporan_wakil_screen.dart';
 import '../../presentation/features/vocational/screens/scout_classes_screen.dart';
 import '../../presentation/features/vocational/screens/scout_attendance_screen.dart';
 import '../../presentation/features/vocational/screens/scout_report_screen.dart';
+import '../../presentation/features/vocational/screens/pkl_kepsek_screen.dart';
 
 // ─── Vocational / PKL ─────────────────────────────────────────
 import '../../presentation/features/vocational/screens/pkl_location_report_screen.dart';
@@ -59,23 +62,23 @@ import '../../presentation/features/asset/screens/treasurer_response_screen.dart
 import '../../presentation/features/asset/screens/principal_response_screen.dart';
 
 class AppRouter {
-  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _rootNavigatorKey =
+  GlobalKey<NavigatorState>();
 
   static GoRouter createRouter(AuthProvider authProvider) {
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
       initialLocation: RouteNames.home,
-      refreshListenable: authProvider, // Router mendengarkan AuthProvider
+      refreshListenable: authProvider,
       redirect: (context, state) {
         final status = authProvider.status;
         final isLoggingIn = state.matchedLocation == RouteNames.login;
 
-        // Jika masih loading baca token, jangan pindah halaman dulu
         if (status == AuthStatus.initial || status == AuthStatus.loading) {
           return null;
         }
 
-        final bool authenticated = status == AuthStatus.authenticated;
+        final authenticated = status == AuthStatus.authenticated;
 
         if (!authenticated) {
           return isLoggingIn ? null : RouteNames.login;
@@ -151,7 +154,6 @@ class AppRouter {
               path: RouteNames.subjects,
               builder: (_, __) => const SubjectsScreen(),
             ),
-            // Wakil Kepsek → Academic Service
             GoRoute(
               path: RouteNames.wakilMonitoringJadwal,
               builder: (_, __) => const MonitoringJadwalScreen(),
@@ -174,26 +176,50 @@ class AppRouter {
               path: RouteNames.summonsLetter,
               builder: (_, __) => const SummonsLetterScreen(),
             ),
+
+            // Route lama absensi siswa.
+            // Jangan diganti karena masih dipakai flow lama.
             GoRoute(
               path: RouteNames.attendanceRecap,
               builder: (_, __) => const AttendanceRecapScreen(),
             ),
+
+            // Route baru khusus Kepala Sekolah:
+            // Rekap Absensi Siswa.
+            GoRoute(
+              path: RouteNames.kepsekStudentAttendanceRecap,
+              builder: (_, __) => const RekapAbsensiSiswaKepsekScreen(),
+            ),
+
             GoRoute(
               path: RouteNames.gradesRecap,
               builder: (_, __) => const GradesRecapScreen(),
             ),
-            // Wakil Kepsek → Student Service
+            GoRoute(
+              path: RouteNames.kepsekFinalGradesRecap,
+              builder: (_, __) => const RekapNilaiFinalKepsekScreen(),
+            ),
             GoRoute(
               path: RouteNames.wakilParenting,
               builder: (_, __) => const ParentingWakilScreen(),
             ),
 
             // ─── Learning ────────────────────────────────────
-            // Pakai TeacherAttendanceScreen (versi HEAD)
+
+            // Route lama absensi guru pribadi.
+            // Jangan diganti karena dipakai guru-mapel untuk absen.
             GoRoute(
               path: RouteNames.teacherAttendance,
               builder: (_, __) => const TeacherAttendanceScreen(),
             ),
+
+            // Route baru khusus Kepala Sekolah:
+            // Rekap Absensi Guru.
+            GoRoute(
+              path: RouteNames.teacherAttendanceRecap,
+              builder: (_, __) => const RekapAbsensiGuruScreen(),
+            ),
+
             GoRoute(
               path: RouteNames.teachingNotes,
               builder: (_, __) => const TeachingNotesScreen(),
@@ -214,7 +240,6 @@ class AppRouter {
               path: RouteNames.vicePrincipalReview,
               builder: (_, __) => const VicePrincipalReviewScreen(),
             ),
-            // Wakil Kepsek → Learning Service
             GoRoute(
               path: RouteNames.wakilAbsensiGuru,
               builder: (_, __) => const AbsensiGuruWakilScreen(),
@@ -255,6 +280,10 @@ class AppRouter {
               path: RouteNames.pklGrades,
               builder: (_, __) => const NilaiPKLScreen(),
             ),
+            GoRoute(
+              path: RouteNames.pklKepsek,
+              builder: (_, __) => const PklKepsekScreen(),
+            ),
 
             // ─── Asset ───────────────────────────────────────
             GoRoute(
@@ -284,9 +313,13 @@ class AppRouter {
           ],
         ),
       ],
-      errorBuilder: (_, state) => Scaffold(
-        body: Center(child: Text('Halaman tidak ditemukan: ${state.error}')),
-      ),
+      errorBuilder: (_, state) {
+        return Scaffold(
+          body: Center(
+            child: Text('Halaman tidak ditemukan: ${state.error}'),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,8 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Status kehadiran guru
-/// Sesuai dengan validasi backend (learning-service/AbsensiGuru.js):
-/// status: ['hadir', 'terlambat', 'izin', 'sakit', 'alpa']
 enum StatusKehadiran {
   hadir('hadir', 'Hadir'),
   terlambat('terlambat', 'Terlambat'),
@@ -12,17 +9,18 @@ enum StatusKehadiran {
 
   final String value;
   final String label;
+
   const StatusKehadiran(this.value, this.label);
 
-  /// Convert string dari backend ke enum
-  static StatusKehadiran fromString(String value) {
+  static StatusKehadiran fromString(String? value) {
+    final normalized = (value ?? 'hadir').toLowerCase();
+
     return StatusKehadiran.values.firstWhere(
-          (e) => e.value == value.toLowerCase(),
+          (e) => e.value == normalized,
       orElse: () => StatusKehadiran.hadir,
     );
   }
 
-  /// Status yang bisa dipilih user di dropdown
   static List<StatusKehadiran> get selectableStatuses => [
     StatusKehadiran.hadir,
     StatusKehadiran.izin,
@@ -61,21 +59,35 @@ class AbsensiGuruModel extends Equatable {
   });
 
   factory AbsensiGuruModel.fromJson(Map<String, dynamic> json) {
+    final rawId = json['id'];
+    final rawTanggal = json['tanggal'];
+
     return AbsensiGuruModel(
-      id: json['id'] is int
-          ? json['id']
-          : int.tryParse(json['id']?.toString() ?? ''),
-      idAbsensiGuru: json['id_absensiguru']?.toString(),
+      id: rawId is int ? rawId : int.tryParse(rawId?.toString() ?? ''),
+      idAbsensiGuru: json['id_absensiGuru']?.toString() ??
+          json['id_absensiguru']?.toString() ??
+          json['id_absensi_guru']?.toString(),
       userId: json['user_id']?.toString() ?? '',
-      namaGuru: json['nama_guru']?.toString() ?? 'Unknown',
-      mataPelajaran: json['mata_pelajaran']?.toString() ?? '-',
-      jamMasuk: json['jam_masuk']?.toString(),
-      tanggal: DateTime.tryParse(json['tanggal']?.toString() ?? '')
-          ?? DateTime.now(),
-      foto: json['foto']?.toString(),
-      status: StatusKehadiran.fromString(
-        json['status']?.toString() ?? 'hadir',
-      ),
+      namaGuru: json['namaGuru']?.toString() ??
+          json['nama_guru']?.toString() ??
+          json['nama']?.toString() ??
+          json['nama_lengkap']?.toString() ??
+          'Unknown',
+      mataPelajaran: json['mataPelajaran']?.toString() ??
+          json['mata_pelajaran']?.toString() ??
+          json['mapel']?.toString() ??
+          json['nama_mapel']?.toString() ??
+          '-',
+      jamMasuk: json['jamMasuk']?.toString() ??
+          json['jam_masuk']?.toString() ??
+          json['jam_masuk_guru']?.toString(),
+      tanggal: DateTime.tryParse(rawTanggal?.toString() ?? '') ??
+          DateTime.now(),
+      foto: json['foto']?.toString() ??
+          json['foto_url']?.toString() ??
+          json['fotoAbsensi']?.toString() ??
+          json['foto_absensi']?.toString(),
+      status: StatusKehadiran.fromString(json['status']?.toString()),
       keterangan: json['keterangan']?.toString(),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
@@ -98,36 +110,6 @@ class AbsensiGuruModel extends Equatable {
     'status': status.value,
     if (keterangan != null) 'keterangan': keterangan,
   };
-
-  AbsensiGuruModel copyWith({
-    int? id,
-    String? idAbsensiGuru,
-    String? userId,
-    String? namaGuru,
-    String? mataPelajaran,
-    String? jamMasuk,
-    DateTime? tanggal,
-    String? foto,
-    StatusKehadiran? status,
-    String? keterangan,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return AbsensiGuruModel(
-      id: id ?? this.id,
-      idAbsensiGuru: idAbsensiGuru ?? this.idAbsensiGuru,
-      userId: userId ?? this.userId,
-      namaGuru: namaGuru ?? this.namaGuru,
-      mataPelajaran: mataPelajaran ?? this.mataPelajaran,
-      jamMasuk: jamMasuk ?? this.jamMasuk,
-      tanggal: tanggal ?? this.tanggal,
-      foto: foto ?? this.foto,
-      status: status ?? this.status,
-      keterangan: keterangan ?? this.keterangan,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
 
   @override
   List<Object?> get props => [
