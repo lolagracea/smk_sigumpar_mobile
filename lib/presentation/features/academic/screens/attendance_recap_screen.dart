@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import '../../academic/providers/academic_provider.dart';
+import '../../student/providers/student_provider.dart';
+import '../../../common/widgets/loading_widget.dart';
 
-// ============================================================
-// MODEL
-// ============================================================
 class KehadiranData {
   final String label;
   final int jumlah;
@@ -16,12 +18,6 @@ class KehadiranData {
   });
 }
 
-// ============================================================
-// SCREEN
-// ============================================================
-
-// Nama class DIPERBAIKI: RekapKehadiranScreen → AttendanceRecapScreen
-// agar sesuai dengan import di app_router.dart
 class AttendanceRecapScreen extends StatefulWidget {
   const AttendanceRecapScreen({super.key});
 
@@ -31,19 +27,12 @@ class AttendanceRecapScreen extends StatefulWidget {
 
 class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
     with SingleTickerProviderStateMixin {
-  // --------------- state ---------------
-  String? _selectedKelas;
+  String? _selectedKelasId;
   DateTime _selectedMonth = DateTime.now();
   bool _isLoading = false;
   bool _hasData = false;
   late AnimationController _animController;
   late Animation<double> _animProgress;
-
-  final List<String> _kelasList = [
-    'X TKJ 1', 'X TKJ 2', 'X RPL 1', 'X RPL 2',
-    'XI TKJ 1', 'XI TKJ 2', 'XI RPL 1', 'XI RPL 2',
-    'XII TKJ 1', 'XII TKJ 2', 'XII RPL 1', 'XII RPL 2',
-  ];
 
   List<KehadiranData> _kehadiranData = [];
 
@@ -58,6 +47,10 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
       parent: _animController,
       curve: Curves.easeOutCubic,
     );
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AcademicProvider>().fetchClasses(refresh: true);
+    });
   }
 
   @override
@@ -66,8 +59,8 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
     super.dispose();
   }
 
-  void _tampilkanGrafik() {
-    if (_selectedKelas == null) {
+  Future<void> _tampilkanGrafik() async {
+    if (_selectedKelasId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Silakan pilih kelas terlebih dahulu'),
@@ -80,19 +73,53 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
     setState(() => _isLoading = true);
     _animController.reset();
 
-    Future.delayed(const Duration(milliseconds: 600), () {
+    try {
+      final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+      final lastDay = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+      
+      final provider = context.read<StudentProvider>();
+      await provider.fetchAttendanceSummary(
+        classId: _selectedKelasId!,
+        tanggalMulai: DateFormat('yyyy-MM-dd').format(firstDay),
+        tanggalAkhir: DateFormat('yyyy-MM-dd').format(lastDay),
+      );
+
+      final summaries = provider.summaries;
+      
+      int totalHadir = 0;
+      int totalSakit = 0;
+      int totalIzin = 0;
+      int totalAlpa = 0;
+      int totalTerlambat = 0; // Tambahkan variabel terlambat
+
+      for (var s in summaries) {
+        totalHadir += s.present;
+        totalSakit += s.sick;
+        totalIzin += s.permission;
+        totalAlpa += s.absent;
+        totalTerlambat += s.late; // Akumulasi data terlambat
+      }
+
       setState(() {
         _isLoading = false;
         _hasData = true;
         _kehadiranData = [
-          KehadiranData(label: 'Hadir', jumlah: 18, color: const Color(0xFF3182CE)),
-          KehadiranData(label: 'Sakit', jumlah: 4,  color: const Color(0xFF38A169)),
-          KehadiranData(label: 'Izin',  jumlah: 3,  color: const Color(0xFFD69E2E)),
-          KehadiranData(label: 'Alpha', jumlah: 5,  color: const Color(0xFFE53E3E)),
+          KehadiranData(label: 'Hadir', jumlah: totalHadir, color: const Color(0xFF3182CE)),
+          KehadiranData(label: 'Sakit', jumlah: totalSakit,  color: const Color(0xFF38A169)),
+          KehadiranData(label: 'Izin',  jumlah: totalIzin,  color: const Color(0xFFD69E2E)),
+          KehadiranData(label: 'Alpha', jumlah: totalAlpa,  color: const Color(0xFFE53E3E)),
+          KehadiranData(label: 'Terlambat', jumlah: totalTerlambat, color: Colors.purple), // Tambahkan ke data grafik
         ];
       });
       _animController.forward();
-    });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data: $e')),
+        );
+      }
+    }
   }
 
   String _bulanLabel(DateTime dt) {
@@ -104,18 +131,19 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
   }
 
   Future<void> _pickMonth() async {
-    await showDialog(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      builder: (ctx) => _MonthPickerDialog(
-        initial: _selectedMonth,
-        onSelected: (dt) {
-          setState(() {
-            _selectedMonth = dt;
-            _hasData = false;
-          });
-        },
-      ),
+      initialDate: _selectedMonth,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDatePickerMode: DatePickerMode.year,
     );
+    if (picked != null) {
+      setState(() {
+        _selectedMonth = DateTime(picked.year, picked.month);
+        _hasData = false;
+      });
+    }
   }
 
   @override
@@ -140,7 +168,6 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---- Header card ----
             _HeaderCard(
               title: 'ANALITIK KEHADIRAN SISWA',
               subtitle: 'Monitoring visual diagram lingkaran kehadiran kelas.',
@@ -149,7 +176,6 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
             ),
             const SizedBox(height: 16),
 
-            // ---- Filter card ----
             Card(
               elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -159,16 +185,7 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Pilih Kelas
-                    const Text(
-                      'PILIH KELAS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF718096),
-                        letterSpacing: 0.8,
-                      ),
-                    ),
+                    const Text('PILIH KELAS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF718096), letterSpacing: 0.8)),
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -178,47 +195,34 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
                         color: const Color(0xFFF7FAFC),
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedKelas,
-                          hint: const Text(
-                            '-- Pilih Kelas --',
-                            style: TextStyle(color: Color(0xFFA0AEC0), fontSize: 14),
-                          ),
-                          isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down,
-                              color: Color(0xFF718096)),
-                          items: _kelasList
-                              .map((k) => DropdownMenuItem(
-                            value: k,
-                            child: Text(k,
-                                style: const TextStyle(fontSize: 14)),
-                          ))
-                              .toList(),
-                          onChanged: (val) => setState(() {
-                            _selectedKelas = val;
-                            _hasData = false;
-                          }),
+                        child: Consumer<AcademicProvider>(
+                          builder: (context, academic, child) {
+                            return DropdownButton<String>(
+                              value: _selectedKelasId,
+                              hint: const Text('-- Pilih Kelas --', style: TextStyle(color: Color(0xFFA0AEC0), fontSize: 14)),
+                              isExpanded: true,
+                              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF718096)),
+                              items: academic.classes.map((k) => DropdownMenuItem(
+                                value: k.id,
+                                child: Text(k.namaKelas, style: const TextStyle(fontSize: 14)),
+                              )).toList(),
+                              onChanged: (val) => setState(() {
+                                _selectedKelasId = val;
+                                _hasData = false;
+                              }),
+                            );
+                          },
                         ),
                       ),
                     ),
                     const SizedBox(height: 14),
 
-                    // Pilih Bulan
-                    const Text(
-                      'PILIH BULAN',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF718096),
-                        letterSpacing: 0.8,
-                      ),
-                    ),
+                    const Text('PILIH BULAN', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF718096), letterSpacing: 0.8)),
                     const SizedBox(height: 6),
                     GestureDetector(
                       onTap: _pickMonth,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                         decoration: BoxDecoration(
                           border: Border.all(color: const Color(0xFFCBD5E0)),
                           borderRadius: BorderRadius.circular(8),
@@ -226,45 +230,28 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today_outlined,
-                                size: 16, color: Color(0xFF718096)),
+                            const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF718096)),
                             const SizedBox(width: 8),
-                            Text(
-                              _bulanLabel(_selectedMonth),
-                              style: const TextStyle(
-                                  fontSize: 14, color: Color(0xFF2D3748)),
-                            ),
+                            Text(_bulanLabel(_selectedMonth), style: const TextStyle(fontSize: 14, color: Color(0xFF2D3748))),
                             const Spacer(),
-                            const Icon(Icons.keyboard_arrow_down,
-                                color: Color(0xFF718096)),
+                            const Icon(Icons.keyboard_arrow_down, color: Color(0xFF718096)),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Button
                     ElevatedButton.icon(
                       onPressed: _isLoading ? null : _tampilkanGrafik,
                       icon: _isLoading
-                          ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.bar_chart, size: 18),
                       label: Text(_isLoading ? 'Memuat...' : 'TAMPILKAN GRAFIK'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF3182CE),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        textStyle: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            letterSpacing: 0.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         elevation: 0,
                       ),
                     ),
@@ -274,11 +261,9 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
             ),
             const SizedBox(height: 16),
 
-            // ---- Chart area ----
             Card(
               elevation: 1,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               color: Colors.white,
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -288,7 +273,6 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
                   builder: (_, __) => _ChartContent(
                     data: _kehadiranData,
                     progress: _animProgress.value,
-                    kelas: _selectedKelas!,
                     bulan: _bulanLabel(_selectedMonth),
                   ),
                 )
@@ -302,21 +286,12 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen>
   }
 }
 
-// ============================================================
-// CHART CONTENT WIDGET
-// ============================================================
 class _ChartContent extends StatelessWidget {
   final List<KehadiranData> data;
   final double progress;
-  final String kelas;
   final String bulan;
 
-  const _ChartContent({
-    required this.data,
-    required this.progress,
-    required this.kelas,
-    required this.bulan,
-  });
+  const _ChartContent({required this.data, required this.progress, required this.bulan});
 
   @override
   Widget build(BuildContext context) {
@@ -325,48 +300,20 @@ class _ChartContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.pie_chart, color: Color(0xFF3182CE), size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Kehadiran $kelas — $bulan',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2D3748),
-                ),
-              ),
-            ),
-          ],
-        ),
+        Text('Analitik Kehadiran — $bulan', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF2D3748))),
         const SizedBox(height: 20),
-
-        // Pie chart
         Center(
           child: SizedBox(
             width: 200,
             height: 200,
             child: CustomPaint(
-              painter: _PieChartPainter(
-                  data: data, progress: progress, total: total),
+              painter: _PieChartPainter(data: data, progress: progress, total: total),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '$total',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    const Text(
-                      'Total Hari',
-                      style: TextStyle(fontSize: 11, color: Color(0xFF718096)),
-                    ),
+                    Text('$total', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Color(0xFF2D3748))),
+                    const Text('Total Presensi', style: TextStyle(fontSize: 11, color: Color(0xFF718096))),
                   ],
                 ),
               ),
@@ -374,55 +321,16 @@ class _ChartContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-
-        // Legend + stats
         ...data.map((d) {
-          final pct =
-          total > 0 ? (d.jumlah / total * 100).toStringAsFixed(1) : '0.0';
+          final pct = total > 0 ? (d.jumlah / total * 100).toStringAsFixed(1) : '0.0';
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                      color: d.color,
-                      borderRadius: BorderRadius.circular(3)),
-                ),
+                Container(width: 14, height: 14, decoration: BoxDecoration(color: d.color, borderRadius: BorderRadius.circular(3))),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(d.label,
-                      style: const TextStyle(
-                          fontSize: 14, color: Color(0xFF4A5568))),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: d.color.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${d.jumlah} hari',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: d.color,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 44,
-                  child: Text(
-                    '$pct%',
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
+                Expanded(child: Text(d.label, style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568)))),
+                Text('${d.jumlah} ($pct%)', style: const TextStyle(fontSize: 12, color: Color(0xFF718096), fontWeight: FontWeight.w600)),
               ],
             ),
           );
@@ -437,243 +345,48 @@ class _PieChartPainter extends CustomPainter {
   final double progress;
   final int total;
 
-  _PieChartPainter(
-      {required this.data, required this.progress, required this.total});
+  _PieChartPainter({required this.data, required this.progress, required this.total});
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (total == 0) return;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
-    final innerRadius = radius * 0.55;
-
     var startAngle = -math.pi / 2;
 
     for (final d in data) {
       final sweepAngle = (d.jumlah / total) * 2 * math.pi * progress;
-      final paint = Paint()
-        ..color = d.color
-        ..style = PaintingStyle.fill;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        paint,
-      );
+      final paint = Paint()..color = d.color..style = PaintingStyle.fill;
+      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, true, paint);
       startAngle += sweepAngle;
     }
-
-    // Donut hole
-    canvas.drawCircle(
-      center,
-      innerRadius,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.fill,
-    );
+    canvas.drawCircle(center, radius * 0.55, Paint()..color = Colors.white..style = PaintingStyle.fill);
   }
 
   @override
   bool shouldRepaint(_PieChartPainter old) => old.progress != progress;
 }
 
-// ============================================================
-// EMPTY STATE
-// ============================================================
 class _EmptyChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 180,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.bar_chart_rounded,
-                size: 48, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            const Text(
-              'SILAKAN PILIH FILTER\nUNTUK MELIHAT DIAGRAM LINGKARAN.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFFA0AEC0),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox(height: 180, child: Center(child: Text('SILAKAN PILIH FILTER\nUNTUK MELIHAT DIAGRAM LINGKARAN.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Color(0xFFA0AEC0), fontWeight: FontWeight.w600))));
   }
 }
 
-// ============================================================
-// HEADER CARD
-// ============================================================
 class _HeaderCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final Color iconColor;
-
-  const _HeaderCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-  });
+  const _HeaderCard({required this.title, required this.subtitle, required this.icon, required this.iconColor});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: iconColor, width: 4)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: iconColor, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF2D3748),
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF718096)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// MONTH PICKER DIALOG
-// ============================================================
-class _MonthPickerDialog extends StatefulWidget {
-  final DateTime initial;
-  final ValueChanged<DateTime> onSelected;
-
-  const _MonthPickerDialog(
-      {required this.initial, required this.onSelected});
-
-  @override
-  State<_MonthPickerDialog> createState() => _MonthPickerDialogState();
-}
-
-class _MonthPickerDialogState extends State<_MonthPickerDialog> {
-  late int _year;
-  late int _month;
-
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _year = widget.initial.year;
-    _month = widget.initial.month;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape:
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () => setState(() => _year--),
-            padding: EdgeInsets.zero,
-          ),
-          Expanded(
-            child: Text(
-              '$_year',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () => setState(() => _year++),
-            padding: EdgeInsets.zero,
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: 240,
-        child: GridView.builder(
-          shrinkWrap: true,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-          ),
-          itemCount: 12,
-          itemBuilder: (_, i) {
-            final selected = (i + 1) == _month;
-            return GestureDetector(
-              onTap: () {
-                setState(() => _month = i + 1);
-                widget.onSelected(DateTime(_year, i + 1));
-                Navigator.pop(context);
-              },
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFF3182CE)
-                      : const Color(0xFFF7FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: selected
-                        ? const Color(0xFF3182CE)
-                        : const Color(0xFFCBD5E0),
-                  ),
-                ),
-                child: Text(
-                  _months[i],
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: selected ? Colors.white : const Color(0xFF4A5568),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border(left: BorderSide(color: iconColor, width: 4))),
+      child: Row(children: [Icon(icon, color: iconColor, size: 28), const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF2D3748))), Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF718096)))]))]),
     );
   }
 }

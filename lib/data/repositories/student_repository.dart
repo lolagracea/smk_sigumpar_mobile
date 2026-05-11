@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import '../models/attendance_model.dart';
 import '../models/attendance_summary_model.dart';
 import '../models/grade_model.dart';
@@ -18,7 +19,10 @@ abstract class StudentRepository {
 
   // ─── Cleanliness (CRUD) ───────────────────────────────────
   Future<List<CleanlinessModel>> getCleanliness({String? classId});
-  Future<CleanlinessModel> createCleanliness(Map<String, dynamic> data);
+  Future<CleanlinessModel> createCleanliness({
+    required Map<String, dynamic> data,
+    PlatformFile? file,
+  });
   Future<CleanlinessModel> updateCleanliness(String id, Map<String, dynamic> data);
   Future<void> deleteCleanliness(String id);
 
@@ -41,6 +45,11 @@ abstract class StudentRepository {
   Future<void> deleteSummonsLetter(String id);
 
   // ─── Grades ──────────────────────────────────────────────
-  Future<List<GradeModel>> getGradesRecap({required String classId, String? semester, String? academicYear});
+  Future<List<GradeModel>> getGradesRecap({
+    required String classId, 
+    String? semester, 
+    String? academicYear,
+    String? mapelId,
+  });
   Future<List<GradeModel>> getStudentGrades({required String studentId, String? semester, String? academicYear});
 }

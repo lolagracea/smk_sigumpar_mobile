@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/network/api_response.dart';
 import '../../core/constants/api_endpoints.dart';
@@ -87,9 +89,49 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<CleanlinessModel> createCleanliness(Map<String, dynamic> data) async {
-    final response = await _dioClient.post(ApiEndpoints.cleanliness, data: data);
-    return CleanlinessModel.fromJson(response.data['data']);
+  Future<CleanlinessModel> createCleanliness({
+    required Map<String, dynamic> data,
+    PlatformFile? file,
+  }) async {
+    dynamic payload;
+    Options? options;
+
+    if (file != null) {
+      final formData = FormData.fromMap(data);
+      
+      MultipartFile multipartFile;
+      if (file.bytes != null) {
+        multipartFile = MultipartFile.fromBytes(
+          file.bytes!,
+          filename: file.name,
+        );
+      } else if (file.path != null) {
+        multipartFile = await MultipartFile.fromFile(
+          file.path!,
+          filename: file.name,
+        );
+      } else {
+        throw Exception('File tidak valid');
+      }
+
+      formData.files.add(MapEntry('foto', multipartFile));
+      payload = formData;
+      options = Options(headers: {'Content-Type': 'multipart/form-data'});
+    } else {
+      payload = data;
+    }
+
+    final response = await _dioClient.post(
+      ApiEndpoints.cleanliness, 
+      data: payload,
+      options: options,
+    );
+    
+    final raw = response.data;
+    if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
+      return CleanlinessModel.fromJson(raw['data']);
+    }
+    return CleanlinessModel.fromJson(raw);
   }
 
   @override
@@ -199,6 +241,7 @@ class StudentService implements StudentRepository {
     required String classId,
     String? semester,
     String? academicYear,
+    String? mapelId,
   }) async {
     final response = await _dioClient.get(
       ApiEndpoints.studentRekapNilai,
@@ -206,6 +249,7 @@ class StudentService implements StudentRepository {
         'kelas_id': classId,
         if (semester != null) 'semester': semester,
         if (academicYear != null) 'tahun_ajar': academicYear,
+        if (mapelId != null) 'mapel_id': mapelId,
       },
     );
     final List<dynamic> data = response.data['data'] ?? [];

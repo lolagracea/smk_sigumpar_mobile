@@ -46,20 +46,18 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
   }
 
   void _showAddCleanlinessSheet() {
-    if (_selectedClassId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih kelas terlebih dahulu')),
-      );
-      return;
-    }
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: AddCleanlinessForm(initialKelasId: _selectedClassId),
       ),
-      builder: (context) => AddCleanlinessForm(kelasId: _selectedClassId!),
     );
   }
 
@@ -70,8 +68,8 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('Kebersihan Kelas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Upload & kelola dokumen kebersihan', style: TextStyle(fontSize: 12)),
+            Text('KEBERSIHAN KELAS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Penilaian kebersihan, catatan umum, dan dokumentasi kelas', style: TextStyle(fontSize: 10)),
           ],
         ),
         centerTitle: true,
@@ -152,17 +150,30 @@ class _CleanlinessCard extends StatelessWidget {
   final CleanlinessModel note;
   const _CleanlinessCard({required this.note});
 
-  void _showDetailDialog(BuildContext context) {
-    String? imageUrl = note.fotoUrl;
-    if (imageUrl != null && !imageUrl.startsWith('http')) {
-      imageUrl = '${ApiEndpoints.baseUrl}$imageUrl';
+  String _formatUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    
+    // Ensure the path starts with a slash
+    String cleanPath = url.startsWith('/') ? url : '/$url';
+    
+    // ApiEndpoints.baseUrl is usually http://localhost:8001
+    String baseUrl = ApiEndpoints.baseUrl;
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
     }
+    
+    return '$baseUrl$cleanPath';
+  }
 
-    final bool isImage = imageUrl != null && (
-        imageUrl.toLowerCase().endsWith('.jpg') ||
-        imageUrl.toLowerCase().endsWith('.jpeg') ||
-        imageUrl.toLowerCase().endsWith('.png') ||
-        imageUrl.toLowerCase().endsWith('.gif')
+  void _showDetailDialog(BuildContext context) {
+    final String imageUrl = _formatUrl(note.fotoUrl);
+
+    final bool isImage = imageUrl.isNotEmpty && (
+        imageUrl.toLowerCase().contains('.jpg') ||
+        imageUrl.toLowerCase().contains('.jpeg') ||
+        imageUrl.toLowerCase().contains('.png') ||
+        imageUrl.toLowerCase().contains('.gif')
     );
 
     showDialog(
@@ -186,10 +197,16 @@ class _CleanlinessCard extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      imageUrl!,
+                      imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                            Text('Gambar tidak ditemukan', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                          ],
+                        ),
                       ),
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -240,17 +257,13 @@ class _CleanlinessCard extends StatelessWidget {
   }
 
   Future<void> _downloadFile(BuildContext context) async {
-    String? urlString = note.fotoUrl;
-    if (urlString == null || urlString.isEmpty) {
+    final String urlString = _formatUrl(note.fotoUrl);
+    
+    if (urlString.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lampiran foto/dokumen tidak tersedia')),
       );
       return;
-    }
-
-    // Handle relative paths from backend
-    if (!urlString.startsWith('http')) {
-      urlString = '${ApiEndpoints.baseUrl}$urlString';
     }
 
     try {
@@ -258,7 +271,6 @@ class _CleanlinessCard extends StatelessWidget {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
-        // Fallback for some platforms where canLaunchUrl might return false for specific schemes
         await launchUrl(url, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
@@ -355,8 +367,8 @@ class _ActionButton extends StatelessWidget {
 }
 
 class AddCleanlinessForm extends StatefulWidget {
-  final String kelasId;
-  const AddCleanlinessForm({super.key, required this.kelasId});
+  final String? initialKelasId;
+  const AddCleanlinessForm({super.key, this.initialKelasId});
 
   @override
   State<AddCleanlinessForm> createState() => _AddCleanlinessFormState();
@@ -364,15 +376,31 @@ class AddCleanlinessForm extends StatefulWidget {
 
 class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
   final _formKey = GlobalKey<FormState>();
-  DateTime? _selectedDate;
+  DateTime? _selectedDate = DateTime.now();
+  String? _selectedClassId;
   final _summaryController = TextEditingController();
   PlatformFile? _selectedFile;
   bool _isLoading = false;
 
+  final List<String> _ratingOptions = ['Sangat Bersih', 'Bersih', 'Cukup', 'Kotor'];
+  final Map<String, String> _aspectRatings = {
+    'Meja & Kursi': 'Bersih',
+    'Lantai': 'Bersih',
+    'Papan Tulis': 'Bersih',
+    'Jendela & Pintu': 'Bersih',
+    'Sampah': 'Bersih',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedClassId = widget.initialKelasId;
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
@@ -392,8 +420,7 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || 
-        _selectedDate == null) {
+    if (!_formKey.currentState!.validate() || _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Mohon lengkapi semua field')),
       );
@@ -403,17 +430,13 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
     setState(() => _isLoading = true);
     try {
       final Map<String, dynamic> data = {
-        'kelas_id': widget.kelasId,
+        'kelas_id': _selectedClassId,
         'tanggal': DateFormat('yyyy-MM-dd').format(_selectedDate!),
         'catatan': _summaryController.text,
+        'penilaian': jsonEncode(_aspectRatings),
       };
 
-      if (_selectedFile != null && _selectedFile!.bytes != null) {
-        data['file'] = base64Encode(_selectedFile!.bytes!);
-        data['file_name'] = _selectedFile!.name;
-      }
-
-      await context.read<StudentProvider>().addCleanliness(data);
+      await context.read<StudentProvider>().addCleanliness(data, file: _selectedFile);
       
       if (mounted) {
         Navigator.pop(context);
@@ -448,11 +471,40 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Upload Dokumen Baru',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const Center(
+                child: Text(
+                  'KEBERSIHAN KELAS',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
-              const SizedBox(height: 20),
+              const Center(
+                child: Text(
+                  'Penilaian kebersihan, catatan umum, dan dokumentasi kelas',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const Text('Kelas (Opsional)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Consumer<AcademicProvider>(
+                builder: (context, academic, child) {
+                  return DropdownButtonFormField<String>(
+                    value: _selectedClassId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      hintText: 'Pilih Kelas',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                    items: academic.classes.map((c) {
+                      return DropdownMenuItem(value: c.id, child: Text(c.namaKelas));
+                    }).toList(),
+                    onChanged: (val) => setState(() => _selectedClassId = val),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
 
               const Text('Tanggal', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -468,74 +520,113 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _selectedDate == null ? 'Pilih tanggal' : DateFormat('yyyy-MM-dd').format(_selectedDate!),
+                        _selectedDate == null ? 'Pilih tanggal' : DateFormat('dd/MM/yyyy').format(_selectedDate!),
                         style: TextStyle(color: _selectedDate == null ? Colors.grey : Colors.black),
                       ),
+                      const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text('Catatan Kondisi', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              
+              const Text('Penilaian Per Aspek', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Divider(),
+              ..._aspectRatings.keys.map((aspect) => _buildAspectRating(aspect)),
+              
+              const SizedBox(height: 24),
+              const Text('Catatan Umum', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _summaryController,
+                maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'catatan',
+                  hintText: 'Contoh: Kelas sudah cukup bersih, tetapi bagian sudut belakang masih perlu diperhatikan.',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding: const EdgeInsets.all(12),
                 ),
                 validator: (v) => v?.isEmpty ?? true ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 16),
-              const Text('Pilih File (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Dokumentasi Foto (Opsional)', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _pickFile,
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 30),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.upload_outlined, size: 40, color: Colors.grey),
+                      const Icon(Icons.camera_alt_outlined, size: 40, color: Colors.grey),
                       const SizedBox(height: 8),
                       Text(
-                        _selectedFile == null ? 'Klik untuk pilih file' : _selectedFile!.name,
+                        _selectedFile == null ? 'Klik untuk pilih foto' : _selectedFile!.name,
                         style: const TextStyle(color: Colors.grey),
-                      ),
-                      const Text(
-                        'Maksimal 10MB',
-                        style: TextStyle(color: Colors.grey, fontSize: 10),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4285F4),
+                    backgroundColor: const Color(0xFF1E6091),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: _isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Upload Dokumen', style: TextStyle(fontWeight: FontWeight.bold)),
+                      : const Text('Simpan Data', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 40),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAspectRating(String aspect) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Text(aspect, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _ratingOptions.map((option) {
+              final isSelected = _aspectRatings[aspect] == option;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: ChoiceChip(
+                  label: Text(option, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black)),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _aspectRatings[aspect] = option;
+                      });
+                    }
+                  },
+                  selectedColor: const Color(0xFF1E6091),
+                  backgroundColor: Colors.grey[200],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }

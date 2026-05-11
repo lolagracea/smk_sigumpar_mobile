@@ -15,8 +15,8 @@ class AttendanceRecapScreen extends StatefulWidget {
 
 class _AttendanceRecapScreenState extends State<AttendanceRecapScreen> {
   String? _selectedClassId;
-  DateTime? _selectedDate;
-  final TextEditingController _searchController = TextEditingController();
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -28,8 +28,6 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen> {
 
   Future<void> _initData() async {
     final academicProvider = context.read<AcademicProvider>();
-    
-    // Fetch classes for the teacher/wali
     await academicProvider.fetchClasses(refresh: true);
     
     if (academicProvider.classes.isNotEmpty) {
@@ -43,20 +41,10 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen> {
   void _fetchSummary() {
     if (_selectedClassId == null) return;
     
-    String? tanggalMulai;
-    String? tanggalAkhir;
-
-    if (_selectedDate != null) {
-      // If a specific date is picked, maybe we want summary for that day or that month?
-      // Based on the provider, it takes tanggalMulai and tanggalAkhir.
-      // Usually recap is for a range. If only one date is picked, let's assume it's the start date.
-      tanggalMulai = DateFormat('yyyy-MM-dd').format(_selectedDate!);
-    }
-    
     context.read<StudentProvider>().fetchAttendanceSummary(
       classId: _selectedClassId!,
-      tanggalMulai: tanggalMulai,
-      tanggalAkhir: tanggalAkhir,
+      tanggalMulai: _startDate != null ? DateFormat('yyyy-MM-dd').format(_startDate!) : null,
+      tanggalAkhir: _endDate != null ? DateFormat('yyyy-MM-dd').format(_endDate!) : null,
     );
   }
 
@@ -64,196 +52,132 @@ class _AttendanceRecapScreenState extends State<AttendanceRecapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SMK NEGERI 1 SIGUMPAR', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        title: const Text('REKAP KEHADIRAN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+        backgroundColor: const Color(0xFF1E6091),
+        foregroundColor: Colors.white,
+      ),
+      body: Column(
+        children: [
+          _buildFilters(),
+          Expanded(child: _buildTable()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: Column(
+        children: [
+          Consumer<AcademicProvider>(
+            builder: (context, provider, child) {
+              return DropdownButtonFormField<String>(
+                value: _selectedClassId,
+                decoration: InputDecoration(
+                  labelText: 'Pilih Kelas',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                items: provider.classes.map((c) => DropdownMenuItem(value: c.id, child: Text(c.namaKelas))).toList(),
+                onChanged: (val) {
+                  setState(() => _selectedClassId = val);
+                  _fetchSummary();
+                },
+              );
+            },
           ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.all(8),
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(4),
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _startDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() => _startDate = picked);
+                      _fetchSummary();
+                    }
+                  },
+                  icon: const Icon(Icons.date_range, size: 18),
+                  label: Text(_startDate == null ? 'Mulai' : DateFormat('dd/MM/yy').format(_startDate!)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _endDate ?? DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() => _endDate = picked);
+                      _fetchSummary();
+                    }
+                  },
+                  icon: const Icon(Icons.date_range, size: 18),
+                  label: Text(_endDate == null ? 'Akhir' : DateFormat('dd/MM/yy').format(_endDate!)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Absensi Siswa',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              DateFormat('dd MMMM yyyy', 'id_ID').format(DateTime.now()),
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 20),
-            
-            // Filter Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Consumer<AcademicProvider>(
-                          builder: (context, provider, child) {
-                            return DropdownButtonFormField<String>(
-                              value: _selectedClassId,
-                              decoration: InputDecoration(
-                                fillColor: Colors.grey[200],
-                                filled: true,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                              items: provider.classes.map((c) {
-                                return DropdownMenuItem(
-                                  value: c.id,
-                                  child: Text(c.namaKelas),
-                                );
-                              }).toList(),
-                              onChanged: (val) => setState(() => _selectedClassId = val),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2030),
-                            );
-                            if (picked != null) setState(() => _selectedDate = picked);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[400]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _selectedDate == null ? 'mm/dd/yyyy' : DateFormat('MM/dd/yyyy').format(_selectedDate!),
-                                  style: TextStyle(color: _selectedDate == null ? Colors.grey : Colors.black),
-                                ),
-                                const Icon(Icons.calendar_today_outlined, size: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Cari nama siswa',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 45,
-                    child: ElevatedButton(
-                      onPressed: _fetchSummary,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4285F4),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Cari', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 30),
-            const Text(
-              'Tabel Rekapan',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            
-            // Table
-            Consumer<StudentProvider>(
-              builder: (context, provider, child) {
-                if (provider.summaryState == StudentLoadState.loading) {
-                  return const LoadingWidget();
-                }
-                if (provider.summaryState == StudentLoadState.error) {
-                  return AppErrorWidget(
-                    message: provider.summaryError ?? 'Gagal memuat data',
-                    onRetry: _fetchSummary,
-                  );
-                }
-                
-                final summaries = provider.summaries.where((s) {
-                  if (_searchController.text.isEmpty) return true;
-                  return s.studentName.toLowerCase().contains(_searchController.text.toLowerCase());
-                }).toList();
+    );
+  }
 
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 20,
-                    headingRowColor: WidgetStateProperty.all(Colors.grey[50]),
-                    columns: const [
-                      DataColumn(label: Text('No', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Nama Siswa', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Hadir', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Izin', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Sakit', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Alpha', style: TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: List.generate(summaries.length, (index) {
-                      final s = summaries[index];
-                      return DataRow(cells: [
-                        DataCell(Text('${index + 1}')),
-                        DataCell(Text(s.studentName)),
-                        DataCell(Center(child: Text('${s.present}'))),
-                        DataCell(Center(child: Text('${s.permission}'))),
-                        DataCell(Center(child: Text('${s.sick}'))),
-                        DataCell(Center(child: Text('${s.absent}'))),
-                      ]);
-                    }),
-                  ),
-                );
-              },
+  Widget _buildTable() {
+    return Consumer<StudentProvider>(
+      builder: (context, provider, child) {
+        if (provider.summaryState == StudentLoadState.loading) return const LoadingWidget();
+        if (provider.summaryState == StudentLoadState.error) {
+          return AppErrorWidget(message: provider.summaryError ?? 'Gagal memuat rekap', onRetry: _fetchSummary);
+        }
+        
+        final data = provider.summaries;
+        if (data.isEmpty) return const Center(child: Text('Tidak ada data kehadiran'));
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SingleChildScrollView(
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(Colors.blue[50]),
+              columns: const [
+                DataColumn(label: Text('No')),
+                DataColumn(label: Text('Nama Siswa')),
+                DataColumn(label: Text('H')),
+                DataColumn(label: Text('I')),
+                DataColumn(label: Text('S')),
+                DataColumn(label: Text('A')),
+                DataColumn(label: Text('T')),
+              ],
+              rows: List.generate(data.length, (index) {
+                final s = data[index];
+                return DataRow(cells: [
+                  DataCell(Text('${index + 1}')),
+                  DataCell(Text(s.studentName)),
+                  DataCell(Text('${s.present}')),
+                  DataCell(Text('${s.permission}')),
+                  DataCell(Text('${s.sick}')),
+                  DataCell(Text('${s.absent}')),
+                  DataCell(Text('${s.late}')),
+                ]);
+              }),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

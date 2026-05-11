@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:smk_sigumpar/data/models/attendance_model.dart';
 import 'package:smk_sigumpar/data/models/attendance_summary_model.dart';
 import 'package:smk_sigumpar/data/models/grade_model.dart';
@@ -8,7 +9,6 @@ import 'package:smk_sigumpar/data/models/reflection_model.dart';
 import 'package:smk_sigumpar/data/models/summons_letter_model.dart';
 import 'package:smk_sigumpar/data/models/student_model.dart';
 import 'package:smk_sigumpar/data/repositories/student_repository.dart';
-import 'package:smk_sigumpar/core/network/api_response.dart';
 
 enum StudentLoadState { initial, loading, loaded, error }
 
@@ -86,6 +86,7 @@ class StudentProvider extends ChangeNotifier {
     String? tanggalAkhir,
   }) async {
     _summaryState = StudentLoadState.loading;
+    _summaries = [];
     notifyListeners();
 
     try {
@@ -115,6 +116,7 @@ class StudentProvider extends ChangeNotifier {
     required String classId,
     String? semester,
     String? academicYear,
+    String? mapelId,
   }) async {
     _gradeState = StudentLoadState.loading;
     notifyListeners();
@@ -124,6 +126,7 @@ class StudentProvider extends ChangeNotifier {
         classId: classId,
         semester: semester,
         academicYear: academicYear,
+        mapelId: mapelId,
       );
       _gradeState = StudentLoadState.loaded;
     } catch (e) {
@@ -233,9 +236,12 @@ class StudentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addCleanliness(Map<String, dynamic> data) async {
+  Future<void> addCleanliness(Map<String, dynamic> data, {PlatformFile? file}) async {
     try {
-      final result = await _repository.createCleanliness(data);
+      final result = await _repository.createCleanliness(
+        data: data,
+        file: file,
+      );
       _cleanlinessNotes.insert(0, result);
       notifyListeners();
     } catch (e) {
