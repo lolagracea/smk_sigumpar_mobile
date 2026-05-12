@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import '../../core/network/api_response.dart';
 import '../models/attendance_model.dart';
 import '../models/attendance_summary_model.dart';
 import '../models/grade_model.dart';
@@ -7,30 +8,95 @@ import '../models/cleanliness_model.dart';
 import '../models/reflection_model.dart';
 import '../models/summons_letter_model.dart';
 import '../models/student_model.dart';
-import '../../core/network/api_response.dart';
 
 abstract class StudentRepository {
-  // ─── Attendance ───────────────────────────────────────────
-  Future<PaginatedResponse<AttendanceModel>> getAttendanceRecap({
+  // ═══════════════════════════════════════════════════════════════
+  // === FITUR WALI KELAS (CRUD penuh) ===
+  // ═══════════════════════════════════════════════════════════════
+
+  // ─── Students (general) ─────────────────────────────────────────
+  Future<List<StudentModel>> getAllStudents();
+
+  // ─── Attendance Summary (rekap H/I/S/A/T per siswa) ────────────
+  Future<List<AttendanceSummaryModel>> getAttendanceSummary({
     required String classId,
-    String? month,
-    String? year,
-    int page = 1,
+    String? tanggalMulai,
+    String? tanggalAkhir,
   });
 
-  Future<void> submitAttendance(Map<String, dynamic> data);
+  // ─── Cleanliness (CRUD) ─────────────────────────────────────────
+  Future<List<CleanlinessModel>> getCleanliness({String? classId});
+  Future<CleanlinessModel> createCleanliness({
+    required Map<String, dynamic> data,
+    PlatformFile? file,
+  });
+  Future<CleanlinessModel> updateCleanliness(
+      String id,
+      Map<String, dynamic> data,
+      );
+  Future<void> deleteCleanliness(String id);
 
-  // ─── Grades (lama) ────────────────────────────────────────
-  Future<PaginatedResponse<GradeModel>> getGradesRecap({
+  // ─── Parenting Notes (CRUD) ─────────────────────────────────────
+  Future<List<ParentingNoteModel>> getParentingNotes({
+    String? classId,
+    String? studentId,
+  });
+  Future<ParentingNoteModel> createParentingNote(Map<String, dynamic> data);
+  Future<ParentingNoteModel> updateParentingNote(
+      String id,
+      Map<String, dynamic> data,
+      );
+  Future<void> deleteParentingNote(String id);
+
+  // ─── Reflection (CRUD) ──────────────────────────────────────────
+  Future<List<ReflectionModel>> getReflections({String? classId});
+  Future<ReflectionModel> createReflection(Map<String, dynamic> data);
+  Future<ReflectionModel> updateReflection(
+      String id,
+      Map<String, dynamic> data,
+      );
+  Future<void> deleteReflection(String id);
+
+  // ─── Summons Letter (CRUD) ──────────────────────────────────────
+  Future<List<SummonsLetterModel>> getSummonsLetters({
+    String? classId,
+    String? studentId,
+  });
+  Future<SummonsLetterModel> createSummonsLetter(Map<String, dynamic> data);
+  Future<SummonsLetterModel> updateSummonsLetter(
+      String id,
+      Map<String, dynamic> data,
+      );
+  Future<void> deleteSummonsLetter(String id);
+
+  // ─── Grades Recap (read-only, List) ─────────────────────────────
+  Future<List<GradeModel>> getGradesRecap({
     required String classId,
     String? semester,
     String? academicYear,
-    int page = 1,
+    String? mapelId,
   });
-  Future<CleanlinessModel> updateCleanliness(String id, Map<String, dynamic> data);
-  Future<void> deleteCleanliness(String id);
 
-  // ─── Grades (input nilai guru mapel) ─────────────────────
+  Future<List<GradeModel>> getStudentGrades({
+    required String studentId,
+    String? semester,
+    String? academicYear,
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // === FITUR GURU MAPEL (Punya HEAD — Tetap Dipertahankan) ===
+  // ═══════════════════════════════════════════════════════════════
+
+  // ─── Attendance Recap (lama, pagination) ────────────────────────
+  Future<PaginatedResponse<AttendanceModel>> getAttendanceRecap({
+    required String classId,
+    String? date,
+  });
+
+  /// Submit absensi (single payload Map sesuai struktur backend).
+  Future<void> submitAttendance(Map<String, dynamic> data);
+
+  // ─── Grades (input nilai guru mapel) ────────────────────────────
   Future<List<Map<String, dynamic>>> getGuruMapelAssignments();
 
   Future<List<Map<String, dynamic>>> getSiswaUntukInputNilai({
@@ -54,7 +120,7 @@ abstract class StudentRepository {
     required List<Map<String, dynamic>> dataNilai,
   });
 
-  // ─── Absensi Mapel (Guru Mapel) ───────────────────────────
+  // ─── Absensi Mapel (Guru Mapel) ─────────────────────────────────
   Future<List<Map<String, dynamic>>> getAbsensiMapelJadwal();
 
   Future<List<Map<String, dynamic>>> getAbsensiMapelSiswa({
@@ -78,25 +144,4 @@ abstract class StudentRepository {
     String? tanggalMulai,
     String? tanggalAkhir,
   });
-
-  // ─── Cleanliness ─────────────────────────────────────────
-  Future<PaginatedResponse<Map<String, dynamic>>> getCleanlinessRecap(
-      {int page = 1});
-  Future<Map<String, dynamic>> submitCleanliness(Map<String, dynamic> data);
-
-  // ─── Parenting Notes ──────────────────────────────────────
-  Future<PaginatedResponse<Map<String, dynamic>>> getParentingNotes(
-      {int page = 1});
-  Future<Map<String, dynamic>> createParentingNote(Map<String, dynamic> data);
-
-  // ─── Homeroom Reflection ──────────────────────────────────
-  Future<PaginatedResponse<Map<String, dynamic>>> getHomeroomReflections(
-      {int page = 1});
-  Future<Map<String, dynamic>> createHomeroomReflection(
-      Map<String, dynamic> data);
-
-  // ─── Summons Letter ───────────────────────────────────────
-  Future<PaginatedResponse<Map<String, dynamic>>> getSummonsLetters(
-      {int page = 1});
-  Future<Map<String, dynamic>> createSummonsLetter(Map<String, dynamic> data);
 }

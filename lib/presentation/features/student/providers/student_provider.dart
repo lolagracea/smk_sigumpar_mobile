@@ -1,6 +1,12 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../../data/models/attendance_model.dart';
+import '../../../../data/models/attendance_summary_model.dart';
+import '../../../../data/models/cleanliness_model.dart';
 import '../../../../data/models/grade_model.dart';
+import '../../../../data/models/parenting_note_model.dart';
+import '../../../../data/models/reflection_model.dart';
+import '../../../../data/models/summons_letter_model.dart';
 import '../../../../data/repositories/student_repository.dart';
 
 enum StudentLoadState { initial, loading, loaded, error }
@@ -11,7 +17,9 @@ class StudentProvider extends ChangeNotifier {
   StudentProvider({required StudentRepository repository})
       : _repository = repository;
 
-  // ─── STATE UNTUK REKAP ABSENSI ──────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // ─── REKAP ABSENSI (Guru Mapel - HEAD) ────────────────────
+  // ══════════════════════════════════════════════════════════
   StudentLoadState _attendanceState = StudentLoadState.initial;
   List<AttendanceModel> _attendances = [];
   String? _attendanceError;
@@ -26,8 +34,7 @@ class StudentProvider extends ChangeNotifier {
   Future<void> fetchAttendanceRecap({
     bool refresh = false,
     required String classId,
-    String? month,
-    String? year,
+    String? date,
   }) async {
     if (refresh) {
       _attendancePage = 1;
@@ -44,9 +51,7 @@ class StudentProvider extends ChangeNotifier {
     try {
       final result = await _repository.getAttendanceRecap(
         classId: classId,
-        month: month,
-        year: year,
-        page: _attendancePage,
+        date: date,
       );
 
       if (refresh) {
@@ -59,15 +64,14 @@ class StudentProvider extends ChangeNotifier {
       _attendancePage++;
       _attendanceState = StudentLoadState.loaded;
     } catch (e) {
-      _attendanceError = e.toString();
+      _attendanceError = _parseError(e);
       _attendanceState = StudentLoadState.error;
     }
 
     notifyListeners();
   }
 
-  // ─── STATE UNTUK INPUT (SUBMIT) ABSENSI ─────────────────
-  // ✅ IKUTI TEAM LEAD: Map version + rethrow di service
+  // ─── SUBMIT ABSENSI (Guru Mapel) ──────────────────────────
   bool _isSubmittingAttendance = false;
   bool get isSubmittingAttendance => _isSubmittingAttendance;
 
@@ -82,14 +86,16 @@ class StudentProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _attendanceError = e.toString();
+      _attendanceError = _parseError(e);
       _isSubmittingAttendance = false;
       notifyListeners();
       return false;
     }
   }
 
-  // ─── STATE UNTUK REKAP NILAI (GRADES) ───────────────────
+  // ══════════════════════════════════════════════════════════
+  // ─── REKAP NILAI (umum, dipakai Wali Kelas & Guru Mapel) ──
+  // ══════════════════════════════════════════════════════════
   StudentLoadState _gradeState = StudentLoadState.initial;
   List<GradeModel> _grades = [];
   String? _gradeError;
@@ -98,6 +104,10 @@ class StudentProvider extends ChangeNotifier {
   List<GradeModel> get grades => _grades;
   String? get gradeError => _gradeError;
 
+  /// Alias getter untuk kompatibilitas dengan screen lama
+  /// yang manggil `studentsError`.
+  String? get studentsError => _gradeError;
+
   Future<void> fetchGrades({
     required String classId,
     String? semester,
@@ -105,6 +115,7 @@ class StudentProvider extends ChangeNotifier {
     String? mapelId,
   }) async {
     _gradeState = StudentLoadState.loading;
+    _gradeError = null;
     notifyListeners();
 
     try {
@@ -116,16 +127,15 @@ class StudentProvider extends ChangeNotifier {
       );
       _gradeState = StudentLoadState.loaded;
     } catch (e) {
-      _gradeError = e.toString();
+      _gradeError = _parseError(e);
       _gradeState = StudentLoadState.error;
     }
     notifyListeners();
   }
 
   // ══════════════════════════════════════════════════════════
-  // ─── INPUT NILAI GURU MAPEL ───────────────────────────────
+  // ─── INPUT NILAI GURU MAPEL (HEAD) ────────────────────────
   // ══════════════════════════════════════════════════════════
-
   StudentLoadState _assignmentState = StudentLoadState.initial;
   List<Map<String, dynamic>> _assignments = [];
   String? _assignmentError;
@@ -198,8 +208,8 @@ class StudentProvider extends ChangeNotifier {
     try {
       final kelasId = _selectedAssignment!['kelas_id'].toString();
       final mapelId =
-          (_selectedAssignment!['mapel_id'] ?? _selectedAssignment!['id'])
-              .toString();
+      (_selectedAssignment!['mapel_id'] ?? _selectedAssignment!['id'])
+          .toString();
 
       final siswaList = await _repository.getSiswaUntukInputNilai(
         kelasId: kelasId,
@@ -243,7 +253,7 @@ class StudentProvider extends ChangeNotifier {
               'uts': int.tryParse(nilai['bobot_uts'].toString()) ?? 25,
               'uas': int.tryParse(nilai['bobot_uas'].toString()) ?? 30,
               'praktik':
-                  int.tryParse(nilai['bobot_praktik'].toString()) ?? 15,
+              int.tryParse(nilai['bobot_praktik'].toString()) ?? 15,
             };
           }
         }
@@ -273,10 +283,10 @@ class StudentProvider extends ChangeNotifier {
     if (g == null) return 0.0;
     return double.parse(
       ((g['tugas'] as num? ?? 0) * _bobot['tugas']! / 100 +
-              (g['kuis'] as num? ?? 0) * _bobot['kuis']! / 100 +
-              (g['uts'] as num? ?? 0) * _bobot['uts']! / 100 +
-              (g['uas'] as num? ?? 0) * _bobot['uas']! / 100 +
-              (g['praktik'] as num? ?? 0) * _bobot['praktik']! / 100)
+          (g['kuis'] as num? ?? 0) * _bobot['kuis']! / 100 +
+          (g['uts'] as num? ?? 0) * _bobot['uts']! / 100 +
+          (g['uas'] as num? ?? 0) * _bobot['uas']! / 100 +
+          (g['praktik'] as num? ?? 0) * _bobot['praktik']! / 100)
           .toStringAsFixed(2),
     );
   }
@@ -314,8 +324,8 @@ class StudentProvider extends ChangeNotifier {
     try {
       final kelasId = _selectedAssignment!['kelas_id'].toString();
       final mapelId =
-          (_selectedAssignment!['mapel_id'] ?? _selectedAssignment!['id'])
-              .toString();
+      (_selectedAssignment!['mapel_id'] ?? _selectedAssignment!['id'])
+          .toString();
 
       final dataNilai = _nilaiStudents.map((s) {
         final id = s['id'].toString();
@@ -351,9 +361,8 @@ class StudentProvider extends ChangeNotifier {
   }
 
   // ══════════════════════════════════════════════════════════
-  // ─── SUBJECT ATTENDANCE (attendance_recap_screen) ─────────
+  // ─── SUBJECT ATTENDANCE (Guru Mapel - HEAD) ───────────────
   // ══════════════════════════════════════════════════════════
-
   StudentLoadState _scheduleState = StudentLoadState.initial;
   List<Map<String, dynamic>> _scheduleList = [];
   String? _scheduleError;
@@ -586,7 +595,322 @@ class StudentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ══════════════════════════════════════════════════════════
+  // ═══ FITUR WALI KELAS ═════════════════════════════════════
+  // ══════════════════════════════════════════════════════════
+
+  // ─── ATTENDANCE SUMMARY (Rekap H/I/S/A/T) ─────────────────
+  StudentLoadState _summaryState = StudentLoadState.initial;
+  List<AttendanceSummaryModel> _summaries = [];
+  String? _summaryError;
+
+  StudentLoadState get summaryState => _summaryState;
+  List<AttendanceSummaryModel> get summaries => _summaries;
+  String? get summaryError => _summaryError;
+
+  Future<void> fetchAttendanceSummary({
+    required String classId,
+    String? tanggalMulai,
+    String? tanggalAkhir,
+  }) async {
+    _summaryState = StudentLoadState.loading;
+    _summaryError = null;
+    notifyListeners();
+
+    try {
+      _summaries = await _repository.getAttendanceSummary(
+        classId: classId,
+        tanggalMulai: tanggalMulai,
+        tanggalAkhir: tanggalAkhir,
+      );
+      _summaryState = StudentLoadState.loaded;
+    } catch (e) {
+      _summaryError = _parseError(e);
+      _summaryState = StudentLoadState.error;
+    }
+    notifyListeners();
+  }
+
+  // ─── PARENTING NOTES (CRUD) ───────────────────────────────
+  StudentLoadState _parentingState = StudentLoadState.initial;
+  List<ParentingNoteModel> _parentingNotes = [];
+  String? _parentingError;
+
+  StudentLoadState get parentingState => _parentingState;
+  List<ParentingNoteModel> get parentingNotes => _parentingNotes;
+  String? get parentingError => _parentingError;
+
+  Future<void> fetchParentingNotes({
+    String? classId,
+    String? studentId,
+  }) async {
+    _parentingState = StudentLoadState.loading;
+    _parentingError = null;
+    notifyListeners();
+
+    try {
+      _parentingNotes = await _repository.getParentingNotes(
+        classId: classId,
+        studentId: studentId,
+      );
+      _parentingState = StudentLoadState.loaded;
+    } catch (e) {
+      _parentingError = _parseError(e);
+      _parentingState = StudentLoadState.error;
+    }
+    notifyListeners();
+  }
+
+  Future<bool> addParentingNote(Map<String, dynamic> data) async {
+    try {
+      final created = await _repository.createParentingNote(data);
+      _parentingNotes.insert(0, created);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _parentingError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateParentingNote(
+      String id, Map<String, dynamic> data) async {
+    try {
+      final updated = await _repository.updateParentingNote(id, data);
+      final idx = _parentingNotes.indexWhere((e) => e.id == id);
+      if (idx >= 0) _parentingNotes[idx] = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _parentingError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteParentingNote(String id) async {
+    try {
+      await _repository.deleteParentingNote(id);
+      _parentingNotes.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _parentingError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── REFLECTION (CRUD) ────────────────────────────────────
+  StudentLoadState _reflectionState = StudentLoadState.initial;
+  List<ReflectionModel> _reflections = [];
+  String? _reflectionError;
+
+  StudentLoadState get reflectionState => _reflectionState;
+  List<ReflectionModel> get reflections => _reflections;
+  String? get reflectionError => _reflectionError;
+
+  Future<void> fetchReflections({String? classId}) async {
+    _reflectionState = StudentLoadState.loading;
+    _reflectionError = null;
+    notifyListeners();
+
+    try {
+      _reflections = await _repository.getReflections(classId: classId);
+      _reflectionState = StudentLoadState.loaded;
+    } catch (e) {
+      _reflectionError = _parseError(e);
+      _reflectionState = StudentLoadState.error;
+    }
+    notifyListeners();
+  }
+
+  Future<bool> addReflection(Map<String, dynamic> data) async {
+    try {
+      final created = await _repository.createReflection(data);
+      _reflections.insert(0, created);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _reflectionError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateReflection(String id, Map<String, dynamic> data) async {
+    try {
+      final updated = await _repository.updateReflection(id, data);
+      final idx = _reflections.indexWhere((e) => e.id == id);
+      if (idx >= 0) _reflections[idx] = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _reflectionError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteReflection(String id) async {
+    try {
+      await _repository.deleteReflection(id);
+      _reflections.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _reflectionError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── SUMMONS LETTER (CRUD) ────────────────────────────────
+  StudentLoadState _summonsState = StudentLoadState.initial;
+  List<SummonsLetterModel> _summonsLetters = [];
+  String? _summonsError;
+
+  StudentLoadState get summonsState => _summonsState;
+  List<SummonsLetterModel> get summonsLetters => _summonsLetters;
+  String? get summonsError => _summonsError;
+
+  Future<void> fetchSummonsLetters({
+    String? classId,
+    String? studentId,
+  }) async {
+    _summonsState = StudentLoadState.loading;
+    _summonsError = null;
+    notifyListeners();
+
+    try {
+      _summonsLetters = await _repository.getSummonsLetters(
+        classId: classId,
+        studentId: studentId,
+      );
+      _summonsState = StudentLoadState.loaded;
+    } catch (e) {
+      _summonsError = _parseError(e);
+      _summonsState = StudentLoadState.error;
+    }
+    notifyListeners();
+  }
+
+  Future<bool> addSummonsLetter(Map<String, dynamic> data) async {
+    try {
+      final created = await _repository.createSummonsLetter(data);
+      _summonsLetters.insert(0, created);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _summonsError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateSummonsLetter(
+      String id, Map<String, dynamic> data) async {
+    try {
+      final updated = await _repository.updateSummonsLetter(id, data);
+      final idx = _summonsLetters.indexWhere((e) => e.id == id);
+      if (idx >= 0) _summonsLetters[idx] = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _summonsError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteSummonsLetter(String id) async {
+    try {
+      await _repository.deleteSummonsLetter(id);
+      _summonsLetters.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _summonsError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ─── CLEANLINESS (CRUD) ───────────────────────────────────
+  StudentLoadState _cleanlinessState = StudentLoadState.initial;
+  List<CleanlinessModel> _cleanlinessNotes = [];
+  String? _cleanlinessError;
+
+  StudentLoadState get cleanlinessState => _cleanlinessState;
+  List<CleanlinessModel> get cleanlinessNotes => _cleanlinessNotes;
+  String? get cleanlinessError => _cleanlinessError;
+
+  Future<void> fetchCleanliness({String? classId}) async {
+    _cleanlinessState = StudentLoadState.loading;
+    _cleanlinessError = null;
+    notifyListeners();
+
+    try {
+      _cleanlinessNotes = await _repository.getCleanliness(classId: classId);
+      _cleanlinessState = StudentLoadState.loaded;
+    } catch (e) {
+      _cleanlinessError = _parseError(e);
+      _cleanlinessState = StudentLoadState.error;
+    }
+    notifyListeners();
+  }
+
+  Future<bool> addCleanliness({
+    required Map<String, dynamic> data,
+    PlatformFile? file,
+  }) async {
+    try {
+      final created = await _repository.createCleanliness(
+        data: data,
+        file: file,
+      );
+      _cleanlinessNotes.insert(0, created);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _cleanlinessError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateCleanliness(
+      String id, Map<String, dynamic> data) async {
+    try {
+      final updated = await _repository.updateCleanliness(id, data);
+      final idx = _cleanlinessNotes.indexWhere((e) => e.id == id);
+      if (idx >= 0) _cleanlinessNotes[idx] = updated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _cleanlinessError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteCleanliness(String id) async {
+    try {
+      await _repository.deleteCleanliness(id);
+      _cleanlinessNotes.removeWhere((e) => e.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _cleanlinessError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
   // ─── Helper ───────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
   String _parseError(Object e) {
     final s = e.toString();
     if (s.contains('SocketException') || s.contains('Network')) {

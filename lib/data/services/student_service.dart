@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/network/dio_client.dart';
@@ -18,7 +17,11 @@ class StudentService implements StudentRepository {
   final DioClient _dioClient;
   StudentService({required DioClient dioClient}) : _dioClient = dioClient;
 
-  // ─── Attendance ───────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // === FITUR WALI KELAS ===
+  // ═══════════════════════════════════════════════════════════════
+
+  // ─── Students (general) ─────────────────────────────────────────
   @override
   Future<List<StudentModel>> getAllStudents() async {
     final response = await _dioClient.get(ApiEndpoints.students);
@@ -26,36 +29,36 @@ class StudentService implements StudentRepository {
     return data.map((json) => StudentModel.fromJson(json)).toList();
   }
 
-  // ─── ABSENSI / KEHADIRAN ──────────────────────────────────────────
+  // ─── Attendance Summary ────────────────────────────────────────
   @override
-  Future<PaginatedResponse<AttendanceModel>> getAttendanceRecap({
+  Future<List<AttendanceSummaryModel>> getAttendanceSummary({
     required String classId,
-    String? date,
+    String? tanggalMulai,
+    String? tanggalAkhir,
   }) async {
     final response = await _dioClient.get(
       ApiEndpoints.attendanceRecap,
       queryParameters: {
         'kelas_id': classId,
-        if (date != null) 'tanggal': date,
+        if (tanggalMulai != null) 'tanggal_mulai': tanggalMulai,
+        if (tanggalAkhir != null) 'tanggal_akhir': tanggalAkhir,
       },
     );
-    return PaginatedResponse.fromJson(
-      response.data,
-          (json) => AttendanceModel.fromJson(json),
-    );
+    final List<dynamic> data = response.data['data'] ?? [];
+    return data.map((json) => AttendanceSummaryModel.fromJson(json)).toList();
   }
 
+  // ─── Cleanliness (CRUD) ─────────────────────────────────────────
   @override
-  // ✅ IKUTI TEAM LEAD: parameter Map + rethrow
-  Future<void> submitAttendance(Map<String, dynamic> data) async {
-    try {
-      await _dioClient.post(ApiEndpoints.absensiMapel, data: data);
-    } catch (e) {
-      rethrow;
-    }
+  Future<List<CleanlinessModel>> getCleanliness({String? classId}) async {
+    final response = await _dioClient.get(
+      ApiEndpoints.cleanliness,
+      queryParameters: {if (classId != null) 'kelas_id': classId},
+    );
+    final List<dynamic> data = response.data['data'] ?? [];
+    return data.map((json) => CleanlinessModel.fromJson(json)).toList();
   }
 
-  // ─── Grades (lama) ────────────────────────────────────────
   @override
   Future<CleanlinessModel> createCleanliness({
     required Map<String, dynamic> data,
@@ -66,7 +69,7 @@ class StudentService implements StudentRepository {
 
     if (file != null) {
       final formData = FormData.fromMap(data);
-      
+
       MultipartFile multipartFile;
       if (file.bytes != null) {
         multipartFile = MultipartFile.fromBytes(
@@ -90,11 +93,11 @@ class StudentService implements StudentRepository {
     }
 
     final response = await _dioClient.post(
-      ApiEndpoints.cleanliness, 
+      ApiEndpoints.cleanliness,
       data: payload,
       options: options,
     );
-    
+
     final raw = response.data;
     if (raw is Map<String, dynamic> && raw['data'] is Map<String, dynamic>) {
       return CleanlinessModel.fromJson(raw['data']);
@@ -103,8 +106,14 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<CleanlinessModel> updateCleanliness(String id, Map<String, dynamic> data) async {
-    final response = await _dioClient.put('${ApiEndpoints.cleanliness}/$id', data: data);
+  Future<CleanlinessModel> updateCleanliness(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.cleanliness}/$id',
+      data: data,
+    );
     return CleanlinessModel.fromJson(response.data['data']);
   }
 
@@ -113,9 +122,12 @@ class StudentService implements StudentRepository {
     await _dioClient.delete('${ApiEndpoints.cleanliness}/$id');
   }
 
-  // ─── PARENTING ───────────────────────────────────────────────────
+  // ─── Parenting Notes (CRUD) ─────────────────────────────────────
   @override
-  Future<List<ParentingNoteModel>> getParentingNotes({String? classId, String? studentId}) async {
+  Future<List<ParentingNoteModel>> getParentingNotes({
+    String? classId,
+    String? studentId,
+  }) async {
     final response = await _dioClient.get(
       ApiEndpoints.parenting,
       queryParameters: {
@@ -128,14 +140,22 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<ParentingNoteModel> createParentingNote(Map<String, dynamic> data) async {
+  Future<ParentingNoteModel> createParentingNote(
+      Map<String, dynamic> data,
+      ) async {
     final response = await _dioClient.post(ApiEndpoints.parenting, data: data);
     return ParentingNoteModel.fromJson(response.data['data']);
   }
 
   @override
-  Future<ParentingNoteModel> updateParentingNote(String id, Map<String, dynamic> data) async {
-    final response = await _dioClient.put('${ApiEndpoints.parenting}/$id', data: data);
+  Future<ParentingNoteModel> updateParentingNote(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.parenting}/$id',
+      data: data,
+    );
     return ParentingNoteModel.fromJson(response.data['data']);
   }
 
@@ -144,7 +164,7 @@ class StudentService implements StudentRepository {
     await _dioClient.delete('${ApiEndpoints.parenting}/$id');
   }
 
-  // ─── REFLEKSI ────────────────────────────────────────────────────
+  // ─── Reflection (CRUD) ──────────────────────────────────────────
   @override
   Future<List<ReflectionModel>> getReflections({String? classId}) async {
     final response = await _dioClient.get(
@@ -162,8 +182,14 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<ReflectionModel> updateReflection(String id, Map<String, dynamic> data) async {
-    final response = await _dioClient.put('${ApiEndpoints.reflection}/$id', data: data);
+  Future<ReflectionModel> updateReflection(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.reflection}/$id',
+      data: data,
+    );
     return ReflectionModel.fromJson(response.data['data']);
   }
 
@@ -172,9 +198,12 @@ class StudentService implements StudentRepository {
     await _dioClient.delete('${ApiEndpoints.reflection}/$id');
   }
 
-  // ─── SURAT PANGGILAN ──────────────────────────────────────────────
+  // ─── Summons Letter (CRUD) ──────────────────────────────────────
   @override
-  Future<List<SummonsLetterModel>> getSummonsLetters({String? classId, String? studentId}) async {
+  Future<List<SummonsLetterModel>> getSummonsLetters({
+    String? classId,
+    String? studentId,
+  }) async {
     final response = await _dioClient.get(
       ApiEndpoints.summons,
       queryParameters: {
@@ -187,14 +216,22 @@ class StudentService implements StudentRepository {
   }
 
   @override
-  Future<SummonsLetterModel> createSummonsLetter(Map<String, dynamic> data) async {
+  Future<SummonsLetterModel> createSummonsLetter(
+      Map<String, dynamic> data,
+      ) async {
     final response = await _dioClient.post(ApiEndpoints.summons, data: data);
     return SummonsLetterModel.fromJson(response.data['data']);
   }
 
   @override
-  Future<SummonsLetterModel> updateSummonsLetter(String id, Map<String, dynamic> data) async {
-    final response = await _dioClient.put('${ApiEndpoints.summons}/$id', data: data);
+  Future<SummonsLetterModel> updateSummonsLetter(
+      String id,
+      Map<String, dynamic> data,
+      ) async {
+    final response = await _dioClient.put(
+      '${ApiEndpoints.summons}/$id',
+      data: data,
+    );
     return SummonsLetterModel.fromJson(response.data['data']);
   }
 
@@ -203,7 +240,7 @@ class StudentService implements StudentRepository {
     await _dioClient.delete('${ApiEndpoints.summons}/$id');
   }
 
-  // ─── NILAI (REKAP) ────────────────────────────────────────────────
+  // ─── Grades Recap (read-only) ───────────────────────────────────
   @override
   Future<List<GradeModel>> getGradesRecap({
     required String classId,
@@ -220,26 +257,61 @@ class StudentService implements StudentRepository {
         if (mapelId != null) 'mapel_id': mapelId,
       },
     );
+    final List<dynamic> data = response.data['data'] ?? [];
+    return data.map((json) => GradeModel.fromJson(json)).toList();
+  }
+
+  @override
+  Future<List<GradeModel>> getStudentGrades({
+    required String studentId,
+    String? semester,
+    String? academicYear,
+  }) async {
+    final response = await _dioClient.get(
+      ApiEndpoints.studentRekapNilai,
+      queryParameters: {
+        'siswa_id': studentId,
+        if (semester != null) 'semester': semester,
+        if (academicYear != null) 'tahun_ajar': academicYear,
+      },
+    );
+    final List<dynamic> data = response.data['data'] ?? [];
+    return data.map((json) => GradeModel.fromJson(json)).toList();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // === FITUR GURU MAPEL (Punya HEAD) ===
+  // ═══════════════════════════════════════════════════════════════
+
+  // ─── Attendance Recap (pagination) ──────────────────────────────
+  @override
+  Future<PaginatedResponse<AttendanceModel>> getAttendanceRecap({
+    required String classId,
+    String? date,
+  }) async {
+    final response = await _dioClient.get(
+      ApiEndpoints.attendanceRecap,
+      queryParameters: {
+        'kelas_id': classId,
+        if (date != null) 'tanggal': date,
+      },
+    );
     return PaginatedResponse.fromJson(
-        response.data, (json) => GradeModel.fromJson(json));
+      response.data,
+          (json) => AttendanceModel.fromJson(json),
+    );
   }
 
   @override
-  Future<GradeModel> submitGrade(Map<String, dynamic> data) async {
-    final response =
-    await _dioClient.post(ApiEndpoints.studentRekapNilai, data: data);
-    return GradeModel.fromJson(response.data['data']);
+  Future<void> submitAttendance(Map<String, dynamic> data) async {
+    try {
+      await _dioClient.post(ApiEndpoints.absensiMapel, data: data);
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  @override
-  Future<GradeModel> updateGrade(String id, Map<String, dynamic> data) async {
-    final response = await _dioClient
-        .put('${ApiEndpoints.studentRekapNilai}/$id', data: data);
-    return GradeModel.fromJson(response.data['data']);
-  }
-
-  // ─── Grades (input nilai guru mapel) ─────────────────────
-
+  // ─── Grades (input nilai guru mapel) ────────────────────────────
   @override
   Future<List<Map<String, dynamic>>> getGuruMapelAssignments() async {
     final response = await _dioClient.get(
@@ -316,8 +388,7 @@ class StudentService implements StudentRepository {
     );
   }
 
-  // ─── Absensi Mapel (Guru Mapel) ───────────────────────────
-
+  // ─── Absensi Mapel (Guru Mapel) ─────────────────────────────────
   @override
   Future<List<Map<String, dynamic>>> getAbsensiMapelJadwal() async {
     final response = await _dioClient.get(ApiEndpoints.absensiMapelJadwal);
@@ -392,69 +463,5 @@ class StudentService implements StudentRepository {
     if (data is List) return data.cast<Map<String, dynamic>>();
     final list = data['data'] ?? [];
     return (list as List).cast<Map<String, dynamic>>();
-  }
-
-  // ─── Cleanliness ─────────────────────────────────────────
-  @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getCleanlinessRecap(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.cleanliness, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
-  }
-
-  @override
-  Future<Map<String, dynamic>> submitCleanliness(
-      Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.cleanliness, data: data);
-    return r.data['data'] as Map<String, dynamic>;
-  }
-
-  // ─── Parenting Notes ──────────────────────────────────────
-  @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getParentingNotes(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.parenting, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
-  }
-
-  @override
-  Future<Map<String, dynamic>> createParentingNote(
-      Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.parenting, data: data);
-    return r.data['data'] as Map<String, dynamic>;
-  }
-
-  // ─── Homeroom Reflection ──────────────────────────────────
-  @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getHomeroomReflections(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.reflection, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
-  }
-
-  @override
-  Future<Map<String, dynamic>> createHomeroomReflection(
-      Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.reflection, data: data);
-    return r.data['data'] as Map<String, dynamic>;
-  }
-
-  // ─── Summons Letter ───────────────────────────────────────
-  @override
-  Future<PaginatedResponse<Map<String, dynamic>>> getSummonsLetters(
-      {int page = 1}) async {
-    final r = await _dioClient
-        .get(ApiEndpoints.summons, queryParameters: {'page': page});
-    return PaginatedResponse.fromJson(r.data, (j) => j as Map<String, dynamic>);
-  }
-
-  @override
-  Future<Map<String, dynamic>> createSummonsLetter(
-      Map<String, dynamic> data) async {
-    final r = await _dioClient.post(ApiEndpoints.summons, data: data);
-    return r.data['data'] as Map<String, dynamic>;
   }
 }

@@ -45,17 +45,8 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
         ChangeNotifierProvider<LearningProvider>(
           create: (_) => sl<LearningProvider>(),
         ),
-        ChangeNotifierProvider<AbsensiGuruProvider>(
-          create: (_) => sl<AbsensiGuruProvider>(),
-        ),
-        ChangeNotifierProvider<StudentProvider>(
-          create: (_) => sl<StudentProvider>(),
-        ),
-        ChangeNotifierProvider<AcademicProvider>(
-          create: (_) => sl<AcademicProvider>(),
-        ),
       ],
-      // Consumer agar MaterialApp rebuild saat tema berubah (dari team lead)
+      // Consumer agar MaterialApp rebuild saat tema berubah
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp.router(
@@ -65,7 +56,7 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
             darkTheme: AppTheme.darkTheme,
             // Tema dinamis dari team lead
             themeMode: themeProvider.themeMode,
-            // Router dengan refreshListenable dari HEAD → auth persist
+            // Router dengan refreshListenable → auth persist
             routerConfig: _router,
           );
         },

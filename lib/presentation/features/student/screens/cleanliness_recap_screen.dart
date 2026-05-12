@@ -436,7 +436,7 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
         'penilaian': jsonEncode(_aspectRatings),
       };
 
-      await context.read<StudentProvider>().addCleanliness(data, file: _selectedFile);
+      await context.read<StudentProvider>().addCleanliness(data: data, file: _selectedFile);
       
       if (mounted) {
         Navigator.pop(context);
