@@ -54,6 +54,10 @@ class MainShell extends StatelessWidget {
         return 'Parenting';
       case RouteNames.homeroomReflection:
         return 'Refleksi Wali Kelas';
+      case RouteNames.waliAttendanceSummary:
+        return 'Presensi Kelas';
+      case RouteNames.waliGradesView:
+        return 'Rekap Nilai Siswa';
       case RouteNames.summonsLetter:
         return 'Surat Panggilan';
       case RouteNames.learningDevice:

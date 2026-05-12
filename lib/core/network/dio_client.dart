@@ -15,8 +15,8 @@ class DioClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 60), // naik dari 30
+        receiveTimeout: const Duration(seconds: 60), // naik dari 30
         contentType: 'application/json',
         headers: {
           'Accept': 'application/json',
@@ -245,7 +245,12 @@ class _AuthInterceptor extends Interceptor {
     }
 
     try {
-      final refreshDio = Dio();
+      final refreshDio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 60), // ← UBAH
+          receiveTimeout: const Duration(seconds: 60), // ← UBAH
+        ),
+      );
       final response = await refreshDio.post(
         ApiEndpoints.keycloakTokenUrl,
         data: {

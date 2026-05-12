@@ -14,28 +14,10 @@ class RouteNames {
   static const String students = '/academic/students';
   static const String teachers = '/academic/teachers';
   static const String subjects = '/academic/subjects';
-
-  /// Route halaman daftar/manajemen pengumuman di mobile.
-  ///
-  /// Catatan:
-  /// - Walaupun namanya announcements, UI tetap boleh menampilkan teks
-  ///   "Pengumuman".
   static const String announcements = '/academic/announcements';
-
-  /// Route detail pengumuman.
-  ///
-  /// Pakai path `/academic/announcements/:id` (versi HEAD/punya saya)
-  /// supaya konsisten dengan list route dan helper di bawah.
   static const String announcementDetail = '/academic/announcements/:id';
-
-  /// Helper untuk membuka detail pengumuman berdasarkan id.
-  ///
-  /// Contoh:
-  /// context.go(RouteNames.announcementDetailPath('12'));
-  static String announcementDetailPath(String id) {
-    return '/academic/announcements/$id';
-  }
-
+  static String announcementDetailPath(String id) =>
+      '/academic/announcements/$id';
   static const String schedules = '/academic/schedules';
   static const String letters = '/academic/letters';
 
@@ -48,27 +30,22 @@ class RouteNames {
   static const String attendanceRecap = '/student/attendance';
   static const String kepsekStudentAttendanceRecap =
       '/student/kepsek-attendance-recap';
-
-  /// Alias untuk absensi siswa.
-  ///
-  /// Dipakai oleh drawer/menu role tertentu agar tidak perlu route baru.
   static const String studentAttendance = attendanceRecap;
-
   static const String gradesRecap = '/student/grades';
   static const String kepsekFinalGradesRecap =
       '/student/kepsek-final-grades-recap';
+
+  // ✅ TAMBAH — Wali Kelas view-only
+  static const String waliAttendanceSummary =
+      '/student/wali-attendance-summary';
+  static const String waliGradesView = '/student/wali-grades-view';
 
   // ─── Learning ──────────────────────────────────────────
   static const String learning = '/learning';
   static const String teacherAttendance = '/learning/teacher-attendance';
   static const String teacherAttendanceRecap =
       '/learning/teacher-attendance-recap';
-
-  /// Alias untuk absensi guru.
-  ///
-  /// Dipakai oleh drawer/menu role tertentu agar tidak perlu route baru.
   static const String absensiGuru = teacherAttendance;
-
   static const String teachingNotes = '/learning/teaching-notes';
   static const String teacherEvaluation = '/learning/teacher-evaluation';
   static const String learningDevice = '/learning/devices';

@@ -124,6 +124,28 @@ class AppDrawer extends StatelessWidget {
       );
     }
 
+    // // ─── Wali Kelas ───────────────────────────────────────
+    // if (RoleHelper.hasRole(
+    //   targetRole: AppRoles.homeroom,
+    //   role: role,
+    //   roles: roles,
+    // )) {
+    //   categories.add(
+    //     const _MenuCategoryData(
+    //       title: 'Menu Wali Kelas',
+    //       icon: Icons.supervised_user_circle_outlined,
+    //       items: [
+    //         _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Presensi Kelas', route: RouteNames.attendanceRecap),
+    //         _MenuItemData(icon: Icons.bar_chart_outlined, label: 'Rekap Nilai', route: RouteNames.gradesRecap),
+    //         _MenuItemData(icon: Icons.family_restroom_outlined, label: 'Parenting', route: RouteNames.parentingNotes),
+    //         _MenuItemData(icon: Icons.cleaning_services_outlined, label: 'Kebersihan Kelas', route: RouteNames.cleanlinessRecap),
+    //         _MenuItemData(icon: Icons.edit_note_outlined, label: 'Refleksi', route: RouteNames.homeroomReflection),
+    //         _MenuItemData(icon: Icons.mail_outline, label: 'Surat Panggilan', route: RouteNames.summonsLetter),
+    //       ],
+    //     ),
+    //   );
+    // }
+
     // ─── Wali Kelas ───────────────────────────────────────
     if (RoleHelper.hasRole(
       targetRole: AppRoles.homeroom,
@@ -135,12 +157,36 @@ class AppDrawer extends StatelessWidget {
           title: 'Menu Wali Kelas',
           icon: Icons.supervised_user_circle_outlined,
           items: [
-            _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Presensi Kelas', route: RouteNames.attendanceRecap),
-            _MenuItemData(icon: Icons.bar_chart_outlined, label: 'Rekap Nilai', route: RouteNames.gradesRecap),
-            _MenuItemData(icon: Icons.family_restroom_outlined, label: 'Parenting', route: RouteNames.parentingNotes),
-            _MenuItemData(icon: Icons.cleaning_services_outlined, label: 'Kebersihan Kelas', route: RouteNames.cleanlinessRecap),
-            _MenuItemData(icon: Icons.edit_note_outlined, label: 'Refleksi', route: RouteNames.homeroomReflection),
-            _MenuItemData(icon: Icons.mail_outline, label: 'Surat Panggilan', route: RouteNames.summonsLetter),
+            _MenuItemData(
+              icon: Icons.how_to_reg_outlined,
+              label: 'Presensi Kelas',
+              route: RouteNames.waliAttendanceSummary, // ← GANTI
+            ),
+            _MenuItemData(
+              icon: Icons.bar_chart_outlined,
+              label: 'Rekap Nilai',
+              route: RouteNames.waliGradesView, // ← GANTI
+            ),
+            _MenuItemData(
+              icon: Icons.family_restroom_outlined,
+              label: 'Parenting',
+              route: RouteNames.parentingNotes,
+            ),
+            _MenuItemData(
+              icon: Icons.cleaning_services_outlined,
+              label: 'Kebersihan Kelas',
+              route: RouteNames.cleanlinessRecap,
+            ),
+            _MenuItemData(
+              icon: Icons.edit_note_outlined,
+              label: 'Refleksi',
+              route: RouteNames.homeroomReflection,
+            ),
+            _MenuItemData(
+              icon: Icons.mail_outline,
+              label: 'Surat Panggilan',
+              route: RouteNames.summonsLetter,
+            ),
           ],
         ),
       );

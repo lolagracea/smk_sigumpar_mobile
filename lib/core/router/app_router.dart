@@ -29,6 +29,9 @@ import '../../presentation/features/student/screens/summons_letter_screen.dart';
 import '../../presentation/features/student/screens/parenting_wakil_screen.dart';
 import '../../presentation/features/student/screens/rekap_absensi_siswa_kepsek_screen.dart';
 import '../../presentation/features/student/screens/rekap_nilai_final_kepsek_screen.dart';
+// ✅ TAMBAH
+import '../../presentation/features/student/screens/attendance_summary_screen.dart';
+import '../../presentation/features/student/screens/grades_view_screen.dart';
 
 // ─── Learning ─────────────────────────────────────────────────
 import '../../presentation/features/learning/screens/Teacher_Attendance_Screen.dart';
@@ -176,21 +179,14 @@ class AppRouter {
               path: RouteNames.summonsLetter,
               builder: (_, __) => const SummonsLetterScreen(),
             ),
-
-            // Route lama absensi siswa.
-            // Jangan diganti karena masih dipakai flow lama.
             GoRoute(
               path: RouteNames.attendanceRecap,
               builder: (_, __) => const AttendanceRecapScreen(),
             ),
-
-            // Route baru khusus Kepala Sekolah:
-            // Rekap Absensi Siswa.
             GoRoute(
               path: RouteNames.kepsekStudentAttendanceRecap,
               builder: (_, __) => const RekapAbsensiSiswaKepsekScreen(),
             ),
-
             GoRoute(
               path: RouteNames.gradesRecap,
               builder: (_, __) => const GradesRecapScreen(),
@@ -204,22 +200,25 @@ class AppRouter {
               builder: (_, __) => const ParentingWakilScreen(),
             ),
 
-            // ─── Learning ────────────────────────────────────
+            // ✅ TAMBAH — Wali Kelas view-only
+            GoRoute(
+              path: RouteNames.waliAttendanceSummary,
+              builder: (_, __) => const AttendanceSummaryScreen(),
+            ),
+            GoRoute(
+              path: RouteNames.waliGradesView,
+              builder: (_, __) => const GradesViewScreen(),
+            ),
 
-            // Route lama absensi guru pribadi.
-            // Jangan diganti karena dipakai guru-mapel untuk absen.
+            // ─── Learning ────────────────────────────────────
             GoRoute(
               path: RouteNames.teacherAttendance,
               builder: (_, __) => const TeacherAttendanceScreen(),
             ),
-
-            // Route baru khusus Kepala Sekolah:
-            // Rekap Absensi Guru.
             GoRoute(
               path: RouteNames.teacherAttendanceRecap,
               builder: (_, __) => const RekapAbsensiGuruScreen(),
             ),
-
             GoRoute(
               path: RouteNames.teachingNotes,
               builder: (_, __) => const TeachingNotesScreen(),
