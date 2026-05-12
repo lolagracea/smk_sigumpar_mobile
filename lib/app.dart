@@ -8,6 +8,7 @@ import 'presentation/common/providers/auth_provider.dart';
 import 'presentation/common/providers/theme_provider.dart';
 import 'presentation/features/learning/providers/learning_provider.dart';
 import 'presentation/features/academic/providers/academic_provider.dart';
+import 'presentation/features/student/providers/student_provider.dart'; // ← TAMBAH
 
 class SmkSigumparApp extends StatefulWidget {
   const SmkSigumparApp({super.key});
@@ -22,10 +23,7 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
   @override
   void initState() {
     super.initState();
-    // Ambil AuthProvider dari Service Locator
     final authProvider = sl<AuthProvider>();
-
-    // Inisialisasi router dengan refreshListenable → tidak balik ke login saat reload
     _router = AppRouter.createRouter(authProvider);
   }
 
@@ -45,8 +43,10 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
         ChangeNotifierProvider<LearningProvider>(
           create: (_) => sl<LearningProvider>(),
         ),
+        ChangeNotifierProvider<StudentProvider>(  // ← TAMBAH
+          create: (_) => sl<StudentProvider>(),   // ← TAMBAH
+        ),                                        // ← TAMBAH
       ],
-      // Consumer agar MaterialApp rebuild saat tema berubah
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp.router(
@@ -54,9 +54,7 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            // Tema dinamis dari team lead
             themeMode: themeProvider.themeMode,
-            // Router dengan refreshListenable → auth persist
             routerConfig: _router,
           );
         },

@@ -18,6 +18,7 @@ import '../../presentation/common/providers/auth_provider.dart';
 import '../../presentation/common/providers/theme_provider.dart';
 import '../../presentation/features/learning/providers/learning_provider.dart';
 import '../../presentation/features/academic/providers/academic_provider.dart';
+import '../../presentation/features/student/providers/student_provider.dart'; // ← TAMBAHAN
 
 final sl = GetIt.instance;
 
@@ -79,4 +80,8 @@ Future<void> init() async {
   sl.registerFactory<AcademicProvider>(
         () => AcademicProvider(repository: sl<AcademicRepository>()),
   );
+
+  sl.registerFactory<StudentProvider>(                              // ← TAMBAHAN
+        () => StudentProvider(repository: sl<StudentRepository>()),     // ← TAMBAHAN
+  );                                                                // ← TAMBAHAN
 }
