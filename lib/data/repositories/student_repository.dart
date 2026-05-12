@@ -1,5 +1,12 @@
+import 'package:file_picker/file_picker.dart';
 import '../models/attendance_model.dart';
+import '../models/attendance_summary_model.dart';
 import '../models/grade_model.dart';
+import '../models/parenting_note_model.dart';
+import '../models/cleanliness_model.dart';
+import '../models/reflection_model.dart';
+import '../models/summons_letter_model.dart';
+import '../models/student_model.dart';
 import '../../core/network/api_response.dart';
 
 abstract class StudentRepository {
@@ -20,8 +27,8 @@ abstract class StudentRepository {
     String? academicYear,
     int page = 1,
   });
-  Future<GradeModel> submitGrade(Map<String, dynamic> data);
-  Future<GradeModel> updateGrade(String id, Map<String, dynamic> data);
+  Future<CleanlinessModel> updateCleanliness(String id, Map<String, dynamic> data);
+  Future<void> deleteCleanliness(String id);
 
   // ─── Grades (input nilai guru mapel) ─────────────────────
   Future<List<Map<String, dynamic>>> getGuruMapelAssignments();

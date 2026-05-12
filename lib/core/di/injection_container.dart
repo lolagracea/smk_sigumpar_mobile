@@ -59,7 +59,7 @@ Future<void> init() async {
         () => AssetService(dioClient: sl<DioClient>()),
   );
 
-  // ─── Providers ─────────────────────────────────────────
+  // ─── Providers (Singleton) ─────────────────────────────
   sl.registerLazySingleton<ThemeProvider>(
         () => ThemeProvider(notifier: sl<ThemeNotifier>()),
   );

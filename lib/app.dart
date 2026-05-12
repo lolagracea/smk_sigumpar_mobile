@@ -45,6 +45,15 @@ class _SmkSigumparAppState extends State<SmkSigumparApp> {
         ChangeNotifierProvider<LearningProvider>(
           create: (_) => sl<LearningProvider>(),
         ),
+        ChangeNotifierProvider<AbsensiGuruProvider>(
+          create: (_) => sl<AbsensiGuruProvider>(),
+        ),
+        ChangeNotifierProvider<StudentProvider>(
+          create: (_) => sl<StudentProvider>(),
+        ),
+        ChangeNotifierProvider<AcademicProvider>(
+          create: (_) => sl<AcademicProvider>(),
+        ),
       ],
       // Consumer agar MaterialApp rebuild saat tema berubah (dari team lead)
       child: Consumer<ThemeProvider>(

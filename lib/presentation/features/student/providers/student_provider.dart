@@ -100,22 +100,20 @@ class StudentProvider extends ChangeNotifier {
 
   Future<void> fetchGrades({
     required String classId,
-    bool refresh = false,
     String? semester,
     String? academicYear,
+    String? mapelId,
   }) async {
-    if (refresh) _grades = [];
-
     _gradeState = StudentLoadState.loading;
     notifyListeners();
 
     try {
-      final result = await _repository.getGradesRecap(
+      _grades = await _repository.getGradesRecap(
         classId: classId,
         semester: semester,
         academicYear: academicYear,
+        mapelId: mapelId,
       );
-      _grades = result.items;
       _gradeState = StudentLoadState.loaded;
     } catch (e) {
       _gradeError = e.toString();

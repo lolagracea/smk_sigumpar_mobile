@@ -39,12 +39,16 @@ class AcademicProvider extends ChangeNotifier {
   String? get classError => _classError;
   bool get hasMoreClasses => _hasMoreClasses;
 
-  Future<void> fetchClasses({bool refresh = false, String? search}) async {
+  Future<void> fetchClasses({
+    bool refresh = false,
+    String? search,
+  }) async {
     if (refresh) {
       _classPage = 1;
       _classes = [];
       _hasMoreClasses = true;
     }
+
     if (!_hasMoreClasses) return;
 
     _classState = AcademicLoadState.loading;
@@ -62,6 +66,7 @@ class AcademicProvider extends ChangeNotifier {
       _classError = _parseError(e);
       _classState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
@@ -105,12 +110,17 @@ class AcademicProvider extends ChangeNotifier {
   String? get studentError => _studentError;
   bool get hasMoreStudents => _hasMoreStudents;
 
-  Future<void> fetchStudents({bool refresh = false, String? classId, String? search}) async {
+  Future<void> fetchStudents({
+    bool refresh = false,
+    String? classId,
+    String? search,
+  }) async {
     if (refresh) {
       _studentPage = 1;
       _students = [];
       _hasMoreStudents = true;
     }
+
     if (!_hasMoreStudents) return;
 
     _studentState = AcademicLoadState.loading;
@@ -128,6 +138,7 @@ class AcademicProvider extends ChangeNotifier {
       _studentError = _parseError(e);
       _studentState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
@@ -184,17 +195,25 @@ class AcademicProvider extends ChangeNotifier {
   List<TeacherModel> get teachers => _teachers;
   String? get teacherError => _teacherError;
 
-  Future<void> fetchTeachers({bool refresh = false, String? search}) async {
+  Future<void> fetchTeachers({
+    bool refresh = false,
+    String? search,
+  }) async {
     if (refresh) {
       _teacherPage = 1;
       _teachers = [];
       _hasMoreTeachers = true;
     }
+
     if (!_hasMoreTeachers) return;
     _teacherState = AcademicLoadState.loading;
     notifyListeners();
     try {
-      final result = await _repository.getTeachers(page: _teacherPage, search: search);
+      final result = await _repository.getTeachers(
+        page: _teacherPage,
+        search: search,
+      );
+
       _teachers.addAll(result.items);
       _hasMoreTeachers = result.hasNextPage;
       _teacherPage++;
@@ -203,6 +222,7 @@ class AcademicProvider extends ChangeNotifier {
       _teacherError = _parseError(e);
       _teacherState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
@@ -218,12 +238,15 @@ class AcademicProvider extends ChangeNotifier {
   String? get announcementError => _announcementError;
   bool get hasMoreAnnouncements => _hasMoreAnnouncements;
 
-  Future<void> fetchAnnouncements({bool refresh = false}) async {
+  Future<void> fetchAnnouncements({
+    bool refresh = false,
+  }) async {
     if (refresh) {
       _announcementPage = 1;
       _announcements = [];
       _hasMoreAnnouncements = true;
     }
+
     if (!_hasMoreAnnouncements) return;
     _announcementState = AcademicLoadState.loading;
     _announcementError = null;
@@ -240,6 +263,7 @@ class AcademicProvider extends ChangeNotifier {
       _announcementError = _parseError(e);
       _announcementState = AcademicLoadState.error;
     }
+
     notifyListeners();
   }
 
