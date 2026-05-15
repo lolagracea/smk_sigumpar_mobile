@@ -911,13 +911,28 @@ class StudentProvider extends ChangeNotifier {
   // ══════════════════════════════════════════════════════════
   // ─── Helper ───────────────────────────────────────────────
   // ══════════════════════════════════════════════════════════
+
+  /// Mengurai exception menjadi pesan error yang ramah pengguna.
+  /// Urutan pengecekan: HTTP status spesifik → koneksi → fallback.
   String _parseError(Object e) {
     final s = e.toString();
-    if (s.contains('SocketException') || s.contains('Network')) {
-      return 'Tidak ada koneksi internet';
-    }
-    if (s.contains('TimeoutException')) return 'Server tidak merespon';
+
+    // ── HTTP status codes (cek dulu sebelum koneksi) ──────────
     if (s.contains('403')) return 'Akses ditolak';
-    return s.replaceAll('Exception: ', '');
+    if (s.contains('401')) return 'Sesi habis, silakan login ulang';
+    if (s.contains('404')) return 'Data tidak ditemukan';
+    if (s.contains('422')) return 'Data yang dikirim tidak valid';
+    if (s.contains('500') || s.contains('502') || s.contains('503')) {
+      return 'Terjadi kesalahan pada server';
+    }
+
+    // ── Koneksi & timeout ─────────────────────────────────────
+    if (s.contains('SocketException')) return 'Tidak ada koneksi internet';
+    if (s.contains('TimeoutException')) return 'Server tidak merespon';
+    if (s.contains('NetworkException')) return 'Tidak ada koneksi internet';
+    if (s.contains('HandshakeException')) return 'Koneksi tidak aman (SSL)';
+
+    // ── Fallback: strip prefix Exception ─────────────────────
+    return s.replaceAll('Exception: ', '').trim();
   }
 }

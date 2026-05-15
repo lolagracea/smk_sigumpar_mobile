@@ -71,6 +71,13 @@ class _AttendanceSummaryScreenState extends State<AttendanceSummaryScreen> {
     _fetchData();
   }
 
+  // Pakai == bukan contains — karena _parseError sudah mengembalikan
+  // string yang terdefinisi jelas sehingga tidak ada false positive.
+  bool _isNotAssignedError(String? msg) => msg == 'Akses ditolak';
+  bool _isConnectionError(String? msg) =>
+      msg == 'Tidak ada koneksi internet' || msg == 'Server tidak merespon';
+  bool _isSessionError(String? msg) => msg == 'Sesi habis, silakan login ulang';
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -187,72 +194,208 @@ class _AttendanceSummaryScreenState extends State<AttendanceSummaryScreen> {
         Expanded(
           child: Consumer<StudentProvider>(
             builder: (context, provider, _) {
+              // ── Loading ──────────────────────────────────
               if (provider.summaryState == StudentLoadState.loading) {
                 return const Center(child: CircularProgressIndicator());
               }
 
+              // ── Error State ──────────────────────────────
               if (provider.summaryState == StudentLoadState.error) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 48,
-                          color: isDark
-                              ? Colors.red.shade300
-                              : Colors.red.shade400),
-                      const SizedBox(height: 12),
-                      Text(
-                        provider.summaryError ?? 'Gagal memuat data',
-                        style: TextStyle(
-                            color: isDark
-                                ? Colors.red.shade300
-                                : Colors.red.shade600),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _fetchData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark
-                              ? const Color(0xFF3B82F6)
-                              : const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                );
-              }
+                final errorMsg = provider.summaryError;
+                final isNotAssigned = _isNotAssignedError(errorMsg);
+                final isConnection = _isConnectionError(errorMsg);
+                final isSession = _isSessionError(errorMsg);
 
-              if (provider.summaries.isEmpty) {
+                final IconData icon;
+                final Color iconColor;
+                final String title;
+                final String subtitle;
+
+                if (isNotAssigned) {
+                  icon = Icons.admin_panel_settings_outlined;
+                  iconColor = isDark
+                      ? Colors.orange.shade300
+                      : Colors.orange.shade600;
+                  title = 'Akses Tidak Diizinkan';
+                  subtitle =
+                  'Anda bukan wali kelas yang ditugaskan untuk kelas ini. '
+                      'Silakan pilih kelas lain yang sesuai dengan penugasan Anda.';
+                } else if (isSession) {
+                  icon = Icons.lock_outline_rounded;
+                  iconColor =
+                  isDark ? Colors.amber.shade300 : Colors.amber.shade700;
+                  title = 'Sesi Berakhir';
+                  subtitle =
+                  'Sesi Anda telah habis. Silakan login ulang untuk melanjutkan.';
+                } else if (isConnection) {
+                  icon = errorMsg == 'Server tidak merespon'
+                      ? Icons.cloud_off_rounded
+                      : Icons.wifi_off_rounded;
+                  iconColor =
+                  isDark ? Colors.red.shade300 : Colors.red.shade500;
+                  title = errorMsg == 'Server tidak merespon'
+                      ? 'Server Tidak Merespon'
+                      : 'Tidak Ada Koneksi';
+                  subtitle = errorMsg == 'Server tidak merespon'
+                      ? 'Server sedang tidak merespon. Coba lagi beberapa saat.'
+                      : 'Periksa koneksi internet Anda, lalu coba lagi.';
+                } else {
+                  icon = Icons.error_outline_rounded;
+                  iconColor =
+                  isDark ? Colors.red.shade300 : Colors.red.shade500;
+                  title = 'Gagal Memuat Data';
+                  subtitle = errorMsg?.isNotEmpty == true
+                      ? errorMsg!
+                      : 'Terjadi kesalahan saat memuat data absensi.';
+                }
+
                 return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.people_outline,
-                          size: 64,
-                          color: isDark
-                              ? Colors.white24
-                              : Colors.grey.shade300),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Belum ada data absensi',
-                        style: TextStyle(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: iconColor.withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(icon, size: 52, color: iconColor),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          subtitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
                             color: isDark
                                 ? Colors.white54
-                                : Colors.grey.shade500),
-                      ),
-                    ],
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        if (!isNotAssigned && !isSession)
+                          ElevatedButton.icon(
+                            onPressed: _fetchData,
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('Coba Lagi'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark
+                                  ? const Color(0xFF3B82F6)
+                                  : const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        if (isNotAssigned)
+                          OutlinedButton.icon(
+                            onPressed: () {},
+                            icon: Icon(Icons.swap_horiz,
+                                size: 18, color: iconColor),
+                            label: Text('Ganti Kelas',
+                                style: TextStyle(color: iconColor)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                  color: iconColor.withOpacity(0.5)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               }
 
+              // ── Empty State ──────────────────────────────
+              if (provider.summaries.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.grey.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.event_busy_outlined,
+                            size: 52,
+                            color: isDark
+                                ? Colors.white24
+                                : Colors.grey.shade400,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Belum Ada Data Absensi',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color:
+                            isDark ? Colors.white70 : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _startDate != null
+                              ? 'Tidak ada data absensi pada rentang tanggal yang dipilih.\nCoba ubah atau hapus filter tanggal.'
+                              : 'Data absensi untuk kelas ini belum tersedia.\nPastikan kelas ini adalah kelas yang Anda ampu sebagai wali kelas.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.5,
+                            color: isDark
+                                ? Colors.white38
+                                : Colors.grey.shade500,
+                          ),
+                        ),
+                        if (_startDate != null) ...[
+                          const SizedBox(height: 20),
+                          TextButton.icon(
+                            onPressed: _clearFilter,
+                            icon:
+                            const Icon(Icons.filter_alt_off, size: 16),
+                            label: const Text('Hapus Filter Tanggal'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: isDark
+                                  ? const Color(0xFF60A5FA)
+                                  : const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              // ── Data tersedia ─────────────────────────────
               return RefreshIndicator(
                 onRefresh: () async => _fetchData(),
                 child: Column(
                   children: [
-                    // Header tabel
                     Container(
                       color: isDark
                           ? const Color(0xFF3B82F6)
@@ -265,8 +408,8 @@ class _AttendanceSummaryScreenState extends State<AttendanceSummaryScreen> {
                               width: 28,
                               child: Text('No', style: _headerStyle)),
                           Expanded(
-                              child:
-                              Text('Nama Siswa', style: _headerStyle)),
+                              child: Text('Nama Siswa',
+                                  style: _headerStyle)),
                           _HeaderCell('H'),
                           _HeaderCell('S'),
                           _HeaderCell('I'),
@@ -275,7 +418,6 @@ class _AttendanceSummaryScreenState extends State<AttendanceSummaryScreen> {
                         ],
                       ),
                     ),
-                    // List data
                     Expanded(
                       child: ListView.builder(
                         itemCount: provider.summaries.length,
@@ -289,7 +431,6 @@ class _AttendanceSummaryScreenState extends State<AttendanceSummaryScreen> {
                               : (isEven
                               ? Colors.white
                               : Colors.grey.shade50);
-
                           final total = s.present +
                               s.sick +
                               s.permission +
@@ -303,14 +444,12 @@ class _AttendanceSummaryScreenState extends State<AttendanceSummaryScreen> {
                               children: [
                                 SizedBox(
                                   width: 28,
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: isDark
-                                            ? Colors.white54
-                                            : Colors.grey),
-                                  ),
+                                  child: Text('${index + 1}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? Colors.white54
+                                              : Colors.grey)),
                                 ),
                                 Expanded(
                                   child: Column(
@@ -402,8 +541,8 @@ class _HeaderCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 44,
-      child:
-      Text(label, textAlign: TextAlign.center, style: _headerStyle),
+      child: Text(label,
+          textAlign: TextAlign.center, style: _headerStyle),
     );
   }
 }
