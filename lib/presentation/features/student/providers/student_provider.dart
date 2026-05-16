@@ -571,7 +571,10 @@ class StudentProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadAttendanceRecap() async {
+  Future<void> loadAttendanceRecap({
+    String? tanggalMulai,
+    String? tanggalAkhir,
+  }) async {
     if (_selectedSchedule == null) return;
 
     _recapState = StudentLoadState.loading;
@@ -585,6 +588,8 @@ class StudentProvider extends ChangeNotifier {
       _attendanceRecap = await _repository.getAbsensiMapelRekap(
         kelasId: kelasId,
         mapelId: mapelId,
+        tanggalMulai: tanggalMulai,
+        tanggalAkhir: tanggalAkhir,
       );
 
       _recapState = StudentLoadState.loaded;

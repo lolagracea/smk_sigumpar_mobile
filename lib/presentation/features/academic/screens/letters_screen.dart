@@ -1,10 +1,10 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/file_downloader.dart';
 import '../../../../core/utils/role_helper.dart';
 import '../../../../data/models/arsip_surat_model.dart';
 import '../../../../data/repositories/academic_repository.dart';
@@ -107,7 +107,8 @@ class _LettersView extends StatelessWidget {
                   const SizedBox(height: 12),
                   TextField(
                     controller: controller,
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                    style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87),
                     onChanged: (_) {
                       setState(() {});
                     },
@@ -122,9 +123,7 @@ class _LettersView extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                  },
+                  onPressed: () => Navigator.pop(dialogContext),
                   child: Text(
                     'Batal',
                     style: TextStyle(
@@ -136,23 +135,20 @@ class _LettersView extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.red.shade600,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                    disabledBackgroundColor:
+                    isDark ? Colors.white12 : Colors.grey.shade300,
                   ),
                   onPressed: isMatch
                       ? () async {
                     final provider =
                     parentContext.read<AcademicProvider>();
-
-                    final success = await provider.deleteLetter(
-                      id: item.id,
-                    );
+                    final success =
+                    await provider.deleteLetter(id: item.id);
 
                     if (!dialogContext.mounted) return;
-
                     Navigator.pop(dialogContext);
 
                     if (!parentContext.mounted) return;
-
                     ScaffoldMessenger.of(parentContext).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -177,51 +173,48 @@ class _LettersView extends StatelessWidget {
     });
   }
 
-  Future<void> _openFile(
+  /// Download file surat via FileDownloader (mobile: save ke Download/SMK Sigumpar, web: tab baru)
+  Future<void> _downloadFile(
       BuildContext context,
       ArsipSuratModel item,
       ) async {
-    final url = _buildPublicFileUrl(item);
-
-    if (url.isEmpty) {
+    final fileUrl = item.fileUrl;
+    if (fileUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('File surat tidak tersedia.'),
-        ),
+        const SnackBar(content: Text('File surat tidak tersedia.')),
       );
       return;
     }
 
-    final uri = Uri.parse(url);
+    // Bersihkan nomor surat untuk dijadikan nama file
+    final cleanNomor = item.nomorSurat
+        .replaceAll(RegExp(r'[^\w\-]'), '_')
+        .replaceAll(RegExp(r'_+'), '_');
 
-    final success = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
-
-    if (!success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal membuka file surat.'),
-        ),
-      );
+    // Coba pakai extension dari file_name asli
+    String fileName = 'surat_$cleanNomor';
+    if (item.fileName.isNotEmpty && item.fileName.contains('.')) {
+      final ext = item.fileName.split('.').last;
+      fileName = '$fileName.$ext';
     }
-  }
 
-  String _buildPublicFileUrl(ArsipSuratModel item) {
-    if (item.fileUrl.isEmpty) return '';
+    debugPrint('=== DOWNLOAD SURAT TU ===');
+    debugPrint('nomor: ${item.nomorSurat}');
+    debugPrint('fileName asli: ${item.fileName}');
+    debugPrint('fileUrl: $fileUrl');
+    debugPrint('saved as: $fileName');
+    debugPrint('=========================');
 
-    final filename = item.fileUrl.split('/').last;
-
-    if (filename.isEmpty) return '';
-
-    return '${ApiEndpoints.baseUrl}/uploads/$filename';
+    await FileDownloader.downloadFile(
+      context: context,
+      source: fileUrl,
+      fileName: fileName,
+      baseUrl: ApiEndpoints.baseUrl,
+    );
   }
 
   Future<void> _refresh(BuildContext context) {
-    return context.read<AcademicProvider>().fetchLetters(
-      refresh: true,
-    );
+    return context.read<AcademicProvider>().fetchLetters(refresh: true);
   }
 
   @override
@@ -248,11 +241,11 @@ class _LettersView extends StatelessWidget {
               ),
               if (canManage)
                 FilledButton.icon(
-                  onPressed: () {
-                    _openFormSheet(context);
-                  },
+                  onPressed: () => _openFormSheet(context),
                   style: FilledButton.styleFrom(
-                    backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                    backgroundColor: isDark
+                        ? const Color(0xFF3B82F6)
+                        : const Color(0xFF2563EB),
                     foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.add_rounded),
@@ -262,12 +255,7 @@ class _LettersView extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _buildContent(
-            context,
-            provider,
-            canManage,
-            isDark,
-          ),
+          child: _buildContent(context, provider, canManage, isDark),
         ),
       ],
     );
@@ -290,9 +278,7 @@ class _LettersView extends StatelessWidget {
       return AppErrorWidget(
         message: provider.letterError,
         onRetry: () {
-          context.read<AcademicProvider>().fetchLetters(
-            refresh: true,
-          );
+          context.read<AcademicProvider>().fetchLetters(refresh: true);
         },
       );
     }
@@ -313,7 +299,8 @@ class _LettersView extends StatelessWidget {
             Center(
               child: Text(
                 'Belum ada arsip surat.',
-                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                style: TextStyle(
+                    color: isDark ? Colors.white54 : Colors.grey.shade700),
               ),
             ),
           ],
@@ -326,30 +313,38 @@ class _LettersView extends StatelessWidget {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         itemCount: provider.letters.length,
-        separatorBuilder: (_, __) {
-          return const SizedBox(height: 8);
-        },
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final item = provider.letters[index];
+          final ext = item.fileName.contains('.')
+              ? item.fileName.split('.').last.toUpperCase()
+              : '';
 
           return Card(
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: isDark ? Colors.white12 : Colors.grey.shade200),
+              side: BorderSide(
+                  color: isDark ? Colors.white12 : Colors.grey.shade200),
             ),
             child: ListTile(
               leading: Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2563EB).withOpacity(0.15) : const Color(0xFFEFF6FF),
+                  color: _extColor(ext, isDark).withOpacity(isDark ? 0.2 : 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.description_outlined,
-                  color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                child: Center(
+                  child: Text(
+                    ext.isEmpty ? 'FILE' : ext,
+                    style: TextStyle(
+                      color: _extColor(ext, isDark),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
                 ),
               ),
               title: Text(
@@ -365,25 +360,19 @@ class _LettersView extends StatelessWidget {
                   item.fileName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade600),
+                  style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.grey.shade600),
                 ),
               ),
-              onTap: () {
-                _openFile(context, item);
-              },
+              onTap: () => _downloadFile(context, item),
               trailing: PopupMenuButton<String>(
                 iconColor: isDark ? Colors.white70 : Colors.grey.shade600,
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 onSelected: (value) {
-                  if (value == 'view') {
-                    _openFile(context, item);
-                  } else if (value == 'download') {
-                    _openFile(context, item);
+                  if (value == 'download') {
+                    _downloadFile(context, item);
                   } else if (value == 'edit') {
-                    _openFormSheet(
-                      context,
-                      initialData: item,
-                    );
+                    _openFormSheet(context, initialData: item);
                   } else if (value == 'delete') {
                     _openDeleteDialog(context, item);
                   }
@@ -391,22 +380,47 @@ class _LettersView extends StatelessWidget {
                 itemBuilder: (_) {
                   return [
                     PopupMenuItem(
-                      value: 'view',
-                      child: Text('Lihat', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-                    ),
-                    PopupMenuItem(
                       value: 'download',
-                      child: Text('Unduh', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.file_download_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Text('Download',
+                              style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : Colors.black87)),
+                        ],
+                      ),
                     ),
                     if (canManage)
                       PopupMenuItem(
                         value: 'edit',
-                        child: Text('Edit', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.edit_outlined, size: 18),
+                            const SizedBox(width: 8),
+                            Text('Edit',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black87)),
+                          ],
+                        ),
                       ),
                     if (canManage)
                       PopupMenuItem(
                         value: 'delete',
-                        child: Text('Hapus', style: TextStyle(color: Colors.red.shade400)),
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline,
+                                size: 18, color: Colors.red.shade400),
+                            const SizedBox(width: 8),
+                            Text('Hapus',
+                                style:
+                                TextStyle(color: Colors.red.shade400)),
+                          ],
+                        ),
                       ),
                   ];
                 },
@@ -417,8 +431,30 @@ class _LettersView extends StatelessWidget {
       ),
     );
   }
+
+  Color _extColor(String ext, bool isDark) {
+    switch (ext.toLowerCase()) {
+      case 'pdf':
+        return Colors.red.shade600;
+      case 'doc':
+      case 'docx':
+        return Colors.blue.shade600;
+      case 'xls':
+      case 'xlsx':
+        return Colors.green.shade600;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Colors.purple.shade600;
+      default:
+        return isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
+    }
+  }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── FORM TAMBAH/EDIT ARSIP SURAT ──────────────────────────
+// ═══════════════════════════════════════════════════════════
 class _LetterFormSheet extends StatefulWidget {
   final BuildContext parentContext;
   final ArsipSuratModel? initialData;
@@ -444,7 +480,6 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
   @override
   void initState() {
     super.initState();
-
     if (_isEdit) {
       _nomorSuratController.text = widget.initialData?.nomorSurat ?? '';
     }
@@ -459,14 +494,7 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: [
-        'pdf',
-        'doc',
-        'docx',
-        'jpg',
-        'jpeg',
-        'png',
-      ],
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
       withData: true,
     );
 
@@ -482,16 +510,12 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
 
     if (!_isEdit && _selectedFile == null) {
       ScaffoldMessenger.of(widget.parentContext).showSnackBar(
-        const SnackBar(
-          content: Text('File surat wajib diunggah.'),
-        ),
+        const SnackBar(content: Text('File surat wajib diunggah.')),
       );
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     final provider = context.read<AcademicProvider>();
 
@@ -507,16 +531,12 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
     );
 
     if (!mounted) return;
-
-    setState(() {
-      _isSubmitting = false;
-    });
+    setState(() => _isSubmitting = false);
 
     final messenger = ScaffoldMessenger.of(widget.parentContext);
 
     if (success) {
       Navigator.of(context).pop();
-
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -530,8 +550,7 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            provider.letterError ?? 'Gagal menyimpan arsip surat.',
-          ),
+              provider.letterError ?? 'Gagal menyimpan arsip surat.'),
         ),
       );
     }
@@ -549,9 +568,8 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Form(
             key: _formKey,
@@ -582,13 +600,18 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                 TextFormField(
                   controller: _nomorSuratController,
                   enabled: !_isSubmitting,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     labelText: 'Nomor Surat',
                     hintText: 'Contoh: 123/SMKN1/2026',
                     prefixIcon: const Icon(Icons.numbers_outlined),
-                    labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
-                    hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.grey.shade400),
+                    labelStyle: TextStyle(
+                        color:
+                        isDark ? Colors.white54 : Colors.grey.shade700),
+                    hintStyle: TextStyle(
+                        color:
+                        isDark ? Colors.white30 : Colors.grey.shade400),
                   ),
                   textInputAction: TextInputAction.next,
                   validator: (value) {
@@ -604,10 +627,14 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                   borderRadius: BorderRadius.circular(12),
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: _isEdit ? 'File Surat Baru Opsional' : 'File Surat',
+                      labelText:
+                      _isEdit ? 'File Surat Baru Opsional' : 'File Surat',
                       prefixIcon: const Icon(Icons.upload_file_outlined),
                       suffixIcon: const Icon(Icons.folder_open_outlined),
-                      labelStyle: TextStyle(color: isDark ? Colors.white54 : Colors.grey.shade700),
+                      labelStyle: TextStyle(
+                          color: isDark
+                              ? Colors.white54
+                              : Colors.grey.shade700),
                     ),
                     child: Text(
                       _selectedFile?.name ??
@@ -618,7 +645,9 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: _selectedFile == null
-                            ? (isDark ? Colors.white54 : Colors.grey.shade600)
+                            ? (isDark
+                            ? Colors.white54
+                            : Colors.grey.shade600)
                             : (isDark ? Colors.white : Colors.black87),
                       ),
                     ),
@@ -632,7 +661,8 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                       'File saat ini: ${widget.initialData!.fileName}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        color:
+                        isDark ? Colors.white54 : Colors.grey.shade600,
                       ),
                     ),
                   ),
@@ -643,9 +673,12 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                   child: FilledButton.icon(
                     onPressed: _isSubmitting ? null : _submit,
                     style: FilledButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB),
+                      backgroundColor: isDark
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: isDark ? Colors.white12 : Colors.grey.shade300,
+                      disabledBackgroundColor:
+                      isDark ? Colors.white12 : Colors.grey.shade300,
                     ),
                     icon: _isSubmitting
                         ? const SizedBox(
@@ -657,9 +690,7 @@ class _LetterFormSheetState extends State<_LetterFormSheet> {
                       ),
                     )
                         : const Icon(Icons.save_outlined),
-                    label: Text(
-                      _isSubmitting ? 'Menyimpan...' : 'Simpan',
-                    ),
+                    label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan'),
                   ),
                 ),
               ],

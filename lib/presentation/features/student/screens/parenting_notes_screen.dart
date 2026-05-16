@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/utils/file_downloader.dart';
 import '../providers/student_provider.dart';
 import '../../academic/providers/academic_provider.dart';
 import '../../../../data/models/parenting_note_model.dart';
@@ -34,7 +35,7 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
   Future<void> _initData() async {
     final academicProvider = context.read<AcademicProvider>();
     await academicProvider.fetchClasses(refresh: true);
-    
+
     if (academicProvider.classes.isNotEmpty) {
       setState(() {
         _selectedClassId = academicProvider.classes.first.id;
@@ -44,7 +45,9 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
   }
 
   void _fetchNotes() {
-    context.read<StudentProvider>().fetchParentingNotes(classId: _selectedClassId);
+    context
+        .read<StudentProvider>()
+        .fetchParentingNotes(classId: _selectedClassId);
   }
 
   void _showAddParentingSheet() {
@@ -72,8 +75,10 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('Parenting', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Upload & kelola dokumen parenting', style: TextStyle(fontSize: 12)),
+            Text('Parenting',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Upload & kelola dokumen parenting',
+                style: TextStyle(fontSize: 12)),
           ],
         ),
         centerTitle: true,
@@ -91,10 +96,12 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
                   value: _selectedClassId,
                   decoration: InputDecoration(
                     labelText: 'Pilih Kelas',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   items: academic.classes.map((c) {
-                    return DropdownMenuItem(value: c.id, child: Text(c.namaKelas));
+                    return DropdownMenuItem(
+                        value: c.id, child: Text(c.namaKelas));
                   }).toList(),
                   onChanged: (val) {
                     setState(() => _selectedClassId = val);
@@ -107,11 +114,13 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
           Expanded(
             child: Consumer<StudentProvider>(
               builder: (context, provider, child) {
-                if (provider.parentingState == StudentLoadState.loading && provider.parentingNotes.isEmpty) {
+                if (provider.parentingState == StudentLoadState.loading &&
+                    provider.parentingNotes.isEmpty) {
                   return const LoadingWidget();
                 }
 
-                if (provider.parentingState == StudentLoadState.error && provider.parentingNotes.isEmpty) {
+                if (provider.parentingState == StudentLoadState.error &&
+                    provider.parentingNotes.isEmpty) {
                   return AppErrorWidget(
                     message: provider.parentingError ?? 'Gagal memuat data',
                     onRetry: _fetchNotes,
@@ -121,7 +130,8 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
                 final notes = provider.parentingNotes;
 
                 if (notes.isEmpty) {
-                  return const Center(child: Text('Belum ada data parenting'));
+                  return const Center(
+                      child: Text('Belum ada data parenting'));
                 }
 
                 return RefreshIndicator(
@@ -142,13 +152,17 @@ class _ParentingNotesScreenState extends State<ParentingNotesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddParentingSheet,
-        backgroundColor: Colors.white,
-        child: const Icon(Icons.add_circle_outline, size: 36, color: Colors.black),
+        backgroundColor: const Color(0xFF1E6091),
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, size: 32, color: Colors.white),
       ),
     );
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── CARD PARENTING ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 class _ParentingCard extends StatelessWidget {
   final ParentingNoteModel note;
   const _ParentingCard({required this.note});
@@ -168,17 +182,22 @@ class _ParentingCard extends StatelessWidget {
                 onOpen: () => _downloadFile(context),
               ),
               const SizedBox(height: 16),
-              _detailItem('Tanggal', DateFormat('dd MMMM yyyy', 'id_ID').format(note.tanggal)),
+              _detailItem(
+                  'Tanggal',
+                  DateFormat('dd MMMM yyyy', 'id_ID')
+                      .format(note.tanggal)),
               _detailItem('Agenda', note.agenda ?? '-'),
               _detailItem('Ringkasan', note.ringkasan ?? '-'),
               _detailItem('Kehadiran Ortu', '${note.kehadiranOrtu} orang'),
-              if (note.catatan != null && note.catatan!.isNotEmpty) 
+              if (note.catatan != null && note.catatan!.isNotEmpty)
                 _detailItem('Catatan Tambahan', note.catatan!),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Tutup')),
         ],
       ),
     );
@@ -190,45 +209,65 @@ class _ParentingCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+          Text(label,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Colors.blueGrey)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+          Text(value,
+              style: const TextStyle(fontSize: 14, color: Colors.black87)),
         ],
       ),
     );
   }
 
   Future<void> _downloadFile(BuildContext context) async {
-    String? urlString = note.dokumentasi ?? note.fotoUrl;
-    if (urlString == null || urlString.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lampiran tidak tersedia')));
-      return;
-    }
+    final source = note.dokumentasi ?? note.fotoUrl;
+    debugPrint('=== DOWNLOAD PARENTING ===');
+    debugPrint('note.id: ${note.id}');
+    debugPrint('note.agenda: ${note.agenda}');
+    debugPrint('source: $source');
+    debugPrint('==========================');
 
-    Uri uri;
-    if (urlString.startsWith('http')) {
-      uri = Uri.parse(urlString);
-    } else if (urlString.startsWith('JVBERi')) {
-      uri = Uri.parse('data:application/pdf;base64,$urlString');
-    } else if (urlString.startsWith('/9j/') || urlString.startsWith('iVBORw0KGgo')) {
-      String mime = urlString.startsWith('/9j/') ? 'image/jpeg' : 'image/png';
-      uri = Uri.parse('data:$mime;base64,$urlString');
-    } else if (urlString.startsWith('data:')) {
-      uri = Uri.parse(urlString);
-    } else {
-      String path = urlString.startsWith('/') ? urlString : '/$urlString';
-      uri = Uri.parse('${ApiEndpoints.baseUrl}$path');
-    }
+    // Buat nama file yang descriptive
+    final cleanAgenda = (note.agenda ?? 'parenting')
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        .replaceAll(' ', '_')
+        .toLowerCase();
+    final dateStr = DateFormat('yyyyMMdd').format(note.tanggal);
+    final fileName = 'parenting_${dateStr}_$cleanAgenda';
 
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuka file: $e')));
-      }
-    }
+    await FileDownloader.downloadFile(
+      context: context,
+      source: source,
+      fileName: fileName,
+      baseUrl: ApiEndpoints.baseUrl,
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Data?'),
+        content: Text(
+            'Data parenting "${note.agenda ?? '-'}" akan dihapus permanen. Lanjutkan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<StudentProvider>().deleteParentingNote(note.id);
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -248,18 +287,23 @@ class _ParentingCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     (note.agenda ?? 'Parenting').toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
                     'DOKUMEN',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue),
                   ),
                 ),
               ],
@@ -267,12 +311,28 @@ class _ParentingCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                const Icon(Icons.calendar_today,
+                    size: 14, color: Colors.grey),
                 const SizedBox(width: 8),
                 Text(
                   DateFormat('dd/MM/yyyy').format(note.tanggal),
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
+                const Spacer(),
+                if (note.kehadiranOrtu > 0)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.people_outline,
+                          size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${note.kehadiranOrtu} ortu',
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -291,10 +351,11 @@ class _ParentingCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                  onPressed: () {
-                    context.read<StudentProvider>().deleteParentingNote(note.id);
-                  },
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.redAccent, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _confirmDelete(context),
                 ),
               ],
             )
@@ -305,6 +366,9 @@ class _ParentingCard extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── PREVIEW LAMPIRAN (di dialog detail) ───────────────────
+// ═══════════════════════════════════════════════════════════
 class _AttachmentPreview extends StatefulWidget {
   final String? urlString;
   final VoidCallback onOpen;
@@ -337,26 +401,26 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
     }
 
     isPdf = url.startsWith('JVBERi') || url.toLowerCase().endsWith('.pdf');
-    isBase64Image = url.startsWith('/9j/') || 
-                    url.startsWith('iVBORw0KGgo') || 
-                    url.startsWith('data:image');
-    
+    isBase64Image = url.startsWith('/9j/') ||
+        url.startsWith('iVBORw0KGgo') ||
+        url.startsWith('data:image');
+
     if (!isPdf && !isBase64Image) {
-       finalUrl = url.startsWith('http') 
-           ? url 
-           : '${ApiEndpoints.baseUrl}${url.startsWith('/') ? url : '/$url'}';
-       
-       isNetworkImage = finalUrl.toLowerCase().endsWith('.jpg') || 
-                        finalUrl.toLowerCase().endsWith('.jpeg') || 
-                        finalUrl.toLowerCase().endsWith('.png') ||
-                        finalUrl.toLowerCase().endsWith('.gif') ||
-                        finalUrl.contains('/storage/');
+      finalUrl = url.startsWith('http')
+          ? url
+          : '${ApiEndpoints.baseUrl}${url.startsWith('/') ? url : '/$url'}';
+
+      isNetworkImage = finalUrl.toLowerCase().endsWith('.jpg') ||
+          finalUrl.toLowerCase().endsWith('.jpeg') ||
+          finalUrl.toLowerCase().endsWith('.png') ||
+          finalUrl.toLowerCase().endsWith('.gif') ||
+          finalUrl.contains('/storage/');
     }
 
     if (isBase64Image) {
       try {
-        final String base64Str = url.contains(',') ? url.split(',').last : url;
-        // Offload decoding to isolate to prevent UI lag
+        final String base64Str =
+        url.contains(',') ? url.split(',').last : url;
         decodedBytes = await compute(base64Decode, base64Str);
       } catch (e) {
         debugPrint('Error decoding base64: $e');
@@ -388,38 +452,55 @@ class _AttachmentPreviewState extends State<_AttachmentPreview> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Lampiran:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+        const Text('Lampiran:',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.blueGrey)),
         const SizedBox(height: 8),
         if (isBase64Image && decodedBytes != null)
-          _ImageFrame(child: Image.memory(
-            decodedBytes!,
-            fit: BoxFit.cover,
-            cacheHeight: 400,
-          ))
+          _ImageFrame(
+              child: Image.memory(
+                decodedBytes!,
+                fit: BoxFit.cover,
+                cacheHeight: 400,
+              ))
         else if (isNetworkImage)
-          _ImageFrame(child: Image.network(
-            finalUrl,
-            fit: BoxFit.cover,
-            cacheHeight: 400,
-            loadingBuilder: (_, child, progress) => progress == null ? child : const Center(child: CircularProgressIndicator()),
-            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-          ))
+          _ImageFrame(
+              child: Image.network(
+                finalUrl,
+                fit: BoxFit.cover,
+                cacheHeight: 400,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : const Center(child: CircularProgressIndicator()),
+                errorBuilder: (_, __, ___) =>
+                const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+              ))
         else if (isPdf)
-          const Center(child: Column(children: [Icon(Icons.picture_as_pdf, size: 60, color: Colors.red), Text('File PDF', style: TextStyle(fontSize: 12))]))
-        else
-          const Center(child: Icon(Icons.insert_drive_file, size: 60, color: Colors.grey)),
-        
+            const Center(
+                child: Column(children: [
+                  Icon(Icons.picture_as_pdf, size: 60, color: Colors.red),
+                  Text('File PDF', style: TextStyle(fontSize: 12))
+                ]))
+          else
+            const Center(
+                child: Icon(Icons.insert_drive_file,
+                    size: 60, color: Colors.grey)),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: widget.onOpen,
-            icon: const Icon(Icons.open_in_new, size: 16),
-            label: Text((isBase64Image || isNetworkImage) ? 'Lihat Full Screen' : 'Buka Dokumen'),
+            icon: const Icon(Icons.file_download_outlined, size: 16),
+            label: Text((isBase64Image || isNetworkImage)
+                ? 'Download Gambar'
+                : 'Download Dokumen'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1E6091),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
           ),
         ),
@@ -454,12 +535,14 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final String label;
-  const _ActionButton({required this.icon, required this.onTap, required this.label});
+  const _ActionButton(
+      {required this.icon, required this.onTap, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -470,7 +553,8 @@ class _ActionButton extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: Colors.blueGrey),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: Colors.blueGrey[700])),
+            Text(label,
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey[700])),
           ],
         ),
       ),
@@ -478,6 +562,9 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── FORM TAMBAH PARENTING ─────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 class AddParentingForm extends StatefulWidget {
   final String kelasId;
   const AddParentingForm({super.key, required this.kelasId});
@@ -495,6 +582,15 @@ class _AddParentingFormState extends State<AddParentingForm> {
   final _catatanController = TextEditingController();
   PlatformFile? _selectedFile;
   bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _agendaController.dispose();
+    _ringkasanController.dispose();
+    _kehadiranController.dispose();
+    _catatanController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -517,7 +613,8 @@ class _AddParentingFormState extends State<AddParentingForm> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lengkapi data wajib')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lengkapi data wajib')));
       return;
     }
 
@@ -538,9 +635,17 @@ class _AddParentingFormState extends State<AddParentingForm> {
       }
 
       await context.read<StudentProvider>().addParentingNote(data);
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Berhasil menambahkan data parenting')),
+        );
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -549,7 +654,11 @@ class _AddParentingFormState extends State<AddParentingForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 20, left: 20, right: 20),
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          top: 20,
+          left: 20,
+          right: 20),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -557,45 +666,77 @@ class _AddParentingFormState extends State<AddParentingForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tambahkan Parenting', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Tambahkan Parenting',
+                  style:
+                  TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
               InkWell(
                 onTap: _pickDate,
                 child: Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(_selectedDate == null ? 'Pilih Tanggal' : DateFormat('dd/MM/yyyy').format(_selectedDate!)),
+                      Text(_selectedDate == null
+                          ? 'Pilih Tanggal'
+                          : DateFormat('dd/MM/yyyy').format(_selectedDate!)),
                       const Icon(Icons.calendar_today),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(controller: _agendaController, decoration: const InputDecoration(labelText: 'Agenda/Kegiatan', border: OutlineInputBorder()), validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
+              TextFormField(
+                  controller: _agendaController,
+                  decoration: const InputDecoration(
+                      labelText: 'Agenda/Kegiatan',
+                      border: OutlineInputBorder()),
+                  validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
               const SizedBox(height: 16),
-              TextFormField(controller: _ringkasanController, decoration: const InputDecoration(labelText: 'Ringkasan', border: OutlineInputBorder()), maxLines: 3),
+              TextFormField(
+                  controller: _ringkasanController,
+                  decoration: const InputDecoration(
+                      labelText: 'Ringkasan', border: OutlineInputBorder()),
+                  maxLines: 3),
               const SizedBox(height: 16),
-              TextFormField(controller: _kehadiranController, decoration: const InputDecoration(labelText: 'Jumlah Kehadiran Ortu', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+              TextFormField(
+                  controller: _kehadiranController,
+                  decoration: const InputDecoration(
+                      labelText: 'Jumlah Kehadiran Ortu',
+                      border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number),
               const SizedBox(height: 16),
-              TextFormField(controller: _catatanController, decoration: const InputDecoration(labelText: 'Catatan Tambahan (Opsional)', border: OutlineInputBorder())),
+              TextFormField(
+                  controller: _catatanController,
+                  decoration: const InputDecoration(
+                      labelText: 'Catatan Tambahan (Opsional)',
+                      border: OutlineInputBorder())),
               const SizedBox(height: 16),
-              const Text('Dokumentasi (PDF/Image)', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Dokumentasi (PDF/Image)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _pickFile,
                 icon: const Icon(Icons.attach_file),
-                label: Text(_selectedFile == null ? 'Pilih File' : _selectedFile!.name),
+                label: Text(_selectedFile == null
+                    ? 'Pilih File'
+                    : _selectedFile!.name),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E6091), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('SIMPAN DATA'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E6091),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16)),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('SIMPAN DATA'),
                 ),
               ),
               const SizedBox(height: 20),
