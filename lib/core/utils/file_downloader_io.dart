@@ -222,7 +222,6 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:saver_gallery/saver_gallery.dart';
 
 import '../di/injection_container.dart';
 import '../network/dio_client.dart';
@@ -239,8 +238,10 @@ Future<void> downloadFile({
   debugPrint('╚═══════════════════════════════════════════╝');
   debugPrint('📌 source: $source');
   debugPrint('📌 fileName: $fileName');
+  debugPrint('📌 baseUrl: $baseUrl');
 
   if (source == null || source.isEmpty) {
+    debugPrint('❌ source kosong, batal');
     _snack(context, 'Lampiran tidak tersedia');
     return;
   }
@@ -249,17 +250,20 @@ Future<void> downloadFile({
   String finalUrl = '';
   Uint8List? fileBytes;
   String detectedFileName = fileName;
-  String detectedExt = 'bin';
+
+  debugPrint('📌 isBase64: $isBase64');
 
   if (isBase64) {
     try {
       final base64Str = source.contains(',') ? source.split(',').last : source;
       fileBytes = base64Decode(base64Str);
-      detectedExt = _detectExtensionFromBytes(fileBytes);
-      if (!detectedFileName.toLowerCase().endsWith('.$detectedExt')) {
-        detectedFileName = '$detectedFileName.$detectedExt';
+      final ext = _detectExtensionFromBytes(fileBytes);
+      if (!detectedFileName.toLowerCase().endsWith('.$ext')) {
+        detectedFileName = '$detectedFileName.$ext';
       }
+      debugPrint('✅ Base64 decoded, ext: $ext, size: ${fileBytes.length} bytes');
     } catch (e) {
+      debugPrint('❌ Base64 decode error: $e');
       _snack(context, 'File rusak: $e');
       return;
     }
@@ -277,99 +281,41 @@ Future<void> downloadFile({
     }
 
     final urlFileName = finalUrl.split('/').last.split('?').first;
-    if (urlFileName.contains('.')) {
-      detectedExt = urlFileName.split('.').last.toLowerCase();
-      if (!detectedFileName.toLowerCase().contains('.')) {
-        detectedFileName = '$detectedFileName.$detectedExt';
-      }
+    if (urlFileName.contains('.') &&
+        !detectedFileName.toLowerCase().contains('.')) {
+      final ext = urlFileName.split('.').last;
+      detectedFileName = '$detectedFileName.$ext';
     }
     debugPrint('🌐 finalUrl: $finalUrl');
+    debugPrint('📝 detectedFileName: $detectedFileName');
   }
-
-  debugPrint('📝 detectedFileName: $detectedFileName');
-  debugPrint('📝 detectedExt: $detectedExt');
-
-  // Cek apakah file ini adalah gambar
-  final isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(detectedExt);
-  debugPrint('🖼️ isImage: $isImage');
 
   try {
     _snack(context, 'Mengunduh file...');
 
-    // ─── Untuk GAMBAR: save ke Galeri (Pictures folder) ──
-    if (isImage && Platform.isAndroid) {
-      // Get bytes
-      Uint8List? imageBytes = fileBytes;
-      if (imageBytes == null) {
-        debugPrint('🌐 Fetch image bytes via Dio...');
-        final dioClient = sl<DioClient>();
-        final response = await dioClient.dio.get(
-          finalUrl,
-          options: Options(
-            responseType: ResponseType.bytes,
-            validateStatus: (status) => status != null && status < 400,
-          ),
-        );
-        imageBytes = Uint8List.fromList(response.data as List<int>);
-      }
-
-      debugPrint('💾 Save ke Gallery (Pictures/SMK Sigumpar)...');
-      final result = await SaverGallery.saveImage(
-        imageBytes,
-        fileName: detectedFileName,
-        androidRelativePath: 'Pictures/SMK Sigumpar',
-        skipIfExists: false,
-      );
-
-      debugPrint('✅ Gallery save result: ${result.isSuccess}');
-      debugPrint('📁 File path: ${result.filePath}');
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        if (result.isSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '✓ Tersimpan di Galeri',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Pictures/SMK Sigumpar/$detectedFileName',
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green.shade700,
-              duration: const Duration(seconds: 6),
-            ),
-          );
-        } else {
-          _snack(context, 'Gagal simpan ke galeri');
-        }
-      }
-      return;
-    }
-
-    // ─── Untuk PDF/DOC: save ke app-specific folder + bisa share ──
-    final saveDir = await _getSaveDirectory();
+    final saveDir = await _getSaveDirectory(context);
     if (saveDir == null) {
+      debugPrint('❌ saveDir null, batal');
       if (context.mounted) _snack(context, 'Tidak bisa akses folder');
       return;
     }
 
     final savePath = '${saveDir.path}/$detectedFileName';
-    debugPrint('📄 Save path: $savePath');
+    debugPrint('');
+    debugPrint('╔═══════════════════════════════════════════╗');
+    debugPrint('║   💾 LOKASI PENYIMPANAN                   ║');
+    debugPrint('╚═══════════════════════════════════════════╝');
+    debugPrint('📁 Folder: ${saveDir.path}');
+    debugPrint('📄 File path: $savePath');
+    debugPrint('');
 
     if (fileBytes != null) {
+      debugPrint('💾 Menulis base64 ke disk...');
       final file = File(savePath);
       await file.writeAsBytes(fileBytes);
+      debugPrint('✅ File base64 tersimpan');
     } else {
+      debugPrint('🌐 Download via Dio...');
       final dioClient = sl<DioClient>();
       await dioClient.dio.download(
         finalUrl,
@@ -378,12 +324,16 @@ Future<void> downloadFile({
           validateStatus: (status) => status != null && status < 400,
         ),
       );
+      debugPrint('✅ Download via Dio sukses');
     }
 
+    // Verifikasi file benar-benar ada
     final savedFile = File(savePath);
     final exists = await savedFile.exists();
     final size = exists ? await savedFile.length() : 0;
-    debugPrint('🔍 File exists? $exists, size: $size bytes');
+    debugPrint('🔍 File exists? $exists');
+    debugPrint('🔍 File size: $size bytes');
+    debugPrint('');
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -393,10 +343,12 @@ Future<void> downloadFile({
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 '✓ File tersimpan',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
@@ -427,20 +379,60 @@ Future<void> downloadFile({
   }
 }
 
-/// App-specific external storage (tidak butuh permission)
-Future<Directory?> _getSaveDirectory() async {
+/// Strategi pemilihan folder:
+/// 1. Coba folder Downloads publik (butuh permission di Android lama)
+/// 2. Kalau permission ditolak ATAU folder tidak bisa diakses,
+///    fallback ke app-specific external storage (tidak butuh permission)
+Future<Directory?> _getSaveDirectory(BuildContext context) async {
+  debugPrint('');
+  debugPrint('╔═══════════════════════════════════════════╗');
+  debugPrint('║   🗂️  CARI FOLDER PENYIMPANAN              ║');
+  debugPrint('╚═══════════════════════════════════════════╝');
+  debugPrint('🔍 Platform: ${Platform.operatingSystem}');
+  debugPrint('🔍 OS Version: ${Platform.operatingSystemVersion}');
+
   if (Platform.isIOS) {
-    return await getApplicationDocumentsDirectory();
+    final dir = await getApplicationDocumentsDirectory();
+    debugPrint('🍎 iOS Documents: ${dir.path}');
+    return dir;
   }
 
   if (Platform.isAndroid) {
+    // ─── Strategi 1: Coba folder Downloads publik ──────
+    try {
+      debugPrint('🔐 Request Permission.storage...');
+      final status = await Permission.storage.request();
+      debugPrint('🔐 Status permission: $status');
+
+      if (status.isGranted) {
+        debugPrint('✅ Permission GRANTED');
+        final publicDir = Directory('/storage/emulated/0/Download');
+        final exists = await publicDir.exists();
+        debugPrint('📂 Folder /storage/emulated/0/Download ada? $exists');
+        if (exists) {
+          debugPrint('✅ Pakai folder Downloads publik');
+          return publicDir;
+        }
+      } else {
+        debugPrint('⚠️ Permission DENIED/RESTRICTED (normal di Android 11+)');
+      }
+    } catch (e) {
+      debugPrint('💥 Permission request error: $e');
+    }
+
+    // ─── Strategi 2: App-specific external storage ──
+    debugPrint('⚠️ Fallback ke app-specific external storage');
     try {
       final dir = await getExternalStorageDirectory();
+      debugPrint('📁 getExternalStorageDirectory: ${dir?.path}');
+
       if (dir != null) {
         final downloadDir = Directory('${dir.path}/Downloads');
         if (!await downloadDir.exists()) {
+          debugPrint('📁 Membuat folder Downloads...');
           await downloadDir.create(recursive: true);
         }
+        debugPrint('✅ Folder siap: ${downloadDir.path}');
         return downloadDir;
       }
     } catch (e) {
@@ -448,7 +440,10 @@ Future<Directory?> _getSaveDirectory() async {
     }
   }
 
-  return await getApplicationDocumentsDirectory();
+  // ─── Strategi 3: Last resort ───────────────────────────
+  final fallback = await getApplicationDocumentsDirectory();
+  debugPrint('🆘 Last resort - Documents: ${fallback.path}');
+  return fallback;
 }
 
 bool _isBase64(String s) {
