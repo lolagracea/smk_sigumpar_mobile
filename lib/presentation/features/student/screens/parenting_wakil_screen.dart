@@ -38,7 +38,10 @@ class _ParentingRow {
     if (v == null) return '—';
     try {
       final d = DateTime.parse(v.toString());
-      const m = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const m = [
+        'Jan','Feb','Mar','Apr','Mei','Jun',
+        'Jul','Agu','Sep','Okt','Nov','Des'
+      ];
       return '${d.day.toString().padLeft(2, '0')} ${m[d.month - 1]} ${d.year}';
     } catch (_) {
       return v.toString().split('T').first;
@@ -56,8 +59,10 @@ class ParentingWakilScreen extends StatefulWidget {
 class _ParentingWakilScreenState extends State<ParentingWakilScreen> {
   List<_ParentingRow> _rows = [];
   List<Map<String, dynamic>> _kelasList = [];
+
   bool _loading = false;
   String? _error;
+
   String _filterKelasId = '';
   String _search = '';
 
@@ -73,103 +78,172 @@ class _ParentingWakilScreenState extends State<ParentingWakilScreen> {
       final dio = sl<DioClient>();
       final resp = await dio.get(ApiEndpoints.classes);
       final raw = resp.data;
-      final list = raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
+
+      final list = raw is List
+          ? raw
+          : (raw is Map ? raw['data'] as List? ?? [] : []);
+
       setState(() {
-        _kelasList = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _kelasList =
+            list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       });
     } catch (_) {}
   }
 
   Future<void> _loadData() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
     try {
       final dio = sl<DioClient>();
+
       final params = <String, dynamic>{};
-      if (_filterKelasId.isNotEmpty) params['kelas_id'] = _filterKelasId;
-      final resp = await dio.get(ApiEndpoints.parenting, queryParameters: params.isNotEmpty ? params : null);
+      if (_filterKelasId.isNotEmpty) {
+        params['kelas_id'] = _filterKelasId;
+      }
+
+      final resp = await dio.get(
+        ApiEndpoints.parenting,
+        queryParameters: params.isNotEmpty ? params : null,
+      );
+
       final raw = resp.data;
-      final list = raw is List ? raw : (raw is Map ? raw['data'] as List? ?? [] : []);
+      final list = raw is List
+          ? raw
+          : (raw is Map ? raw['data'] as List? ?? [] : []);
+
       setState(() {
-        _rows = list.map((e) => _ParentingRow.fromJson(e as Map<String, dynamic>)).toList();
+        _rows = list
+            .map((e) => _ParentingRow.fromJson(e as Map<String, dynamic>))
+            .toList();
       });
-    } catch (e) {
-      setState(() { _error = 'Gagal memuat data parenting'; });
+    } catch (_) {
+      setState(() {
+        _error = 'Gagal memuat data parenting';
+      });
     } finally {
-      setState(() { _loading = false; });
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
   List<_ParentingRow> get _filtered {
-    if (_search.isEmpty) return _rows;
     final q = _search.toLowerCase();
-    return _rows.where((r) =>
-      r.agenda.toLowerCase().contains(q) ||
-      r.ringkasan.toLowerCase().contains(q) ||
-      r.namaKelas.toLowerCase().contains(q)
-    ).toList();
+
+    return _rows.where((r) {
+      if (_search.isNotEmpty &&
+          !r.agenda.toLowerCase().contains(q) &&
+          !r.ringkasan.toLowerCase().contains(q) &&
+          !r.namaKelas.toLowerCase().contains(q)) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filtered = _filtered;
-    final totalOrtu = _rows.fold(0, (sum, r) => sum + r.kehadiranOrtu);
+
+    final totalOrtu =
+        _rows.fold(0, (sum, r) => sum + r.kehadiranOrtu);
+
+    final bgColor =
+        isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF3F4F6);
+
+    final cardColor =
+        isDark ? const Color(0xFF1E1E3A) : Colors.white;
+
+    final textColor =
+        isDark ? Colors.white : const Color(0xFF111827);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1A1A2E) : const Color(0xFFF3F4F6),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Monitoring Parenting', style: TextStyle(fontSize: 16)),
-            Text('Data kegiatan parenting per kelas', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text(
+              'Data kegiatan parenting per kelas',
+              style: TextStyle(fontSize: 11, color: Colors.white70),
+            ),
           ],
         ),
-        backgroundColor: const Color(0xFFEA580C),
+        backgroundColor: const Color(0xFF2563EB), // 🔵 BLUE
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          )
         ],
       ),
+
       body: Column(
         children: [
-          // Stats bar
+          // ───────────────── Stats (FIXED THEME) ─────────────────
           Container(
-            color: const Color(0xFFEA580C),
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            color: cardColor,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Row(
               children: [
-                _StatBox(label: 'Total Kegiatan', value: '${_rows.length}'),
+                _StatBox(
+                  label: 'Total Kegiatan',
+                  value: '${_rows.length}',
+                  isDark: isDark,
+                ),
                 const SizedBox(width: 8),
-                _StatBox(label: 'Total Ortu Hadir', value: '$totalOrtu'),
+                _StatBox(
+                  label: 'Total Ortu Hadir',
+                  value: '$totalOrtu',
+                  isDark: isDark,
+                ),
                 const SizedBox(width: 8),
-                _StatBox(label: 'Kelas Terlibat', value: '${_rows.map((r) => r.kelasId).toSet().length}'),
+                _StatBox(
+                  label: 'Kelas Terlibat',
+                  value: '${_rows.map((r) => r.kelasId).toSet().length}',
+                  isDark: isDark,
+                ),
               ],
             ),
           ),
 
-          // Filter panel
+          // ───────────────── FILTER ─────────────────
           Container(
-            color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
+            color: cardColor,
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _filterKelasId.isEmpty ? null : _filterKelasId,
+                    value:
+                        _filterKelasId.isEmpty ? null : _filterKelasId,
                     decoration: InputDecoration(
                       labelText: 'Filter Kelas',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     items: [
-                      const DropdownMenuItem(value: '', child: Text('Semua Kelas')),
+                      const DropdownMenuItem(
+                        value: '',
+                        child: Text('Semua Kelas'),
+                      ),
                       ..._kelasList.map((k) {
                         final id = k['id']?.toString() ?? '';
-                        final nama = k['nama_kelas'] ?? 'Kelas #$id';
-                        return DropdownMenuItem(value: id, child: Text(nama.toString()));
+                        final nama =
+                            k['nama_kelas'] ?? 'Kelas #$id';
+
+                        return DropdownMenuItem(
+                          value: id,
+                          child: Text(nama.toString()),
+                        );
                       }),
                     ],
                     onChanged: (v) {
@@ -183,10 +257,9 @@ class _ParentingWakilScreenState extends State<ParentingWakilScreen> {
                   child: TextField(
                     decoration: InputDecoration(
                       labelText: 'Cari agenda...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      isDense: true,
-                      prefixIcon: const Icon(Icons.search, size: 18),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                     onChanged: (v) => setState(() => _search = v),
                   ),
@@ -195,36 +268,19 @@ class _ParentingWakilScreenState extends State<ParentingWakilScreen> {
             ),
           ),
 
-          // Content
+          // ───────────────── CONTENT ─────────────────
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFFEA580C)))
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFFEA580C),
+                    ),
+                  )
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                            const SizedBox(height: 8),
-                            Text(_error!),
-                            const SizedBox(height: 12),
-                            ElevatedButton(onPressed: _loadData, child: const Text('Coba Lagi')),
-                          ],
-                        ),
-                      )
+                    ? Center(child: Text(_error!))
                     : filtered.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.family_restroom, size: 60, color: Colors.grey),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _rows.isEmpty ? 'Belum ada data parenting' : 'Tidak ada yang sesuai filter',
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                              ],
-                            ),
+                        ? const Center(
+                            child: Text('Tidak ada data'),
                           )
                         : RefreshIndicator(
                             onRefresh: _loadData,
@@ -232,80 +288,47 @@ class _ParentingWakilScreenState extends State<ParentingWakilScreen> {
                             child: ListView.separated(
                               padding: const EdgeInsets.all(12),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, i) {
                                 final row = filtered[i];
-                                return Card(
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Header row
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFEA580C).withOpacity(0.12),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                row.namaKelas,
-                                                style: const TextStyle(fontSize: 11, color: Color(0xFFEA580C), fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            const Icon(Icons.calendar_today, size: 13, color: Colors.grey),
-                                            const SizedBox(width: 4),
-                                            Text(row.tanggal, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
 
-                                        // Agenda
-                                        Text(
-                                          row.agenda,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                return Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: cardColor,
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        row.namaKelas,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: textColor,
                                         ),
-                                        const SizedBox(height: 4),
-
-                                        // Ringkasan
-                                        if (row.ringkasan != '—')
-                                          Text(
-                                            row.ringkasan,
-                                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        const SizedBox(height: 8),
-
-                                        // Kehadiran ortu
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.people_outline, size: 14, color: Colors.grey),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Kehadiran Orang Tua: ',
-                                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                '${row.kehadiranOrtu} orang',
-                                                style: const TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        row.agenda,
+                                        style: TextStyle(
+                                          color: textColor,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${row.kehadiranOrtu} orang tua hadir',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -321,7 +344,13 @@ class _ParentingWakilScreenState extends State<ParentingWakilScreen> {
 class _StatBox extends StatelessWidget {
   final String label;
   final String value;
-  const _StatBox({required this.label, required this.value});
+  final bool isDark;
+
+  const _StatBox({
+    required this.label,
+    required this.value,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -329,13 +358,37 @@ class _StatBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: isDark
+              ? const Color(0xFF2A2A40)
+              : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark
+                ? Colors.white24
+                : Colors.grey.shade200,
+          ),
         ),
         child: Column(
           children: [
-            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-            Text(label, style: const TextStyle(fontSize: 9, color: Colors.white70), textAlign: TextAlign.center),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark
+                    ? Colors.white
+                    : const Color(0xFF111827),
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                color: isDark
+                    ? Colors.white70
+                    : Colors.grey,
+              ),
+            ),
           ],
         ),
       ),

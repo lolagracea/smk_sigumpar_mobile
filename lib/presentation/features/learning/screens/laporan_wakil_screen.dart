@@ -178,19 +178,26 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Laporan Ringkas Akademik', style: TextStyle(fontSize: 15)),
-            Text('Rekap absensi · jadwal · perangkat',
-                style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text(
+              'Rekap absensi · jadwal · perangkat',
+              style: TextStyle(fontSize: 11, color: Colors.white70),
+            ),
           ],
         ),
-        backgroundColor: const Color(0xFFEA580C),
+        backgroundColor: const Color(0xFF2563EB), // 🔵 BLUE SAMA
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAll)],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadAll,
+          )
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
+          unselectedLabelColor: Colors.white70,
           tabs: [
             Tab(text: '📋 Absensi (${_absensiRows.length})'),
             Tab(text: '📅 Jadwal (${_jadwalRows.length})'),
@@ -202,7 +209,7 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
         children: [
           // Summary 4 kartu (sama seperti web)
           Container(
-            color: isDark ? const Color(0xFF1E1E3A) : Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
@@ -380,7 +387,11 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
             children: [
               Row(
                 children: [
-                  _MiniStat('Total Jam', '${stats['total']}', const Color(0xFFEA580C)),
+                  _MiniStat(
+                    'Total Jam',
+                    '${stats['total']}',
+                    Theme.of(context).colorScheme.primary,
+                  ),
                   _MiniStat('Guru',      '${stats['guru']}',  Colors.blue),
                   _MiniStat('Kelas',     '${stats['kelas']}', Colors.purple),
                 ],
@@ -425,7 +436,7 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
                                 width: 50,
                                 padding: const EdgeInsets.symmetric(vertical: 4),
                                 decoration: BoxDecoration(
-                                    color: const Color(0xFFEA580C).withOpacity(0.12),
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(6)),
                                 child: Text(
                                   hari.length >= 3 ? hari.substring(0,3) : hari,
@@ -518,7 +529,7 @@ class _LaporanWakilScreenState extends State<LaporanWakilScreen>
                                       margin: const EdgeInsets.only(top: 4),
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                          color: const Color(0xFFEA580C).withOpacity(0.10),
+                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
                                           borderRadius: BorderRadius.circular(4)),
                                       child: Text(jenis,
                                           style: const TextStyle(fontSize: 10, color: Color(0xFFEA580C), fontWeight: FontWeight.w600)),
