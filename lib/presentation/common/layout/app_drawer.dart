@@ -182,11 +182,11 @@ class AppDrawer extends StatelessWidget {
               label: 'Refleksi',
               route: RouteNames.homeroomReflection,
             ),
-            _MenuItemData(
-              icon: Icons.mail_outline,
-              label: 'Surat Panggilan',
-              route: RouteNames.summonsLetter,
-            ),
+            // _MenuItemData(
+            //   icon: Icons.mail_outline,
+            //   label: 'Surat Panggilan',
+            //   route: RouteNames.summonsLetter,
+            // ),
           ],
         ),
       );

@@ -175,10 +175,10 @@ class AppRouter {
               path: RouteNames.homeroomReflection,
               builder: (_, __) => const HomeroomReflectionScreen(),
             ),
-            GoRoute(
-              path: RouteNames.summonsLetter,
-              builder: (_, __) => const SummonsLetterScreen(),
-            ),
+            // GoRoute(
+            //   path: RouteNames.summonsLetter,
+            //   builder: (_, __) => const SummonsLetterScreen(),
+            // ),
             GoRoute(
               path: RouteNames.attendanceRecap,
               builder: (_, __) => const AttendanceRecapScreen(),

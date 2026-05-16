@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/utils/file_downloader.dart';
 import '../providers/student_provider.dart';
 import '../../academic/providers/academic_provider.dart';
 import '../../../../data/models/cleanliness_model.dart';
@@ -32,7 +33,7 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
   Future<void> _initData() async {
     final academicProvider = context.read<AcademicProvider>();
     await academicProvider.fetchClasses(refresh: true);
-    
+
     if (academicProvider.classes.isNotEmpty) {
       setState(() {
         _selectedClassId = academicProvider.classes.first.id;
@@ -68,8 +69,10 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('KEBERSIHAN KELAS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Penilaian kebersihan, catatan umum, dan dokumentasi kelas', style: TextStyle(fontSize: 10)),
+            Text('KEBERSIHAN KELAS',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Penilaian kebersihan, catatan umum, dan dokumentasi kelas',
+                style: TextStyle(fontSize: 10)),
           ],
         ),
         centerTitle: true,
@@ -87,10 +90,12 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
                   value: _selectedClassId,
                   decoration: InputDecoration(
                     labelText: 'Pilih Kelas',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   items: academic.classes.map((c) {
-                    return DropdownMenuItem(value: c.id, child: Text(c.namaKelas));
+                    return DropdownMenuItem(
+                        value: c.id, child: Text(c.namaKelas));
                   }).toList(),
                   onChanged: (val) {
                     setState(() => _selectedClassId = val);
@@ -103,11 +108,13 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
           Expanded(
             child: Consumer<StudentProvider>(
               builder: (context, provider, child) {
-                if (provider.cleanlinessState == StudentLoadState.loading && provider.cleanlinessNotes.isEmpty) {
+                if (provider.cleanlinessState == StudentLoadState.loading &&
+                    provider.cleanlinessNotes.isEmpty) {
                   return const LoadingWidget();
                 }
 
-                if (provider.cleanlinessState == StudentLoadState.error && provider.cleanlinessNotes.isEmpty) {
+                if (provider.cleanlinessState == StudentLoadState.error &&
+                    provider.cleanlinessNotes.isEmpty) {
                   return AppErrorWidget(
                     message: provider.cleanlinessError ?? 'Gagal memuat data',
                     onRetry: _fetchData,
@@ -117,7 +124,8 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
                 final notes = provider.cleanlinessNotes;
 
                 if (notes.isEmpty) {
-                  return const Center(child: Text('Belum ada data kebersihan'));
+                  return const Center(
+                      child: Text('Belum ada data kebersihan'));
                 }
 
                 return RefreshIndicator(
@@ -138,43 +146,92 @@ class _CleanlinessRecapScreenState extends State<CleanlinessRecapScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddCleanlinessSheet,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF1E6091),
         shape: const CircleBorder(),
-        child: const Icon(Icons.add_circle_outline, size: 36, color: Colors.black),
+        child: const Icon(Icons.add, size: 32, color: Colors.white),
       ),
     );
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── CARD DENGAN PENILAIAN ASPEK ───────────────────────────
+// ═══════════════════════════════════════════════════════════
 class _CleanlinessCard extends StatelessWidget {
   final CleanlinessModel note;
   const _CleanlinessCard({required this.note});
 
+  static const List<String> _aspectKeys = [
+    'Meja & Kursi',
+    'Lantai',
+    'Papan Tulis',
+    'Jendela & Pintu',
+    'Sampah',
+  ];
+
+  /// Parse penilaian — handle Map maupun JSON String defensive
+  Map<String, String> _parsePenilaian() {
+    final result = <String, String>{};
+    final raw = note.penilaian;
+
+    if (raw.isNotEmpty) {
+      raw.forEach((k, v) {
+        if (v != null) result[k] = v.toString();
+      });
+    }
+
+    return result;
+  }
+
+  Color _ratingColor(String rating) {
+    switch (rating.toLowerCase()) {
+      case 'sangat bersih':
+        return Colors.green.shade700;
+      case 'bersih':
+        return Colors.green;
+      case 'cukup':
+        return Colors.orange;
+      case 'kotor':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _ratingIcon(String rating) {
+    switch (rating.toLowerCase()) {
+      case 'sangat bersih':
+      case 'bersih':
+        return Icons.check_circle;
+      case 'cukup':
+        return Icons.info;
+      case 'kotor':
+        return Icons.warning;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
   String _formatUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     if (url.startsWith('http')) return url;
-    
-    // Ensure the path starts with a slash
     String cleanPath = url.startsWith('/') ? url : '/$url';
-    
-    // ApiEndpoints.baseUrl is usually http://localhost:8001
     String baseUrl = ApiEndpoints.baseUrl;
     if (baseUrl.endsWith('/')) {
       baseUrl = baseUrl.substring(0, baseUrl.length - 1);
     }
-    
     return '$baseUrl$cleanPath';
   }
 
   void _showDetailDialog(BuildContext context) {
     final String imageUrl = _formatUrl(note.fotoUrl);
+    final bool isImage = imageUrl.isNotEmpty &&
+        (imageUrl.toLowerCase().contains('.jpg') ||
+            imageUrl.toLowerCase().contains('.jpeg') ||
+            imageUrl.toLowerCase().contains('.png') ||
+            imageUrl.toLowerCase().contains('.gif'));
 
-    final bool isImage = imageUrl.isNotEmpty && (
-        imageUrl.toLowerCase().contains('.jpg') ||
-        imageUrl.toLowerCase().contains('.jpeg') ||
-        imageUrl.toLowerCase().contains('.png') ||
-        imageUrl.toLowerCase().contains('.gif')
-    );
+    final penilaian = _parsePenilaian();
 
     showDialog(
       context: context,
@@ -199,36 +256,50 @@ class _CleanlinessCard extends StatelessWidget {
                     child: Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Center(
+                      errorBuilder: (context, error, stackTrace) =>
+                      const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                            Text('Gambar tidak ditemukan', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                            Icon(Icons.broken_image,
+                                size: 40, color: Colors.grey),
+                            Text('Gambar tidak ditemukan',
+                                style: TextStyle(
+                                    fontSize: 10, color: Colors.grey)),
                           ],
                         ),
                       ),
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(
+                            child: CircularProgressIndicator());
                       },
                     ),
                   ),
                 ),
               ],
-              _detailItem('Tanggal', DateFormat('dd MMMM yyyy', 'id_ID').format(note.tanggal)),
+              _detailItem('Tanggal',
+                  DateFormat('dd MMMM yyyy', 'id_ID').format(note.tanggal)),
               _detailItem('Catatan / Kondisi', note.catatan ?? '-'),
-              if (note.penilaian.isNotEmpty) ...[
+              if (penilaian.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                const Text('Penilaian Item:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                const Text('Penilaian Item:',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.blueGrey)),
                 const Divider(),
-                ...note.penilaian.entries.map((e) => Padding(
+                ...penilaian.entries.map((e) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(e.key, style: const TextStyle(fontSize: 13)),
-                      Text(e.value.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text(e.value,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _ratingColor(e.value))),
                     ],
                   ),
                 )),
@@ -237,7 +308,9 @@ class _CleanlinessCard extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Tutup')),
         ],
       ),
     );
@@ -249,7 +322,11 @@ class _CleanlinessCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+          Text(label,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Colors.blueGrey)),
           Text(value, style: const TextStyle(fontSize: 14)),
         ],
       ),
@@ -257,33 +334,49 @@ class _CleanlinessCard extends StatelessWidget {
   }
 
   Future<void> _downloadFile(BuildContext context) async {
-    final String urlString = _formatUrl(note.fotoUrl);
-    
-    if (urlString.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lampiran foto/dokumen tidak tersedia')),
-      );
-      return;
-    }
+    debugPrint('=== DEBUG DOWNLOAD CLEANLINESS ===');
+    debugPrint('note.fotoUrl: ${note.fotoUrl}');
+    debugPrint('note.id: ${note.id}');
+    debugPrint('baseUrl: ${ApiEndpoints.baseUrl}');
+    debugPrint('===================================');
 
-    try {
-      final url = Uri.parse(urlString);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal membuka lampiran: $e')),
-        );
-      }
-    }
+    await FileDownloader.downloadFile(
+      context: context,
+      source: note.fotoUrl,
+      fileName: 'kebersihan_${note.id}',
+      baseUrl: ApiEndpoints.baseUrl,
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Data?'),
+        content: const Text(
+            'Data kebersihan ini akan dihapus permanen. Lanjutkan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<StudentProvider>().deleteCleanliness(note.id);
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final penilaian = _parsePenilaian();
+    final hasPenilaian = penilaian.isNotEmpty;
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
@@ -293,27 +386,119 @@ class _CleanlinessCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              note.catatan ?? 'Kebersihan Kelas',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 12),
+            // ─── Header: Tanggal & Delete ──────────────────────
             Row(
               children: [
-                const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text(
-                  DateFormat('yyyy-MM-dd').format(note.tanggal),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E6091).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          size: 12, color: Color(0xFF1E6091)),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat('dd MMM yyyy', 'id_ID')
+                            .format(note.tanggal),
+                        style: const TextStyle(
+                          color: Color(0xFF1E6091),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.redAccent, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _confirmDelete(context),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+
+            // ─── Catatan ───────────────────────────────────────
+            if (note.catatan != null && note.catatan!.isNotEmpty) ...[
+              Text(
+                note.catatan!,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Colors.black87),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ─── Penilaian Aspek (Meja, Lantai, Jendela, dll) ─
+            if (hasPenilaian) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.checklist_rounded,
+                            size: 14, color: Colors.blueGrey.shade700),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Penilaian Aspek',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueGrey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Aspek standar (urutan tetap)
+                    ..._aspectKeys.where((k) => penilaian.containsKey(k)).map(
+                          (aspect) {
+                        final rating = penilaian[aspect] ?? '-';
+                        return _AspectRow(
+                          aspect: aspect,
+                          rating: rating,
+                          icon: _ratingIcon(rating),
+                          color: _ratingColor(rating),
+                        );
+                      },
+                    ),
+                    // Aspek tambahan (kalau backend kirim aspek lain)
+                    ...penilaian.entries
+                        .where((e) => !_aspectKeys.contains(e.key))
+                        .map((e) => _AspectRow(
+                      aspect: e.key,
+                      rating: e.value,
+                      icon: _ratingIcon(e.value),
+                      color: _ratingColor(e.value),
+                    )),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ─── Tombol Aksi ───────────────────────────────────
             Row(
               children: [
                 _ActionButton(
                   icon: Icons.file_download_outlined,
-                  label: 'Lampiran',
+                  label: 'Download',
                   onTap: () => _downloadFile(context),
                 ),
                 const SizedBox(width: 8),
@@ -322,15 +507,8 @@ class _CleanlinessCard extends StatelessWidget {
                   label: 'Detail',
                   onTap: () => _showDetailDialog(context),
                 ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                  onPressed: () {
-                    context.read<StudentProvider>().deleteCleanliness(note.id);
-                  },
-                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -338,16 +516,68 @@ class _CleanlinessCard extends StatelessWidget {
   }
 }
 
+// ─── Helper widget: row aspek dengan badge rating ─────────
+class _AspectRow extends StatelessWidget {
+  final String aspect;
+  final String rating;
+  final IconData icon;
+  final Color color;
+
+  const _AspectRow({
+    required this.aspect,
+    required this.rating,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              aspect,
+              style: const TextStyle(fontSize: 12, color: Colors.black87),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              rating,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Tombol aksi (Download / Detail) ──────────────────────
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _ActionButton({required this.icon, required this.label, required this.onTap});
+  const _ActionButton(
+      {required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -358,7 +588,8 @@ class _ActionButton extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: Colors.blueGrey),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: Colors.blueGrey[700])),
+            Text(label,
+                style: TextStyle(fontSize: 12, color: Colors.blueGrey[700])),
           ],
         ),
       ),
@@ -366,6 +597,9 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ─── FORM TAMBAH KEBERSIHAN ────────────────────────────────
+// ═══════════════════════════════════════════════════════════
 class AddCleanlinessForm extends StatefulWidget {
   final String? initialKelasId;
   const AddCleanlinessForm({super.key, this.initialKelasId});
@@ -382,7 +616,13 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
   PlatformFile? _selectedFile;
   bool _isLoading = false;
 
-  final List<String> _ratingOptions = ['Sangat Bersih', 'Bersih', 'Cukup', 'Kotor'];
+  final List<String> _ratingOptions = [
+    'Sangat Bersih',
+    'Bersih',
+    'Cukup',
+    'Kotor',
+  ];
+
   final Map<String, String> _aspectRatings = {
     'Meja & Kursi': 'Bersih',
     'Lantai': 'Bersih',
@@ -395,6 +635,12 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
   void initState() {
     super.initState();
     _selectedClassId = widget.initialKelasId;
+  }
+
+  @override
+  void dispose() {
+    _summaryController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickDate() async {
@@ -413,6 +659,7 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'docx', 'jpg', 'jpeg', 'png'],
+      withData: true,
     );
     if (result != null) {
       setState(() => _selectedFile = result.files.first);
@@ -436,8 +683,10 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
         'penilaian': jsonEncode(_aspectRatings),
       };
 
-      await context.read<StudentProvider>().addCleanliness(data: data, file: _selectedFile);
-      
+      await context
+          .read<StudentProvider>()
+          .addCleanliness(data: data, file: _selectedFile);
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -485,7 +734,9 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
               ),
               const SizedBox(height: 24),
 
-              const Text('Kelas (Opsional)', style: TextStyle(fontWeight: FontWeight.bold)),
+              // ─── Pilih Kelas ─────────────────────────────────
+              const Text('Kelas (Opsional)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Consumer<AcademicProvider>(
                 builder: (context, academic, child) {
@@ -494,11 +745,14 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
                     isExpanded: true,
                     decoration: InputDecoration(
                       hintText: 'Pilih Kelas',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
                     ),
                     items: academic.classes.map((c) {
-                      return DropdownMenuItem(value: c.id, child: Text(c.namaKelas));
+                      return DropdownMenuItem(
+                          value: c.id, child: Text(c.namaKelas));
                     }).toList(),
                     onChanged: (val) => setState(() => _selectedClassId = val),
                   );
@@ -506,12 +760,15 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
               ),
               const SizedBox(height: 16),
 
-              const Text('Tanggal', style: TextStyle(fontWeight: FontWeight.bold)),
+              // ─── Pilih Tanggal ───────────────────────────────
+              const Text('Tanggal',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _pickDate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 15),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[300]!),
                     borderRadius: BorderRadius.circular(8),
@@ -520,35 +777,52 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _selectedDate == null ? 'Pilih tanggal' : DateFormat('dd/MM/yyyy').format(_selectedDate!),
-                        style: TextStyle(color: _selectedDate == null ? Colors.grey : Colors.black),
+                        _selectedDate == null
+                            ? 'Pilih tanggal'
+                            : DateFormat('dd/MM/yyyy').format(_selectedDate!),
+                        style: TextStyle(
+                            color: _selectedDate == null
+                                ? Colors.grey
+                                : Colors.black),
                       ),
-                      const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                      const Icon(Icons.calendar_today,
+                          size: 20, color: Colors.grey),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              
-              const Text('Penilaian Per Aspek', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+
+              // ─── Penilaian Per Aspek ─────────────────────────
+              const Text('Penilaian Per Aspek',
+                  style:
+                  TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const Divider(),
               ..._aspectRatings.keys.map((aspect) => _buildAspectRating(aspect)),
-              
+
               const SizedBox(height: 24),
-              const Text('Catatan Umum', style: TextStyle(fontWeight: FontWeight.bold)),
+
+              // ─── Catatan Umum ────────────────────────────────
+              const Text('Catatan Umum',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _summaryController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Contoh: Kelas sudah cukup bersih, tetapi bagian sudut belakang masih perlu diperhatikan.',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  hintText:
+                  'Contoh: Kelas sudah cukup bersih, tetapi bagian sudut belakang masih perlu diperhatikan.',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   contentPadding: const EdgeInsets.all(12),
                 ),
                 validator: (v) => v?.isEmpty ?? true ? 'Wajib diisi' : null,
               ),
               const SizedBox(height: 16),
-              const Text('Dokumentasi Foto (Opsional)', style: TextStyle(fontWeight: FontWeight.bold)),
+
+              // ─── Upload Foto ─────────────────────────────────
+              const Text('Dokumentasi Foto (Opsional)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _pickFile,
@@ -556,15 +830,19 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                    border: Border.all(
+                        color: Colors.grey[300]!, style: BorderStyle.solid),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.camera_alt_outlined, size: 40, color: Colors.grey),
+                      const Icon(Icons.camera_alt_outlined,
+                          size: 40, color: Colors.grey),
                       const SizedBox(height: 8),
                       Text(
-                        _selectedFile == null ? 'Klik untuk pilih foto' : _selectedFile!.name,
+                        _selectedFile == null
+                            ? 'Klik untuk pilih foto'
+                            : _selectedFile!.name,
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -572,6 +850,8 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
                 ),
               ),
               const SizedBox(height: 32),
+
+              // ─── Tombol Simpan ───────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -580,11 +860,18 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E6091),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: _isLoading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Simpan Data', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2),
+                  )
+                      : const Text('Simpan Data',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 40),
@@ -610,7 +897,13 @@ class _AddCleanlinessFormState extends State<AddCleanlinessForm> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ChoiceChip(
-                  label: Text(option, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black)),
+                  label: Text(
+                    option,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isSelected ? Colors.white : Colors.black,
+                    ),
+                  ),
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) {
