@@ -9,6 +9,7 @@ import '../../../../data/models/mapel_assignment_model.dart';
 import '../../../../data/models/schedule_model.dart';
 import '../../../../data/models/user_search_model.dart';
 import '../../../../data/repositories/academic_repository.dart';
+import '../../../../data/repositories/kelola_akun_repository.dart';
 import '../../../common/providers/auth_provider.dart';
 import '../../../common/widgets/error_widget.dart';
 import '../../../common/widgets/loading_widget.dart';
@@ -22,6 +23,7 @@ class SchedulesScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AcademicProvider(
         repository: sl<AcademicRepository>(),
+        kelolaAkunRepository: sl<KelolaAkunRepository>(),
       )..fetchSchedules(),
       child: const _SchedulesView(),
     );

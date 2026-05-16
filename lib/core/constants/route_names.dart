@@ -79,4 +79,7 @@ class RouteNames {
   static const String wakilParenting = '/wakil/parenting';
   static const String wakilLaporan = '/wakil/laporan';
   static const String wakilKurikulum = '/wakil/kurikulum';
+
+  // ─── Tata Usaha ─────────────────────────────────────────
+  static const String kelolaAkun = '/tata-usaha/kelola-akun';
 }

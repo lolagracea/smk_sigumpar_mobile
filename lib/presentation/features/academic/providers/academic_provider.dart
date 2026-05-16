@@ -10,20 +10,29 @@ import 'package:smk_sigumpar/data/models/arsip_surat_model.dart';
 import 'package:smk_sigumpar/data/models/mapel_assignment_model.dart';
 import 'package:smk_sigumpar/data/models/schedule_model.dart';
 import 'package:smk_sigumpar/data/models/subject_model.dart';
+import 'package:smk_sigumpar/data/models/kelola_akun_model.dart';
+import 'package:smk_sigumpar/data/repositories/kelola_akun_repository.dart';
 
 enum AcademicLoadState { initial, loading, loaded, error }
 
 class AcademicProvider extends ChangeNotifier {
   final AcademicRepository _repository;
+  final KelolaAkunRepository _kelolaAkunRepository;
 
-  AcademicProvider({required AcademicRepository repository})
-      : _repository = repository;
+  AcademicProvider({
+    required AcademicRepository repository,
+    required KelolaAkunRepository kelolaAkunRepository,
+  })  : _repository = repository,
+        _kelolaAkunRepository = kelolaAkunRepository;
 
   // ─── Shared Error Parser (Biar Catch-mu rapi) ──────────────
   String _parseError(Object error) {
     final errorStr = error.toString();
     if (errorStr.contains('SocketException')) return 'Tidak ada koneksi internet';
     if (errorStr.contains('TimeoutException')) return 'Server tidak merespon';
+    // Coba ekstrak pesan dari DioException / NetworkException
+    final msgMatch = RegExp(r'"message":"([^"]+)"').firstMatch(errorStr);
+    if (msgMatch != null) return msgMatch.group(1) ?? errorStr;
     return errorStr.replaceAll('Exception: ', '');
   }
 
@@ -587,6 +596,110 @@ class AcademicProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _subjectError = _parseError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ─── Kelola Akun Sistem (Tata Usaha) ────────────────────
+  // ═══════════════════════════════════════════════════════════
+
+  AcademicLoadState _kelolaAkunState = AcademicLoadState.initial;
+  AcademicLoadState get kelolaAkunState => _kelolaAkunState;
+
+  List<KelolaAkunModel> _users = [];
+  List<KelolaAkunModel> get users => _users;
+
+  String? _kelolaAkunError;
+  String? get kelolaAkunError => _kelolaAkunError;
+
+  bool _isMutatingAkun = false;
+  bool get isMutatingAkun => _isMutatingAkun;
+
+  String? _mutationAkunError;
+  String? get mutationAkunError => _mutationAkunError;
+
+  // ── Fetch semua user — GET /api/auth/users ────────────────
+  Future<void> fetchUsers() async {
+    _kelolaAkunState = AcademicLoadState.loading;
+    _kelolaAkunError = null;
+    notifyListeners();
+
+    try {
+      _users = await _kelolaAkunRepository.getUsers();
+      _kelolaAkunState = AcademicLoadState.loaded;
+    } catch (e) {
+      _kelolaAkunError = _parseError(e);
+      _kelolaAkunState = AcademicLoadState.error;
+    }
+    notifyListeners();
+  }
+
+  // ── Ambil roles user — GET /api/auth/users/:id/roles ─────
+  Future<List<String>> getUserRoles(String idKeycloak) async {
+    try {
+      return await _kelolaAkunRepository.getUserRoles(idKeycloak);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ── Buat akun baru — POST /api/auth/users ─────────────────
+  Future<bool> createUser(CreateAkunPayload payload) async {
+    _isMutatingAkun = true;
+    _mutationAkunError = null;
+    notifyListeners();
+
+    try {
+      await _kelolaAkunRepository.createUser(payload);
+      _isMutatingAkun = false;
+      notifyListeners();
+      await fetchUsers();
+      return true;
+    } catch (e) {
+      _mutationAkunError = _parseError(e);
+      _isMutatingAkun = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ── Edit akun — PUT /api/auth/users/:id ───────────────────
+  Future<bool> updateUser(String idKeycloak, UpdateAkunPayload payload) async {
+    _isMutatingAkun = true;
+    _mutationAkunError = null;
+    notifyListeners();
+
+    try {
+      await _kelolaAkunRepository.updateUser(idKeycloak, payload);
+      _isMutatingAkun = false;
+      notifyListeners();
+      await fetchUsers();
+      return true;
+    } catch (e) {
+      _mutationAkunError = _parseError(e);
+      _isMutatingAkun = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ── Hapus akun — DELETE /api/auth/users/:id ───────────────
+  Future<bool> deleteUser(String idKeycloak) async {
+    _isMutatingAkun = true;
+    _mutationAkunError = null;
+    notifyListeners();
+
+    try {
+      await _kelolaAkunRepository.deleteUser(idKeycloak);
+      _isMutatingAkun = false;
+      notifyListeners();
+      await fetchUsers();
+      return true;
+    } catch (e) {
+      _mutationAkunError = _parseError(e);
+      _isMutatingAkun = false;
       notifyListeners();
       return false;
     }

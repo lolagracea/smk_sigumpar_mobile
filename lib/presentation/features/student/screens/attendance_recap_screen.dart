@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/di/injection_container.dart';
 import '../../../../data/repositories/academic_repository.dart';
+import '../../../../data/repositories/kelola_akun_repository.dart';
 import '../../../../data/repositories/student_repository.dart';
 import '../../../common/providers/auth_provider.dart';
 import '../../academic/providers/academic_provider.dart';
@@ -25,6 +26,7 @@ class AttendanceRecapScreen extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AcademicProvider(
             repository: sl<AcademicRepository>(),
+            kelolaAkunRepository: sl<KelolaAkunRepository>(),
           ),
         ),
         ChangeNotifierProvider(

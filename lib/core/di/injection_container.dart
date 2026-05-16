@@ -19,6 +19,8 @@ import '../../presentation/common/providers/theme_provider.dart';
 import '../../presentation/features/learning/providers/learning_provider.dart';
 import '../../presentation/features/academic/providers/academic_provider.dart';
 import '../../presentation/features/student/providers/student_provider.dart'; // ← TAMBAHAN
+import '../../data/repositories/kelola_akun_repository.dart';
+import '../../data/services/kelola_akun_service.dart';
 
 final sl = GetIt.instance;
 
@@ -78,10 +80,17 @@ Future<void> init() async {
   );
 
   sl.registerFactory<AcademicProvider>(
-        () => AcademicProvider(repository: sl<AcademicRepository>()),
+        () => AcademicProvider(
+          repository: sl<AcademicRepository>(),
+          kelolaAkunRepository: sl<KelolaAkunRepository>(),
+        ),
   );
 
   sl.registerFactory<StudentProvider>(                              // ← TAMBAHAN
         () => StudentProvider(repository: sl<StudentRepository>()),     // ← TAMBAHAN
   );                                                                // ← TAMBAHAN
+
+  sl.registerLazySingleton<KelolaAkunRepository>(
+        () => KelolaAkunService(dioClient: sl<DioClient>()),
+  );
 }

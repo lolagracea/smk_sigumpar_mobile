@@ -58,6 +58,7 @@ import '../../presentation/features/vocational/screens/nilai_pkl_screen.dart';
 
 // ─── Asset ────────────────────────────────────────────────────
 import '../../presentation/features/asset/screens/submission_info_screen.dart';
+import '../../presentation/features/academic/screens/kelola_akun_screen.dart';
 import '../../presentation/features/asset/screens/item_loan_screen.dart';
 import '../../presentation/features/asset/screens/equipment_submission_screen.dart';
 import '../../presentation/features/asset/screens/loan_response_screen.dart';
@@ -308,6 +309,12 @@ class AppRouter {
             GoRoute(
               path: RouteNames.principalResponse,
               builder: (_, __) => const PrincipalResponseScreen(),
+            ),
+
+            // ─── Tata Usaha ──────────────────────────────────
+            GoRoute(
+              path: RouteNames.kelolaAkun,
+              builder: (_, __) => const KelolaAkunScreen(),
             ),
           ],
         ),

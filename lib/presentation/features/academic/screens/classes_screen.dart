@@ -9,6 +9,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/utils/role_helper.dart';
 import '../../../../data/models/user_search_model.dart';
 import '../../../../data/repositories/academic_repository.dart';
+import '../../../../data/repositories/kelola_akun_repository.dart';
 import '../../../common/providers/auth_provider.dart';
 import '../../../common/widgets/error_widget.dart';
 import '../../../common/widgets/loading_widget.dart';
@@ -22,6 +23,7 @@ class ClassesScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AcademicProvider(
         repository: sl<AcademicRepository>(),
+        kelolaAkunRepository: sl<KelolaAkunRepository>(),
       )..fetchClasses(refresh: true),
       child: const _ClassesView(),
     );

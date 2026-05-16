@@ -6,6 +6,7 @@ import '../../../core/constants/route_names.dart';
 import '../../../core/di/injection_container.dart';
 import '../../../core/utils/role_helper.dart';
 import '../../../data/repositories/academic_repository.dart';
+import '../../../data/repositories/kelola_akun_repository.dart';
 import '../../common/providers/auth_provider.dart';
 import '../academic/providers/academic_provider.dart';
 
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return ChangeNotifierProvider(
       create: (_) => AcademicProvider(
         repository: sl<AcademicRepository>(),
+        kelolaAkunRepository: sl<KelolaAkunRepository>(),
       )..fetchAnnouncements(refresh: true),
       child: const _HomeView(),
     );

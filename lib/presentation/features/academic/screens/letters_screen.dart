@@ -8,6 +8,7 @@ import '../../../../core/utils/file_downloader.dart';
 import '../../../../core/utils/role_helper.dart';
 import '../../../../data/models/arsip_surat_model.dart';
 import '../../../../data/repositories/academic_repository.dart';
+import '../../../../data/repositories/kelola_akun_repository.dart';
 import '../../../common/providers/auth_provider.dart';
 import '../../../common/widgets/error_widget.dart';
 import '../../../common/widgets/loading_widget.dart';
@@ -21,6 +22,7 @@ class LettersScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AcademicProvider(
         repository: sl<AcademicRepository>(),
+        kelolaAkunRepository: sl<KelolaAkunRepository>(),
       )..fetchLetters(refresh: true),
       child: const _LettersView(),
     );

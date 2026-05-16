@@ -118,6 +118,30 @@ class TataUsahaDrawer extends StatelessWidget {
                 context.go(RouteNames.schedules);
               },
             ),
+            const Divider(height: 1),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Manajemen Akun',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ),
+            _DrawerItem(
+              icon: Icons.manage_accounts_outlined,
+              title: 'Kelola Akun',
+              selected: currentRoute == RouteNames.kelolaAkun,
+              onTap: () {
+                Navigator.pop(context);
+                context.go(RouteNames.kelolaAkun);
+              },
+            ),
           ],
         ),
       ),

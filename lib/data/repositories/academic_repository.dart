@@ -117,3 +117,4 @@ abstract class AcademicRepository {
 
   Future<void> deleteSubject(String id);
 }
+
