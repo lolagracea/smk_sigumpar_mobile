@@ -1,6 +1,9 @@
 class RouteNames {
   RouteNames._();
 
+  // ─── Landing ───────────────────────────────────────────
+  static const String landing = '/';
+
   // ─── Auth ──────────────────────────────────────────────
   static const String login = '/login';
   static const String profile = '/profile';

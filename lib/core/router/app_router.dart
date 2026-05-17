@@ -7,6 +7,7 @@ import '../../presentation/features/auth/login_screen.dart';
 import '../../presentation/features/auth/profile_screen.dart';
 import '../../presentation/features/home/home_screen.dart';
 import '../../presentation/common/layout/main_shell.dart';
+import '../../presentation/features/landing/landing_page_screen.dart';
 
 // ─── Academic ─────────────────────────────────────────────────
 import '../../presentation/features/academic/screens/classes_screen.dart';
@@ -18,6 +19,7 @@ import '../../presentation/features/academic/screens/schedules_screen.dart';
 import '../../presentation/features/academic/screens/letters_screen.dart';
 import '../../presentation/features/academic/screens/subjects_screen.dart';
 import '../../presentation/features/academic/screens/monitoring_jadwal_screen.dart';
+import '../../presentation/features/academic/screens/kelola_akun_screen.dart';
 
 // ─── Student ──────────────────────────────────────────────────
 import '../../presentation/features/student/screens/attendance_recap_screen.dart';
@@ -58,7 +60,6 @@ import '../../presentation/features/vocational/screens/nilai_pkl_screen.dart';
 
 // ─── Asset ────────────────────────────────────────────────────
 import '../../presentation/features/asset/screens/submission_info_screen.dart';
-import '../../presentation/features/academic/screens/kelola_akun_screen.dart';
 import '../../presentation/features/asset/screens/item_loan_screen.dart';
 import '../../presentation/features/asset/screens/equipment_submission_screen.dart';
 import '../../presentation/features/asset/screens/loan_response_screen.dart';
@@ -72,11 +73,13 @@ class AppRouter {
   static GoRouter createRouter(AuthProvider authProvider) {
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
-      initialLocation: RouteNames.home,
+      initialLocation: RouteNames.landing,
       refreshListenable: authProvider,
       redirect: (context, state) {
         final status = authProvider.status;
-        final isLoggingIn = state.matchedLocation == RouteNames.login;
+        final currentPath = state.matchedLocation;
+        final isLanding = currentPath == RouteNames.landing;
+        final isLoggingIn = currentPath == RouteNames.login;
 
         if (status == AuthStatus.initial || status == AuthStatus.loading) {
           return null;
@@ -84,17 +87,25 @@ class AppRouter {
 
         final authenticated = status == AuthStatus.authenticated;
 
+        // Belum login: boleh di landing atau login, redirect ke login jika di tempat lain
         if (!authenticated) {
-          return isLoggingIn ? null : RouteNames.login;
+          return (isLanding || isLoggingIn) ? null : RouteNames.login;
         }
 
-        if (authenticated && isLoggingIn) {
+        // Sudah login: landing/login → redirect ke home
+        if (authenticated && (isLanding || isLoggingIn)) {
           return RouteNames.home;
         }
 
         return null;
       },
       routes: [
+        // ─── Landing (publik, tanpa Shell) ──────────────────
+        GoRoute(
+          path: RouteNames.landing,
+          builder: (_, __) => const LandingPageScreen(),
+        ),
+
         // ─── Auth tanpa Shell ────────────────────────────────
         GoRoute(
           path: RouteNames.login,
