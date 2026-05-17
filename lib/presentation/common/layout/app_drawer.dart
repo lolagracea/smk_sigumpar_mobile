@@ -99,6 +99,8 @@ class AppDrawer extends StatelessWidget {
             _MenuItemData(icon: Icons.archive_outlined, label: 'Arsip Surat', route: RouteNames.letters),
             _MenuItemData(icon: Icons.schedule_outlined, label: 'Jadwal Mengajar', route: RouteNames.schedules),
             _MenuItemData(icon: Icons.menu_book_outlined, label: 'Mata Pelajaran', route: RouteNames.subjects),
+            // ✅ FIX: Tambah menu Kelola Akun untuk Tata Usaha
+            _MenuItemData(icon: Icons.manage_accounts_outlined, label: 'Kelola Akun', route: RouteNames.kelolaAkun),
           ],
         ),
       );
@@ -124,28 +126,6 @@ class AppDrawer extends StatelessWidget {
       );
     }
 
-    // // ─── Wali Kelas ───────────────────────────────────────
-    // if (RoleHelper.hasRole(
-    //   targetRole: AppRoles.homeroom,
-    //   role: role,
-    //   roles: roles,
-    // )) {
-    //   categories.add(
-    //     const _MenuCategoryData(
-    //       title: 'Menu Wali Kelas',
-    //       icon: Icons.supervised_user_circle_outlined,
-    //       items: [
-    //         _MenuItemData(icon: Icons.how_to_reg_outlined, label: 'Presensi Kelas', route: RouteNames.attendanceRecap),
-    //         _MenuItemData(icon: Icons.bar_chart_outlined, label: 'Rekap Nilai', route: RouteNames.gradesRecap),
-    //         _MenuItemData(icon: Icons.family_restroom_outlined, label: 'Parenting', route: RouteNames.parentingNotes),
-    //         _MenuItemData(icon: Icons.cleaning_services_outlined, label: 'Kebersihan Kelas', route: RouteNames.cleanlinessRecap),
-    //         _MenuItemData(icon: Icons.edit_note_outlined, label: 'Refleksi', route: RouteNames.homeroomReflection),
-    //         _MenuItemData(icon: Icons.mail_outline, label: 'Surat Panggilan', route: RouteNames.summonsLetter),
-    //       ],
-    //     ),
-    //   );
-    // }
-
     // ─── Wali Kelas ───────────────────────────────────────
     if (RoleHelper.hasRole(
       targetRole: AppRoles.homeroom,
@@ -160,12 +140,12 @@ class AppDrawer extends StatelessWidget {
             _MenuItemData(
               icon: Icons.how_to_reg_outlined,
               label: 'Presensi Kelas',
-              route: RouteNames.waliAttendanceSummary, // ← GANTI
+              route: RouteNames.waliAttendanceSummary,
             ),
             _MenuItemData(
               icon: Icons.bar_chart_outlined,
               label: 'Rekap Nilai',
-              route: RouteNames.waliGradesView, // ← GANTI
+              route: RouteNames.waliGradesView,
             ),
             _MenuItemData(
               icon: Icons.family_restroom_outlined,
